@@ -1,0 +1,150 @@
+/* =====================================================================
+   8. STATE + COMBAT
+   ===================================================================== */
+const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 5, cops: true, crew: 0, solo: true, raid: [null, null], raidT: [60, 90], payT: 60, polT: 0, patrolT: 0, robT: [] };
+const ZS = ZONES.map(() => ({ owner: -1, cap: 0, n0: 0, n1: 0, hot: false }));
+const keys = {}, mouse = { down: false, fresh: false, right: false };
+const DBG = { god: false, ammo: false, freeze: false, stats: false, nav: false, notarget: false, scale: 1, fps: 60 };
+const NET = { mode: null, room: null, remotes: {}, me: null, slot: 0 };
+const AUTH = () => NET.mode !== 'client';           // this machine runs the bots, the traffic, the turf and the police
+const bots = [], pickups = [], grenades = [];
+const GAME = {};
+const P = { kind: 'me', team: 0, name: 'Player', slot: 0, x: 60, y: CURB, z: 300, vy: 0, vx: 0, vz: 0, onGround: true, yaw: 0, pitch: 0, cyaw: 0, cpitch: -.1, hp: 100, armor: 0, dead: false, deadT: 0, wpn: 'pistol', inv: {}, nades: 1, cash: CFG.startCash,
+  fireT: 0, reloadT: 0, switchT: 0, ads: 0, punchT: 0, car: null, seat: 0, enter: null, view: 3, streak: 0, shots: 0, shootT: 0, lastHit: -99, safeT: 0, kills: 0, deaths: 0, spd: 0, knock: 0, kick: 0, earn: 0, spent: 0,
+  heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: 60, lky: CURB, lkz: 300 };
+function eachActor(fn) { fn(P); for (const k in NET.remotes) fn(NET.remotes[k]); for (let i = 0; i < bots.length; i++) fn(bots[i]); }
+const isCrew = t => t === 0 || t === 1;
+const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !== b.team;          // the two crews
+const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
+const wanted = a => a.kind !== 'bot' && a.heat > 0;
+// who a bot will open fire on: the other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
+const hostile = (a, b) => a !== b && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
+const nameOf = a => !a ? 'The city' : a.name || 'Someone';
+const dmgAt = (d, dist) => d.dmg * (dist <= d.range[0] ? 1 : dist >= d.range[1] ? .5 : lerp(1, .5, (dist - d.range[0]) / (d.range[1] - d.range[0])));
+// where a seated or standing body is for the purposes of being shot
+const AH = { head: false }, _ab = { x0: 0, x1: 0, y0: 0, y1: 0, z0: 0, z1: 0 };
+function actorHit(a, ox, oy, oz, dx, dy, dz) {
+  let base = a.y, top = 1.5, hy = 1.63, w = .3, y0 = 0;
+  if (a.car) { base = a.car.y + a.car.geo.seatY; top = 1.0; hy = 1.14; w = .25; y0 = .4; } else if (a.knock > .5) { top = .5; hy = .3; w = .5; }
+  const th = raySphere(ox, oy, oz, dx, dy, dz, a.x, base + hy, a.z, .185);
+  _ab.x0 = a.x - w; _ab.x1 = a.x + w; _ab.y0 = base + y0; _ab.y1 = base + top; _ab.z0 = a.z - w; _ab.z1 = a.z + w;
+  const tb = rayBox(ox, oy, oz, dx, dy, dz, _ab); AH.head = th <= tb; return th < tb ? th : tb;
+}
+const chestY = a => a.car ? a.car.y + a.car.geo.seatY + .8 : a.y + (a.knock > .5 ? .3 : 1.15);
+const eyeY = a => a.car ? a.car.y + a.car.geo.seatY + 1.12 : a.y + 1.6;
+/* One trigger pull from `sh` at (ox,oy,oz) along (dx,dy,dz), with `spread` radians of scatter; the tracer is drawn from (mx,my,mz). */
+function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
+  const n = d.pellets || 1, hl = hyp(dx, dz) || 1e-6, rx = -dz / hl, rz = dx / hl, ux = -dy * dx / hl, uy = hl, uz = -dy * dz / hl;
+  for (let k = 0; k < n; k++) {
+    let ax = dx, ay = dy, az = dz;
+    if (spread > 0) { const a = rand() * TAU, m = Math.sqrt(rand()) * spread, sx = Math.cos(a) * m, sy = Math.sin(a) * m; ax += rx * sx + ux * sy; ay += uy * sy; az += rz * sx + uz * sy; const l = hyp(ax, ay, az); ax /= l; ay /= l; az /= l; }
+    const tW = rayWorld(ox, oy, oz, ax, ay, az, 's', 300), tC = rayCars(ox, oy, oz, ax, ay, az, tW, sh.car || null), carHit = RC.car;
+    let best = tC, who = null, head = false;
+    const h2 = hyp(ax, az);
+    eachActor(a => { if (a === sh || a.dead || a.gone || sameSide(a, sh)) return;
+      const ex = a.x - ox, ez = a.z - oz; if (h2 > .05) { const al = (ex * ax + ez * az) / h2; if (al < -1 || al * h2 > best + 1) return; if (ex * ex + ez * ez - al * al > 1.5) return; } else if (ex * ex + ez * ez > 1.5) return;
+      const t = actorHit(a, ox, oy, oz, ax, ay, az); if (t < best) { best = t; who = a; head = AH.head; } });
+    const ex = ox + ax * best, ey = oy + ay * best, ez = oz + az * best;
+    if (who) { FX.blood(ex, ey, ez, 5); hitActor(who, dmgAt(d, best) * (head ? d.head : 1), head, sh, d.id); }
+    else if (carHit && tC < tW) { FX.sparks(ex, ey, ez, 3); SFX.metal(ex, ey, ez); hitCar(carHit, dmgAt(d, best), sh); }
+    else if (best < 299) { FX.dust(ex, ey, ez, 3); if (rand() < .25) FX.sparks(ex, ey, ez, 2); }
+    if (k < 3 && best > 1.5) tracer(mx, my, mz, ex, ey, ez);
+  }
+  sh.shots = (sh.shots | 0) + 1; sh.shotT = G.time;
+  FX.muzzle(mx, my, mz, d.pellets > 1 ? 1.5 : d.id === 'pistol' || d.id === 'smg' ? .8 : 1.1);
+  SFX.shot(d, ox, oy, oz, sh === P);
+  if (sh === P) { muzzleLight.position.set(mx, my, mz); muzzleLight.intensity = 2.2; }
+  if (AUTH()) GAME.noise(ox, oz, sh);
+}
+// a shot seen from another machine: flash, crack and a tracer along where they are aiming; it decides nothing
+function fxShot(a, wid) {
+  const d = WEAPONS[wid] || WEAPONS.pistol, m = a.ch ? a.ch.muz : null, ox = m ? m.x : a.x, oy = m ? m.y : a.y + 1.4, oz = m ? m.z : a.z, cp = Math.cos(a.pitch || 0);
+  let dx = -Math.sin(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04), dy = Math.sin(a.pitch || 0) + rs(.03), dz = -Math.cos(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04); const l = hyp(dx, dy, dz); dx /= l; dy /= l; dz /= l;
+  const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t);
+  FX.muzzle(ox, oy, oz, 1); SFX.shot(d, ox, oy, oz, false); if (a.ch) a.ch.kick = 1;
+}
+function hitActor(t, dmg, head, sh, wid) {
+  if (sh === P) {
+    if (t.kind === 'bot') { if (AUTH()) damageBot(t, dmg, head, P, wid); else NET.reportBot(t, dmg, head, wid); }
+    else if (t.kind === 'rp') NET.reportPlayer(t, dmg, head, wid);
+    hitMarker(head, t.kind === 'bot' && t.dead);
+  } else if (sh.kind === 'bot') {
+    if (t === P) hurtPlayer(dmg * CFG.botDmg, sh, wid, head); else if (t.kind === 'rp') NET.hurt(t, dmg * CFG.botDmg, sh, wid, head); else damageBot(t, dmg * .8, head, sh, wid);
+  }
+}
+function hitCar(c, dmg, sh) { if (AUTH()) damageCar(c, dmg, sh); else if (sh === P) NET.reportCar(c, dmg); }
+function damageBot(b, dmg, head, src, wid) {
+  if (b.dead || b.gone) return;
+  b.hp -= dmg; b.flinch = .25; b.hurtT = G.time;
+  if (src && src !== b) {
+    if (src.kind !== 'bot') { if (b.team === TEAM_CIV) GAME.crime(src, 5, 0, .4); else if (b.team === TEAM_COP) GAME.crime(src, 10, 2, .4); }
+    else if (b.team !== TEAM_CIV && src.team !== TEAM_CIV && (b.team === TEAM_COP) !== (src.team === TEAM_COP)) { b.grudge = src; b.grudgeT = G.time + 12; }
+    if (b.team !== TEAM_CIV && hostile(b, src) && (!b.tgt || b.tgt.dead)) { b.tgt = src; b.seenT = G.time; b.react = .25; }
+  }
+  if (b.team === TEAM_CIV && !b.car) { b.fleeT = 9; b.fleeX = src ? src.x : b.x; b.fleeZ = src ? src.z : b.z; }
+  if (b.hp <= 0) killBot(b, src, wid, head);
+}
+function killBot(b, src, wid, head) {
+  if (b.dead) return; b.dead = true; b.deadT = 0; b.hp = 0; b.tgt = null;
+  if (b.car) { const c = b.car; c.occ[b.seat] = null; if (b.seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.ai = null; } b.car = null; }
+  GAME.onKill(src, b, wid, head);
+}
+function hurtPlayer(dmg, src, wid, head) {
+  if (P.dead || DBG.god || P.safeT > 0 || G.state === 'menu') return;
+  let d = dmg; if (P.armor > 0) { const ab = Math.min(P.armor, d * .7); P.armor -= ab; d -= ab; }
+  P.hp -= d; P.lastHit = G.time; SFX.hurt(); if (src && src.x !== undefined) dmgArrow(src.x, src.z);
+  if (P.hp <= 0) { P.hp = 0; GAME.playerDied(src, wid, head); }
+}
+function damageCar(c, dmg, src) {
+  if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
+  c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
+  if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
+}
+// everything a blast does on the machine that owns the world
+function explode(x, y, z, owner, power, wid) {
+  power = power || 1; const R = 7.5 * power;
+  FX.boom(x, y, z, power); SFX.boom(x, y, z); const pd = hyp(P.x - x, P.z - z); if (pd < 60) shake(clamp(1.4 - pd / 40, 0, 1)); if (pd < 18) flash(.25);
+  if (AUTH()) {
+    bots.forEach(b => { if (b.dead) return; const d = hyp(b.x - x, b.y + 1 - y, b.z - z); if (d < R && (!owner || !isCrew(b.team) || b.team !== owner.team || b === owner)) { if (!b.car) { b.knock = 1; b.knockT = 1.6; } damageBot(b, 190 * power * (1 - d / (R * 1.15)), false, owner, wid || 'boom'); } });
+    cars.forEach(c => { const d = hyp(c.x - x, c.z - z); if (d < R + 1.5 && !c.wreck) damageCar(c, 520 * power * (1 - d / (R + 3)), owner); });
+    PROPS.forEach(p => { if (!p.down && hyp(p.x - x, p.z - z) < R * .7) { if (knockProp(p, p.x - x, p.z - z)) GAME.onKnock(p, null); } });
+    GAME.noise(x, z, owner, 60); if (owner && owner.kind !== 'bot') GAME.crime(owner, 12, 0, 1);
+  }
+  if (!P.dead) { const d = hyp(P.x - x, P.y + 1 - y, P.z - z); if (d < R && (!owner || owner === P || !isCrew(owner.team) || owner.team !== P.team)) hurtPlayer(170 * power * (1 - d / (R * 1.15)) * (owner === P ? .7 : 1), owner, wid || 'boom'); }
+}
+function blowCar(c) {
+  if (c.wreck) return; c.wreck = true; c.wreckT = 0; c.burn = 0; c.hp = 0; c.vx *= .3; c.vz *= .3; c.ai = null; c.inp.thr = 0;
+  const src = c.lastHit && !c.lastHit.gone ? c.lastHit : null;
+  for (let k = 0; k < 4; k++) { const o = c.occ[k]; if (!o) continue; if (o.kind === 'bot') { c.occ[k] = null; o.car = null; killBot(o, src, 'boom', false); } else if (o === P) { GAME.leaveCar(true); hurtPlayer(999, src, 'boom'); } }
+  if (AUTH()) { GAME.ev('x', Math.round(c.x), Math.round(c.y), Math.round(c.z), 13, c.id, GAME.ref(src)); explode(c.x, c.y + .6, c.z, src, 1.3, 'boom'); }
+}
+// --- grenades: thrown and simulated by whoever threw them
+const nadeGeo = new T.SphereGeometry(.07, 8, 6), nadeMat = new T.MeshLambertMaterial({ color: 0x2f3a2a });
+function throwGrenade() {
+  if (P.nades <= 0 || P.dead || P.car) return; if (!DBG.ammo) P.nades--;
+  const cp = Math.cos(P.cpitch), fx = -Math.sin(P.cyaw) * cp, fy = Math.sin(P.cpitch), fz = -Math.cos(P.cyaw) * cp, m = new T.Mesh(nadeGeo, nadeMat); scene.add(m);
+  grenades.push({ m, x: P.x + fx * .5, y: P.y + 1.5, z: P.z + fz * .5, vx: fx * 15 + P.vx, vy: fy * 15 + 4, vz: fz * 15 + P.vz, t: 2.3 }); P.shootT = .6; SFX.swap();
+}
+function updateGrenades(dt) {
+  for (let i = grenades.length - 1; i >= 0; i--) {
+    const g = grenades[i]; g.t -= dt; g.vy -= 18 * dt;
+    const e = { x: g.x + g.vx * dt, y: g.y, z: g.z + g.vz * dt }, bx = e.x, bz = e.z; pushOut(e.x, e.z, .08, g.y - .02, g.y + .1, 'p'); if (COL.n) { e.x = COL.x; e.z = COL.z; }
+    if (Math.abs(e.x - bx) > 1e-4) g.vx *= -.35; if (Math.abs(e.z - bz) > 1e-4) g.vz *= -.35;
+    g.x = e.x; g.z = e.z; g.y += g.vy * dt;
+    const gr = groundAt(g.x, g.z, g.y, 'p', .1); if (g.y <= gr + .07) { g.y = gr + .07; g.vy = -g.vy * .32; g.vx *= .6; g.vz *= .6; }
+    g.m.position.set(g.x, g.y, g.z);
+    if (g.t <= 0) { scene.remove(g.m); grenades.splice(i, 1); if (AUTH()) { GAME.ev('x', Math.round(g.x), Math.round(g.y), Math.round(g.z), 10, 0, GAME.ref(P)); explode(g.x, g.y + .3, g.z, P, 1, 'nade'); } else { NET.req('gx', Math.round(g.x * 10) / 10, Math.round(g.y * 10) / 10, Math.round(g.z * 10) / 10); FX.boom(g.x, g.y, g.z, 1); SFX.boom(g.x, g.y, g.z); NET.myBoom = G.time; const d = hyp(P.x - g.x, P.y + 1 - g.y, P.z - g.z); if (d < 7.5) hurtPlayer(120 * (1 - d / 8.6), P, 'nade'); } }
+  }
+}
+// --- things lying in the street: chains off the fallen, dropped guns
+const chainGeo = new T.TorusGeometry(.2, .045, 6, 14), chainMat = new T.MeshBasicMaterial({ color: 0xffc83d }), pickGlow = new T.SpriteMaterial({ map: glowTex, color: 0xffc83d, transparent: true, opacity: .55, blending: T.AdditiveBlending, depthWrite: false });
+let pickSeq = 0;
+function addPickup(type, x, y, z, team, id) {
+  const g = new T.Group(); let m;
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' ? 1.5 : 1.1); if (type === 'chain' && isCrew(team)) { s.material = pickGlow.clone(); s.material.color.setHex(CREWS[team].color); }
+  g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: 40, g }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 14) removePickup(pickups[0]); return p;
+}
+function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }

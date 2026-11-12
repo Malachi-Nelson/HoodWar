@@ -1,0 +1,84 @@
+<script src="mqtt.min.js"></script>
+<script>
+/* Online play outside Claude.
+   Every player keeps one ordinary outbound connection to a public message relay and posts their own state to it; the relay
+   passes it to everyone else in the same room. Nothing connects browser-to-browser, so home routers and shared wifi are not
+   in the way, and nobody "holds the room open": anyone can come and go.
+   The plain page is one public room. A link with a #code is a private room for whoever has that link.
+   The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
+(() => {
+  const BUILD = '@BUILD@';
+  const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
+  const STALE = 7000;   // a player the relay has not heard from for this long has gone
+  const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+  const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/@PROTO@/' + code + '/';
+  const table = {}, seen = {}, subs = [];
+  let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
+  const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
+  const show = () => {
+    const el = document.getElementById('co-link-status'); if (!el) return;
+    const n = Object.keys(table).length - (up ? 1 : 0);
+    el.textContent = (up ? 'Online · ' + where + ' · ' + (n === 0 ? 'nobody else here yet' : n === 1 ? '1 other player here' : n + ' other players here') + ' · server ' + (si + 1) : note || 'Connecting…') + ' · ' + BUILD;
+    el.className = up ? 'status ok' : 'status';
+  };
+  const publish = () => { if (!up || !cl) return; lastT = Date.now(); try { cl.publish(base + me, JSON.stringify(mine), { qos: 0 }); } catch (e) {} };
+  const drop = id => { if (!(id in table) || id === me) return; delete table[id]; delete seen[id]; fire(); show(); };
+  function connect() {
+    if (typeof mqtt === 'undefined') { note = 'The online library did not load. Reload the page. Solo still works.'; return show(); }
+    note = 'Connecting to server ' + (si + 1) + '…'; show();
+    let ok = false, dead = false, c;
+    const lost = why => {
+      if (dead) return; dead = true; if (cl === c) cl = null; up = false; try { c.end(true); } catch (e) {}
+      for (const k in table) { delete table[k]; delete seen[k]; } fire();
+      if (!ok) { fails++; si = (si + 1) % SERVERS.length; }
+      note = (ok ? 'Connection lost. Reconnecting…' : 'Server did not answer (' + why + '). Trying server ' + (si + 1) + '…'); show();
+      setTimeout(connect, ok ? 800 : Math.min(4000, 600 * fails));
+    };
+    try { c = cl = mqtt.connect(SERVERS[si], { clientId: 'hw_' + me, clean: true, keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, will: { topic: base + me, payload: '', qos: 0, retain: false } }); }
+    catch (e) { c = { end() {} }; return lost('could not start'); }
+    c.on('connect', () => { if (dead) return; ok = true; up = true; fails = 0; c.subscribe(base + '+', { qos: 0 }, () => { table[me] = mine; publish(); show(); fire(); }); });
+    c.on('message', (topic, payload) => {
+      if (dead || topic.slice(0, base.length) !== base) return; const id = topic.slice(base.length); if (id === me || !id) return;
+      const txt = payload.toString(); if (!txt) return drop(id);
+      let pres; try { pres = JSON.parse(txt); } catch (e) { return; } if (!pres || typeof pres !== 'object') return;
+      const isNew = !(id in table); seen[id] = Date.now(); table[id] = pres; if (isNew) { publish(); show(); }   // someone new: tell them we are here straight away
+      fire();
+    });
+    c.on('close', () => lost('closed')); c.on('error', e => lost(e && e.message ? String(e.message).slice(0, 40) : 'error')); c.on('offline', () => lost('offline'));
+  }
+  setInterval(() => {
+    if (!up) return; const now = Date.now();
+    if (now - lastT >= 2000) publish();                                   // heartbeat, so newcomers and the stale check always have something recent
+    for (const id in seen) if (now - seen[id] > STALE) drop(id);
+  }, 1000);
+  window.addEventListener('pagehide', () => { try { if (up && cl) cl.publish(base + me, '', { qos: 0 }); } catch (e) {} });
+  const room = {
+    peers: () => Object.keys(table).map(k => ({ peer: k, presence: table[k], isMe: k === me, sameTab: k === me, kind: 'viewer', guest: false, by: null })),
+    presence: patch => {
+      const o = Object.assign({}, mine); for (const k in patch) { if (patch[k] === null) delete o[k]; else o[k] = patch[k]; }
+      mine = o; if (up) { table[me] = mine; publish(); }
+      return Promise.resolve();
+    },
+    onPeers: fn => { subs.push(fn); return () => {}; },
+    join: () => Promise.reject(new Error('one room per link')),
+  };
+  window.claude = { use: async name => { if (name !== 'room') return null; if (!started) { started = true; connect(); } return room; } };
+  window.addEventListener('hashchange', () => location.reload());
+  // under the lobby: whether the relay is up, and the link to hand to friends
+  const anchor = document.getElementById('co-status');
+  if (anchor) {
+    const st = document.createElement('div'); st.className = 'status'; st.id = 'co-link-status'; st.textContent = 'Connecting…';
+    const row = document.createElement('div'); row.className = 'row'; row.id = 'row-link';
+    row.innerHTML = '<input id="co-link" type="text" readonly aria-label="Link to this room"><button type="button" class="btn sm" id="co-copy">Copy link</button><button type="button" class="btn sm" id="co-priv"></button>';
+    anchor.after(st); st.after(row);
+    const input = document.getElementById('co-link'), btn = document.getElementById('co-copy'), pv = document.getElementById('co-priv');
+    input.value = location.href.split('#')[0] + (priv ? '#' + code : '');
+    input.addEventListener('keydown', e => e.stopPropagation());
+    pv.textContent = priv ? 'Back to public room' : 'Make a private room';
+    pv.addEventListener('click', () => { if (priv) { location.hash = ''; location.reload(); } else location.hash = Math.random().toString(36).slice(2, 8); });
+    btn.addEventListener('click', () => { const done = () => { btn.textContent = 'Copied'; setTimeout(() => btn.textContent = 'Copy link', 1500); }; if (navigator.clipboard) navigator.clipboard.writeText(input.value).then(done, () => input.select()); else input.select(); });
+    show();
+  }
+})();
+</script>

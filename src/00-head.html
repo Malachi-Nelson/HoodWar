@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Port Calder Open World</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Saira+Condensed:wght@400;500;600;700&family=Permanent+Marker&display=swap">
+<style>
+/* Layout: a full-bleed 3D view. Radar and health sit bottom-left; wanted stars, cash and weapon top-right; the turf strip and the clock top-centre.
+   The menu is a left-hand column over the live city. One dark look by choice: it is a HUD over a lit scene. */
+:root{
+  --asphalt:#0e1014; --panel:#171a20; --line:#2c313a; --chalk:#f2efe6; --ash:#8b929c;
+  --ember:#ff5a36; --tide:#2fb6ff; --cash:#8fe36b; --gold:#ffc83d; --blood:#e23b2e;
+  --font-display:'Anton','Impact','Arial Narrow',sans-serif;
+  --font-ui:'Saira Condensed','Arial Narrow',system-ui,sans-serif;
+  --font-tag:'Permanent Marker','Comic Sans MS',cursive;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);font-size:17px;overflow:hidden;-webkit-user-select:none;user-select:none}
+[hidden]{display:none!important}
+#game{position:relative;height:100%;overflow:hidden}
+#view{position:absolute;inset:0;width:100%;height:100%;display:block;background:var(--asphalt)}
+#hud{position:absolute;inset:0;pointer-events:none;font-variant-numeric:tabular-nums}
+#hud>*{position:absolute}
+.sh{text-shadow:0 1px 3px #000,0 0 2px #000}
+#vign{inset:0;background:radial-gradient(ellipse at center,rgba(226,59,46,0) 45%,rgba(226,59,46,.7) 100%);opacity:0}
+#flash{inset:0;background:var(--chalk);opacity:0}
+#scope{inset:0;background:radial-gradient(circle at center,rgba(0,0,0,0) 0,rgba(0,0,0,0) 34vh,#000 34.4vh);opacity:0}
+#scope::before,#scope::after{content:"";position:absolute;background:rgba(0,0,0,.85)}
+#scope::before{left:50%;top:calc(50% - 34vh);width:1px;height:68vh}
+#scope::after{top:50%;left:calc(50% - 34vh);height:1px;width:68vh}
+/* bottom-left: radar, health, armour */
+#radarwrap{left:18px;bottom:18px;display:flex;flex-direction:column;gap:5px}
+#radar{width:clamp(140px,19vw,204px);aspect-ratio:1;border-radius:14px;border:2px solid rgba(242,239,230,.22);background:rgba(10,12,16,.7);display:block}
+.bars{display:grid;grid-template-columns:1.25fr 1fr;gap:5px}
+.bar{height:9px;background:rgba(10,12,16,.75);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;transform-origin:left;background:var(--cash)}
+#ar-fill{background:#9fc4d8}
+#hp-fill.low{background:var(--blood)}
+#h-area{left:calc(clamp(140px,19vw,204px) + 34px);bottom:18px;font-size:20px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;opacity:0;transition:opacity .6s}
+#h-area.on{opacity:1}
+#h-area small{display:block;font-size:14px;font-weight:500;color:var(--ash);letter-spacing:.12em}
+/* top-right: money, weapon */
+#h-right{top:14px;right:18px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:0}
+#h-stars{font-size:clamp(22px,3vw,30px);line-height:1;letter-spacing:.08em;color:var(--gold);margin-bottom:4px}
+#h-stars.evade{animation:evade .8s steps(2) infinite}
+@keyframes evade{50%{opacity:.35}}
+#h-cash{font-family:var(--font-display);font-size:clamp(28px,4vw,40px);line-height:1;color:var(--cash)}
+#h-gain{font-size:18px;font-weight:600;height:22px;color:var(--cash);opacity:0}
+#h-gain.on{animation:gain 1.1s ease-out}
+#h-gain.neg{color:var(--blood)}
+@keyframes gain{0%{opacity:1;transform:translateY(6px)}100%{opacity:0;transform:translateY(-8px)}}
+#h-weapon{font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+#h-ammo{font-family:var(--font-display);font-size:clamp(30px,4.6vw,46px);line-height:1}
+#h-ammo small{font-size:.5em;color:var(--ash)}
+#h-nades{font-size:14px;letter-spacing:.2em;color:var(--ash)}
+#h-streak{font-size:16px;font-weight:700;letter-spacing:.08em;color:#111;background:var(--gold);padding:2px 8px;margin-top:6px}
+/* top-centre: turf strip */
+#turf{top:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px}
+#turf .zs{display:flex;gap:4px}
+#turf .zs b{width:30px;height:30px;display:grid;place-items:center;font-family:var(--font-display);font-weight:400;font-size:18px;color:var(--chalk);background:rgba(10,12,16,.72);border:2px solid rgba(242,239,230,.35)}
+#turf .zs b.t0{background:var(--ember);border-color:var(--ember);color:#160704}
+#turf .zs b.t1{background:var(--tide);border-color:var(--tide);color:#03121b}
+#turf .zs b.hot{animation:hot .7s steps(2) infinite}
+#turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
+@keyframes hot{50%{filter:brightness(1.6)}}
+#t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
+#feed{top:236px;right:18px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:16px;font-weight:600}
+#feed div{background:rgba(10,12,16,.6);padding:1px 8px;white-space:nowrap}
+#feed .e{color:var(--ember)}#feed .t{color:var(--tide)}#feed .c{color:var(--ash)}#feed .g{color:var(--gold)}#feed .p{color:#9db8ff}#feed .w{color:var(--chalk);font-weight:400;opacity:.85;margin:0 6px}
+#feed .me{box-shadow:inset 3px 0 0 var(--gold)}
+/* centre */
+#cross{left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;opacity:.85;transition:transform .05s linear}
+#cross i{position:absolute;background:var(--chalk);box-shadow:0 0 2px #000}
+#cross i:nth-child(1){left:12px;top:0;width:2px;height:7px}#cross i:nth-child(2){left:12px;bottom:0;width:2px;height:7px}
+#cross i:nth-child(3){top:12px;left:0;height:2px;width:7px}#cross i:nth-child(4){top:12px;right:0;height:2px;width:7px}
+#cross i:nth-child(5){left:12px;top:12px;width:2px;height:2px}
+#hitm{left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;opacity:0;transform:rotate(45deg)}
+#hitm::before,#hitm::after{content:"";position:absolute;background:var(--chalk)}
+#hitm::before{left:10px;top:0;width:2px;height:22px}#hitm::after{top:10px;left:0;height:2px;width:22px}
+#hitm.head::before,#hitm.head::after{background:var(--gold)}
+#hitm.kill{transform:rotate(45deg) scale(1.6)}
+#hitm.kill::before,#hitm.kill::after{background:var(--blood);box-shadow:0 0 6px var(--blood)}
+#dmg{left:50%;top:50%;width:0;height:0}
+#dmg i{position:absolute;left:-60px;top:-150px;width:120px;height:26px;border-radius:60px 60px 0 0;background:radial-gradient(ellipse at 50% 100%,rgba(226,59,46,0) 55%,rgba(226,59,46,.95) 72%,rgba(226,59,46,0) 100%);transform-origin:60px 150px}
+#h-prompt{left:50%;bottom:23%;transform:translateX(-50%);font-size:clamp(17px,2.2vw,22px);font-weight:600;white-space:nowrap}
+#h-prompt b{font-family:var(--font-display);font-weight:400;color:#111;background:var(--gold);padding:0 7px;margin-right:6px}
+#h-banner{left:50%;top:19%;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .4s;width:min(92%,720px)}
+#h-banner.on{opacity:1}
+#h-banner .big{font-family:var(--font-display);font-size:clamp(34px,6.4vw,72px);line-height:1;letter-spacing:.02em;text-wrap:balance}
+#h-banner .sub{font-size:clamp(16px,2.1vw,21px);font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-top:6px}
+#h-banner.t0 .big{color:var(--ember)}#h-banner.t1 .big{color:var(--tide)}#h-banner.gold .big{color:var(--gold)}
+#cap{left:50%;bottom:14%;transform:translateX(-50%);width:min(60%,320px);text-align:center}
+#cap-label{font-size:16px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+#cap .bar{height:10px;position:relative}
+#cap .bar i{position:absolute;top:0;left:50%;width:50%;background:var(--chalk)}
+#h-speed{right:18px;bottom:18px;text-align:right;line-height:1}
+#spd-n{font-family:var(--font-display);font-size:clamp(40px,6vw,64px)}
+#h-speed small{font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--ash);margin-left:6px}
+#h-car{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk)}
+#car-hp{width:150px;margin-left:auto;margin-top:5px}
+#car-fill{background:var(--gold)}
+#h-radio{left:50%;top:86px;transform:translateX(-50%);font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .5s;white-space:nowrap}
+#h-radio.on{opacity:1}
+#h-radio b{color:var(--gold);font-weight:700}
+#dead{inset:0;display:grid;place-items:center;background:rgba(14,16,20,.5);text-align:center}
+#dead-big{font-family:var(--font-tag);font-size:clamp(54px,11vw,128px);line-height:1;color:var(--blood);transform:rotate(-4deg);text-shadow:0 4px 0 rgba(0,0,0,.6)}
+#dead-sub{font-size:20px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-top:10px}
+#h-dev{top:120px;left:18px;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--gold);white-space:pre}
+/* scoreboard, shop, map: panels over the game */
+.pane{background:rgba(23,26,32,.94);border:1px solid var(--line)}
+#board{left:50%;top:50%;transform:translate(-50%,-50%);width:min(94%,720px);padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
+#board h3{font-family:var(--font-display);font-weight:400;font-size:26px;margin:0 0 6px;display:flex;justify-content:space-between}
+#board .c0 h3{color:var(--ember)}#board .c1 h3{color:var(--tide)}
+#board table{width:100%;border-collapse:collapse;font-size:17px}
+#board th{font-weight:500;color:var(--ash);font-size:13px;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:2px 4px}
+#board th:first-child,#board td:first-child{text-align:left}
+#board td{text-align:right;padding:3px 4px;border-top:1px solid var(--line)}
+#board tr.me td{color:var(--gold)}
+#board .foot{grid-column:1/-1;color:var(--ash);font-size:15px;letter-spacing:.06em}
+#shop{left:50%;top:50%;transform:translate(-50%,-50%);width:min(92%,420px);padding:16px 18px;pointer-events:auto}
+#shop h3{font-family:var(--font-display);font-weight:400;font-size:28px;margin:0 0 8px;color:var(--gold)}
+#shop ol{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+#shop li{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;font-size:19px;font-weight:500;padding:3px 0;border-top:1px solid var(--line)}
+#shop li b{font-family:var(--font-display);font-weight:400;color:#111;background:var(--gold);text-align:center}
+#shop li span:last-child{color:var(--cash);font-weight:700}
+#shop li.no{opacity:.45}#shop li.own span:last-child{color:var(--ash)}
+#shop p{margin:10px 0 0;color:var(--ash);font-size:15px}
+#bigmap{inset:0;display:grid;place-items:center;background:rgba(14,16,20,.78)}
+#mapc{max-width:94%;max-height:86%;border:1px solid var(--line)}
+/* menu: a column on the left, the city behind it */
+#overlay{position:absolute;inset:0;display:flex;align-items:stretch;background:linear-gradient(90deg,rgba(14,16,20,.94) 0,rgba(14,16,20,.86) 34%,rgba(14,16,20,.25) 70%,rgba(14,16,20,0) 100%);overflow-y:auto}
+.col{width:min(100%,600px);padding:clamp(18px,3.4vw,40px);display:flex;flex-direction:column;gap:15px;margin-block:auto}
+.eyebrow{font-size:14px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ash)}
+.lockup{position:relative;margin:0;font-family:var(--font-display);font-weight:400;font-size:clamp(58px,10.5vw,118px);line-height:.86;letter-spacing:.01em;color:var(--chalk);text-wrap:balance;padding-bottom:.28em}
+.lockup em{position:absolute;left:38%;bottom:0;font-family:var(--font-tag);font-style:normal;font-size:.44em;line-height:1;color:var(--ember);transform:rotate(-5deg);white-space:nowrap;text-shadow:0 3px 0 rgba(0,0,0,.55)}
+.col p{margin:0;font-size:19px;line-height:1.35;max-width:58ch}
+.stats{display:flex;flex-wrap:wrap;gap:6px 26px;font-size:19px;font-weight:600}
+.stats b{color:var(--gold);font-weight:700}
+.crews{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.crew{font:inherit;color:var(--chalk);text-align:left;background:rgba(23,26,32,.8);border:2px solid var(--line);padding:10px 12px;cursor:pointer;display:grid;gap:2px;min-width:0}
+.crew b{font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1}
+.crew small{font-size:15px;color:var(--ash)}
+.crew i{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.16em;visibility:hidden}
+#crew0 b{color:var(--ember)}#crew1 b{color:var(--tide)}
+#crew0[aria-pressed=true]{border-color:var(--ember);background:rgba(255,90,54,.12)}
+#crew1[aria-pressed=true]{border-color:var(--tide);background:rgba(47,182,255,.12)}
+.crew[aria-pressed=true] i{visibility:visible}
+.crew:disabled{cursor:default;opacity:.6}
+.crew:disabled[aria-pressed=true]{opacity:1}
+.row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.btn{font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:.04em;color:var(--chalk);background:transparent;border:2px solid var(--chalk);padding:7px 16px;cursor:pointer}
+.btn.go{background:var(--gold);border-color:var(--gold);color:#141108;font-size:28px;padding:9px 24px}
+.btn:hover:not(:disabled){filter:brightness(1.12);background-color:rgba(242,239,230,.1)}
+.btn.go:hover:not(:disabled){background:var(--gold)}
+.btn:disabled{border-color:var(--line);color:var(--ash);cursor:default}
+.btn.sm{font-size:17px;padding:5px 12px}
+#co-link{flex:1;min-width:200px;width:auto;font:500 13px ui-monospace,Menlo,monospace}
+.btn:focus-visible,.crew:focus-visible,.col select:focus-visible,.col input:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.col label{font-size:13px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ash)}
+.col input[type=text],.col select{font:600 17px var(--font-ui);color:var(--chalk);background:rgba(0,0,0,.4);border:1px solid var(--ash);padding:7px 9px;min-width:0}
+.col input[type=text]{width:150px}
+.status{font-size:16px;color:var(--ash);min-height:1.3em}
+.status.ok{color:var(--cash)}
+.roster{list-style:none;margin:0;padding:0;display:grid;gap:3px;max-width:440px}
+.roster li{display:flex;justify-content:space-between;gap:12px;font-size:17px;font-weight:600;border-left:4px solid var(--ash);padding:4px 10px;background:rgba(0,0,0,.34)}
+.roster li.c0{border-left-color:var(--ember)}.roster li.c1{border-left-color:var(--tide)}
+.roster li span:last-child{color:var(--ash);font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.roster li.ok span:last-child{color:var(--gold)}
+.keys{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:4px 18px;margin:0;padding:12px 0;border-block:1px solid var(--line)}
+.keys div{display:flex;gap:10px;align-items:baseline;min-width:0}
+.keys dt{font-weight:700;font-size:15px;color:var(--gold);min-width:78px}
+.keys dd{margin:0;font-size:16px}
+.note{font-size:15px!important;color:var(--ash)}
+.note a{color:var(--gold)}
+/* dev menu */
+#dev{position:absolute;top:12px;right:12px;width:min(360px,calc(100% - 24px));max-height:calc(100% - 24px);overflow-y:auto;background:rgba(23,26,32,.97);border:1px solid var(--gold);padding:14px;display:flex;flex-direction:column;gap:9px;font:13px ui-monospace,Menlo,monospace;z-index:5;-webkit-user-select:auto;user-select:auto}
+#dev .dev-h{display:flex;justify-content:space-between;color:var(--gold);letter-spacing:.14em}
+#dev .dev-h span{color:var(--ash);letter-spacing:.04em;font-size:11px}
+#dev .r{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#dev .checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+#dev label{display:flex;gap:6px;align-items:center;cursor:pointer}
+#dev button,#dev select{font:inherit;color:var(--chalk);background:var(--asphalt);border:1px solid var(--ash);padding:5px 8px;cursor:pointer;min-width:0}
+#dev button:hover{border-color:var(--gold);color:var(--gold)}
+#dev input[type=range]{flex:1;min-width:80px;accent-color:var(--gold)}
+#dev select{flex:1}
+#dev :focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+@media (max-width:640px){#feed{display:none}#turf .zs b{width:24px;height:24px;font-size:15px}.crews{grid-template-columns:1fr}#board{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){#h-banner,#h-area,#h-radio{transition:none}#h-gain.on{animation:none;opacity:1}#turf .zs b.hot,#h-stars.evade{animation:none}#h-stars.evade{opacity:.6}}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="view" aria-label="Game view"></canvas>
+  <div id="hud" hidden>
+    <div id="vign"></div><div id="flash"></div><div id="scope"></div>
+    <div id="radarwrap"><canvas id="radar" width="204" height="204" aria-label="Radar"></canvas><div class="bars"><div class="bar"><i id="hp-fill"></i></div><div class="bar"><i id="ar-fill"></i></div></div></div>
+    <div id="h-area" class="sh"></div>
+    <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
+    <div id="turf" class="sh"><div class="zs"><b id="t-z0">A</b><b id="t-z1">B</b><b id="t-z2">C</b><b id="t-z3">D</b><b id="t-z4">E</b></div></div>
+    <div id="t-time" class="sh"></div>
+    <div id="h-radio" class="sh"></div>
+    <div id="feed"></div>
+    <div id="cross"><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="hitm"></div>
+    <div id="dmg"></div>
+    <div id="h-banner" class="sh"><div class="big"></div><div class="sub"></div></div>
+    <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar"><i id="cap-fill"></i></div></div>
+    <div id="h-prompt" class="sh"></div>
+    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div></div>
+    <div id="h-dev"></div>
+    <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
+    <div id="board" class="pane" hidden></div>
+    <div id="shop" class="pane" hidden><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p>Press a number to buy. F or Esc closes.</p></div>
+    <div id="bigmap" hidden><canvas id="mapc" width="960" height="700" aria-label="City map"></canvas></div>
+  </div>
+  <div id="dev" hidden>
+    <div class="dev-h">DEV MENU <span>` or Resume to close</span></div>
+    <div class="checks">
+      <label><input type="checkbox" id="dv-god"> God mode</label>
+      <label><input type="checkbox" id="dv-ammo"> Infinite ammo</label>
+      <label><input type="checkbox" id="dv-freeze"> Freeze bots</label>
+      <label><input type="checkbox" id="dv-stats"> Stats readout</label>
+      <label><input type="checkbox" id="dv-nav"> Show walk graph</label>
+      <label><input type="checkbox" id="dv-notarget"> Bots ignore me</label>
+    </div>
+    <div class="r"><button type="button" id="dv-cash">+$5,000</button><button type="button" id="dv-guns">All guns</button><button type="button" id="dv-heal">Heal + armor</button><button type="button" id="dv-streak">Give drive-by</button></div>
+    <div class="r"><select id="dv-car" aria-label="Car model"></select><button type="button" id="dv-spawncar">Spawn car</button></div>
+    <div class="r"><select id="dv-tp" aria-label="Teleport destination"></select><button type="button" id="dv-go">Teleport</button></div>
+    <div class="r"><label for="dv-tod">Time of day</label><input type="range" id="dv-tod" min="0" max="24" step="0.25" value="17.5"><span id="dv-todv">17:30</span></div>
+    <div class="r"><label for="dv-scale">Game speed</label><input type="range" id="dv-scale" min="0.25" max="3" step="0.25" value="1"><span id="dv-scalev">1x</span></div>
+    <div class="r"><button type="button" id="dv-star">Wanted +1</button><button type="button" id="dv-clear">Clear wanted</button><button type="button" id="dv-wipe">Reset saved cash + guns</button></div>
+    <div class="r"><button type="button" id="dv-close">Resume</button></div>
+  </div>
+  <div id="overlay">
+    <div class="col">
+      <div class="eyebrow" id="o-eyebrow">Open world · free roam · solo or co-op</div>
+      <h1 class="lockup" id="o-title">Port Calder <em>Open World</em></h1>
+      <p id="o-text">No rounds and no clock. Take any car, walk into any fight, hold turf for your crew, and stay ahead of the police. Everyone in the lobby rides together.</p>
+      <div class="stats" id="o-stats" hidden></div>
+      <div class="crews" role="group" aria-label="Choose your crew">
+        <button class="crew" id="crew0" type="button" aria-pressed="true"><b>Ember Row</b><small>West side. Holds The Courts and The Corner.</small><i>YOUR CREW</i></button>
+        <button class="crew" id="crew1" type="button" aria-pressed="false"><b>Tidewater</b><small>Dock side. Holds the Station and The Docks.</small><i>YOUR CREW</i></button>
+      </div>
+      <div class="row"><button id="deploy" class="btn go" type="button">Play solo</button><button id="leave" class="btn" type="button" hidden>Leave session</button><span class="row" id="set-box"><label for="set-bots">Crew size</label><select id="set-bots"><option value="3">3 bots</option><option value="5" selected>5 bots</option><option value="7">7 bots</option></select><label for="set-cops">Police</label><select id="set-cops"><option value="1" selected>On</option><option value="0">Off</option></select></span></div>
+      <div class="row" id="row-lobby"><label for="co-name">Name</label><input id="co-name" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Player"><button id="co-host" class="btn" type="button" disabled>Open lobby</button><button id="co-join" class="btn" type="button" disabled>Join lobby</button><button id="co-ready" class="btn" type="button" hidden>Ready up</button><button id="co-start" class="btn" type="button" hidden>Start session</button><button id="co-leave" class="btn" type="button" hidden>Leave lobby</button></div>
+      <ul class="roster" id="co-roster" hidden></ul>
+      <div class="status" id="co-status">Multiplayer: connecting…</div>
+      <dl class="keys">
+        <div><dt>W A S D</dt><dd>Move · drive</dd></div>
+        <div><dt>Mouse</dt><dd>Look · fire · right-click aim</dd></div>
+        <div><dt>F</dt><dd>Get in or out · carjack · shop · rob a till</dd></div>
+        <div><dt>Shift · Space</dt><dd>Sprint · jump / handbrake</dd></div>
+        <div><dt>1–6 · wheel</dt><dd>Weapons</dd></div>
+        <div><dt>R · G</dt><dd>Reload · grenade</dd></div>
+        <div><dt>V · C</dt><dd>Camera · look behind</dd></div>
+        <div><dt>Q · H</dt><dd>Radio · horn, or siren in a police car</dd></div>
+        <div><dt>Tab · M</dt><dd>Players and turf · map</dd></div>
+        <div><dt>B</dt><dd>Call a drive-by (4-kill streak)</dd></div>
+      </dl>
+      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
+      <p class="note" id="o-note">Needs a keyboard and mouse. Esc pauses. The ` key opens the dev menu. Cash and guns are kept in this browser between sessions. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. On Claude, multiplayer reaches signed-in people this page has been shared with.</p>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>

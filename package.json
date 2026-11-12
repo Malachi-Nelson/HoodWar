@@ -1,0 +1,8 @@
+{
+  "name": "hoodwar",
+  "private": true,
+  "description": "Port Calder: an open-world crew game that runs in the browser. This file only lists what the headless checks in test/ need.",
+  "devDependencies": {
+    "three": "0.128.0"
+  }
+}
