@@ -43,24 +43,24 @@ await B.click('#co-join'); await sleep(300);
 log('B in lobby', await B.evaluate(() => ({ team: __pc.P.team, crewLocked: document.getElementById('crew1').disabled, status: document.getElementById('co-status').textContent })));
 await A.selectOption('#set-bots', '3'); await sleep(250);
 log('B copies settings', await B.evaluate(() => ({ bots: document.getElementById('set-bots').value, cops: document.getElementById('set-cops').value })));
-await A.selectOption('#set-bots', '5'); await B.click('#co-ready'); await sleep(300);
+await A.selectOption('#set-bots', '4'); await B.click('#co-ready'); await sleep(300);
 log('A roster', await A.evaluate(() => [...document.querySelectorAll('#co-roster li')].map(l => l.textContent)));
 log('A status', await A.textContent('#co-status'));
 await A.click('#co-start'); await sleep(400);
 await pump(40);
 log('modes', [await A.evaluate(() => __pc.NET.mode + '/' + __pc.G.state), await B.evaluate(() => __pc.NET.mode + '/' + __pc.G.state)]);
-const snap = () => { const g = __pc; return { slot: g.NET.slot, team: g.P.team, crew: g.G.crew, bots: g.bots.length, cops: g.bots.filter(b => b.team === 3).length, cars: g.cars.length, remotes: Object.values(g.NET.remotes).map(r => r.name + ':' + r.slot + ':t' + r.team + ':h' + (r.heat | 0) + '@' + Math.round(r.x) + ',' + Math.round(r.z)), me: Math.round(g.P.x) + ',' + Math.round(g.P.z), zones: g.ZS.map(z => z.owner).join(','), tod: g.G.tod.toFixed(2), bytes: window.__maxBytes, over: window.__over || 0, hp: Math.round(g.P.hp), cash: g.P.cash, heat: g.P.heat }; };
+const snap = () => { const g = __pc; return { slot: g.NET.slot, team: g.P.team, crew: g.G.crew, bots: g.bots.length, cops: g.bots.filter(b => b.team === g.CREWS.length + 1).length, walkers: g.bots.filter(b => b.team === g.CREWS.length && !b.car).length, cars: g.cars.length, remotes: Object.values(g.NET.remotes).map(r => r.name + ':' + r.slot + ':t' + r.team + ':h' + (r.heat | 0) + '@' + Math.round(r.x) + ',' + Math.round(r.z)), me: Math.round(g.P.x) + ',' + Math.round(g.P.z), zones: g.ZS.map(z => z.owner + (z.prog > .01 ? '>' + z.by + '@' + z.prog.toFixed(1) : '') + (z.hot ? '!' : '')).join(','), tod: g.G.tod.toFixed(2), bytes: window.__maxBytes, over: window.__over || 0, hp: Math.round(g.P.hp), cash: g.P.cash, heat: g.P.heat }; };
 log('A', await A.evaluate(snap)); log('B', await B.evaluate(snap));
 const sync = async (X, tag) => {
-  const hb = await A.evaluate(() => __pc.bots.filter(b => !b.dead).map(b => [b.id, Math.round(b.x), Math.round(b.z), b.team])), cb = await X.evaluate(() => __pc.bots.filter(b => !b.dead).map(b => [b.id, Math.round(b.x), Math.round(b.z), b.team]));
-  let off = 0, miss = 0; hb.forEach(h => { const c = cb.find(q => q[0] === h[0]); if (!c || c[3] !== h[3]) miss++; else off = Math.max(off, Math.hypot(c[1] - h[1], c[2] - h[2])); });
+  const list = () => __pc.bots.filter(b => !b.dead).map(b => [b.id, Math.round(b.x), Math.round(b.z), b.team, b.role | 0, b.car ? -1 : b.act | 0, b.car ? b.car.id : 0]), hb = await A.evaluate(list), cb = await X.evaluate(list);
+  let off = 0, miss = 0, actOff = 0, roleOff = 0, carOff = 0; const acts = {}; hb.forEach(h => { const c = cb.find(q => q[0] === h[0]); if (!c || c[3] !== h[3]) { miss++; return; } off = Math.max(off, Math.hypot(c[1] - h[1], c[2] - h[2])); if (c[4] !== h[4]) roleOff++; if (c[5] !== h[5]) actOff++; if (c[6] !== h[6]) carOff++; acts[h[5]] = (acts[h[5]] || 0) + 1; });
   const hc = await A.evaluate(() => __pc.cars.map(c => [c.id, Math.round(c.x), Math.round(c.z), c.type, !!c.cop])), cc = await X.evaluate(() => __pc.cars.map(c => [c.id, Math.round(c.x), Math.round(c.z), c.type, !!c.cop]));
   let offc = 0, missc = 0; hc.forEach(h => { const c = cc.find(q => q[0] === h[0]); if (!c || c[3] !== h[3] || c[4] !== h[4]) missc++; else offc = Math.max(offc, Math.hypot(c[1] - h[1], c[2] - h[2])); });
-  log(tag, { bots: hb.length + '/' + cb.length, botsMissing: miss, botOff: +off.toFixed(1), cars: hc.length + '/' + cc.length, carsMissing: missc, carOff: +offc.toFixed(1), copCars: hc.filter(c => c[4]).length });
+  log(tag, { bots: hb.length + '/' + cb.length, botsMissing: miss, botOff: +off.toFixed(1), actsDiffer: actOff, rolesDiffer: roleOff, seatsDiffer: carOff, acts, cars: hc.length + '/' + cc.length, carsMissing: missc, carOff: +offc.toFixed(1), copCars: hc.filter(c => c[4]).length });
 };
 await sync(B, 'sync B');
 // the client shoots a rival: the host's copy must take the damage, the client gets the credit
-const shot = await B.evaluate(() => { const g = __pc, P = g.P; g.DBG.god = true; const b = g.bots.filter(b => b.team === 1 - P.team && !b.dead && !b.car).sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z))[0]; if (!b) return null; P.x = b.x + 4; P.z = b.z + 4; P.y = b.y; g.giveWeapon('rifle'); g.setWeapon('rifle'); window.__tgt = b.id; return b.id; });
+const shot = await B.evaluate(() => { const g = __pc, P = g.P; g.DBG.god = true; const b = g.bots.filter(b => b.team !== P.team && b.team < g.CREWS.length && !b.dead && !b.car).sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z))[0]; if (!b) return null; P.x = b.x + 4; P.z = b.z + 4; P.y = b.y; g.giveWeapon('rifle'); g.setWeapon('rifle'); window.__tgt = b.id; return b.id; });
 const fireAt = async (X, n) => { for (let i = 0; i < n; i++) { await X.evaluate(() => { const g = __pc, P = g.P, b = g.bots.find(q => q.id === window.__tgt); if (!b || b.dead) { g.mouse.down = false; return; } P.switchT = 0; P.cyaw = Math.atan2(-(b.x - P.x), -(b.z - P.z)); P.cpitch = Math.atan2(b.y + 1.1 - (P.y + 1.45), Math.hypot(b.x - P.x, b.z - P.z)); g.mouse.down = true; g.visuals(1 / 30); g.step(2, 1 / 30); }); for (const p of [A, B, C]) if (p && p !== X) await p.evaluate(() => { __pc.step(2, 1 / 30); }); await sleep(15); } await X.evaluate(() => { __pc.mouse.down = false; }); };
 await fireAt(B, 26); await pump(20);
 log('rival shot by client', { id: shot, onHost: await A.evaluate(id => { const b = __pc.bots.find(q => q.id === id); return b ? { hp: Math.round(b.hp), dead: b.dead } : 'gone'; }, shot), clientCash: await B.evaluate(() => __pc.P.cash), clientKills: await B.evaluate(() => __pc.P.kills), feedB: await B.textContent('#feed') });
@@ -84,12 +84,12 @@ log('host after being shot at by a player', await A.evaluate(() => ({ hp: Math.r
 log('client shots fired', await B.evaluate(() => ({ shots: __pc.P.shots, kills: __pc.P.kills })));
 // heat: the client hurts a bystander, the host gives the client stars and sends a car after them
 await A.evaluate(() => { __pc.DBG.god = true; });
-const civ = await B.evaluate(() => { const g = __pc, P = g.P; const b = g.bots.filter(b => b.team === 2 && !b.dead && !b.car).sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z))[0]; P.x = b.x + 3; P.z = b.z + 3; P.y = b.y; window.__tgt = b.id; return b.id; });
+const civ = await B.evaluate(() => { const g = __pc, P = g.P; const b = g.bots.filter(b => b.team === g.CREWS.length && !b.dead && !b.car && !b.post).sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z))[0]; P.x = b.x + 3; P.z = b.z + 3; P.y = b.y; window.__tgt = b.id; return b.id; });
 await fireAt(B, 20); await pump(30);
 log('client heat', { onClient: await B.evaluate(() => ({ heat: __pc.P.heat, stars: document.getElementById('h-stars').textContent, hidden: document.getElementById('h-stars').hidden })), onHost: await A.evaluate(() => Object.values(__pc.NET.remotes).map(r => ({ n: r.name, heat: r.heat, wp: Math.round(r.wp) }))), civ: await A.evaluate(id => { const b = __pc.bots.find(q => q.id === id); return b ? b.dead : 'gone'; }, civ) });
 await pump(150);
-log('police after the client', await A.evaluate(() => ({ cops: __pc.bots.filter(b => b.team === 3 && !b.dead).map(b => (b.chase ? b.chase.name : '-') + (b.car ? '@car' : '@foot') + Math.round(Math.hypot(b.x - Object.values(__pc.NET.remotes)[0].x, b.z - Object.values(__pc.NET.remotes)[0].z))), bob: Object.values(__pc.NET.remotes).map(r => r.heat + (r.evade ? 'e' : '')), hostHeat: __pc.P.heat })));
-log('client sees police', await B.evaluate(() => ({ heat: __pc.P.heat, evade: __pc.P.evade, cops: __pc.bots.filter(b => b.team === 3).length, sirens: __pc.cars.filter(c => c.cop && c.horn).length, hp: Math.round(__pc.P.hp) })));
+log('police after the client', await A.evaluate(() => ({ cops: __pc.bots.filter(b => b.team === __pc.CREWS.length + 1 && !b.dead).map(b => (b.chase ? b.chase.name : '-') + (b.car ? '@car' : '@foot') + Math.round(Math.hypot(b.x - Object.values(__pc.NET.remotes)[0].x, b.z - Object.values(__pc.NET.remotes)[0].z))), bob: Object.values(__pc.NET.remotes).map(r => r.heat + (r.evade ? 'e' : '')), hostHeat: __pc.P.heat })));
+log('client sees police', await B.evaluate(() => ({ heat: __pc.P.heat, evade: __pc.P.evade, cops: __pc.bots.filter(b => b.team === __pc.CREWS.length + 1).length, sirens: __pc.cars.filter(c => c.cop && c.horn).length, hp: Math.round(__pc.P.hp) })));
 await sync(B, 'sync B with police');
 await shotOf(B, '/tmp/mpB.png');
 // a stick-up by the client
@@ -97,7 +97,7 @@ const rob = await B.evaluate(() => { const g = __pc, P = g.P, r = g.ROBS[2]; P.x
 await pump(6); await B.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' })); }); await pump(75);
 log('stick-up by client', { before: rob, after: await B.evaluate(() => ({ cash: __pc.P.cash, open: __pc.tillOpen(2), heat: __pc.P.heat, banner: document.querySelector('#h-banner .big').textContent })), hostTill: await A.evaluate(() => __pc.tillOpen(2)), hostFeed: await A.textContent('#feed') });
 // a third player turns up and joins the running session
-C = await open('C'); await sleep(1300); await C.fill('#co-name', 'Cara'); await C.dispatchEvent('#co-name', 'change'); await C.click('#crew1'); await sleep(300);
+C = await open('C'); await sleep(1300); await C.fill('#co-name', 'Cara'); await C.dispatchEvent('#co-name', 'change'); await C.click('#crew2'); await sleep(300);
 log('C before joining', { status: await C.textContent('#co-status'), join: await C.textContent('#co-join') });
 await C.click('#co-join'); await sleep(300); await pump(50);
 log('C', await C.evaluate(snap)); log('A sees', await A.evaluate(() => Object.values(__pc.NET.remotes).map(r => r.name + ':' + r.slot + ':t' + r.team)));

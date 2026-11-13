@@ -131,9 +131,9 @@ defMat('tile',    lam({ map: noiseTex('#d8d4ca', .03, { lines: 64, vlines: 64, l
 defMat('plaster', lam({ map: noiseTex('#e3ded3', .04, { blots: 6 }) }), 6, 6);
 defMat('flat',    lam({}), 1, 1);
 defMat('flatnc',  lam({}), 1, 1, { cast: false });
-defMat('paint',   lam({ polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }), 1, 1, { cast: false });
+defMat('paint',   lam({ polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -22 }), 1, 1, { cast: false });
 defMat('lot',     lam({ map: noiseTex('#46484b', .1, { cracks: 10, blots: 18 }) }), 12, 12, { cast: false });
-['grass', 'dirt', 'court', 'plaza', 'tile', 'lot'].forEach(k => { const m = MATS[k].mat; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; });   // these lie on top of the pavement slab
+['grass', 'dirt', 'lot', 'plaza', 'tile', 'court'].forEach((k, i) => { const m = MATS[k].mat; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2 - i * 3; });   // these lie on top of the pavement slab, and on each other in this order: a court laid on grass always wins
 defMat('glass',   new T.MeshLambertMaterial({ color: 0x9fc4d8, transparent: true, opacity: .32, vertexColors: true }), 1, 1, { cast: false, recv: false });
 defMat('glow',    new T.MeshBasicMaterial({ vertexColors: true }), 1, 1, { cast: false, recv: false });
 { const c = texCanvas(64), g = c.getContext('2d'); g.clearRect(0, 0, 64, 64); g.strokeStyle = 'rgba(200,205,210,.95)'; g.lineWidth = 1.6; for (let i = -64; i < 128; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 64, 64); g.moveTo(i + 64, 0); g.lineTo(i, 64); g.stroke(); }

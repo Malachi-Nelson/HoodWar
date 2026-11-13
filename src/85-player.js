@@ -84,7 +84,7 @@ function sitIn(c, seat) {
   P.enter = null; P.car = c; P.seat = seat; P.ads = 0; P.knock = 0;
   if (seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = false; c.ai = null; c.kin = false; c.mine = true; c.asleep = false; c.team = P.team; c.horn = 0; P.siren = false; if (c.cop && !c.stolen && AUTH()) { c.stolen = true; GAME.crime(P, 20, 1); } }
   if (!WEAPONS[P.wpn].car) { P.prevWpn = P.wpn; P.wpn = P.inv.smg ? 'smg' : 'pistol'; P.reloadT = 0; } else P.prevWpn = null;
-  P.idleCam = 2; if (RADIO.on < 0 && P.radio >= 0) setRadio(P.radio); radioVolume(P.radio >= 0 ? .55 : 0); if (P.radio >= 0) radioToast();
+  P.idleCam = 2; if (RADIO.on !== P.radio) setRadio(P.radio); radioVolume(P.radio >= 0 ? .55 : 0); if (P.radio >= 0) radioToast();   // whatever a speaker outside was playing gives way to the car's own station
 }
 function updateEnter(dt) {
   const E = P.enter, c = E.car; if (c.gone || c.wreck) { P.enter = null; return; }

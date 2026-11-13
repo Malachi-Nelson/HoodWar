@@ -1,8 +1,8 @@
 /* =====================================================================
    6. PEOPLE — players, crew and bystanders share one jointed figure.
-      Each body part is a single instanced mesh, so forty people cost about as much to draw as one.
+      Each body part is a single instanced mesh, so a hundred people cost about as much to draw as one.
    ===================================================================== */
-const CHAR_MAX = 72;
+const CHAR_MAX = 150;
 const charMat = new T.MeshLambertMaterial({ color: 0xffffff }), gunMat = lam({});
 const ZERO_M = new T.Matrix4().makeScale(0, 0, 0), _wc = new T.Color();
 const CP = {};
@@ -33,14 +33,16 @@ const HOLD = {
 const holdOf = id => id === 'pistol' || id === 'smg' ? HOLD.pistol : HOLD.long;
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68e63, 0x9a6642, 0x70452b, 0x4f3020], HAIRC = [0x1a1512, 0x2e2118, 0x5a3d25, 0x8a6a3d, 0xb9b4a8, 0x111111];
 const CIV_TOP = [0xd8d6cc, 0x6b7a6a, 0x8a7a5c, 0x5a5f66, 0xc9b27a, 0x7a5a6a, 0x3f4a44, 0xb9a48f, 0xe8d8a0, 0x9a8f86, 0x4a5a4a], PANTS = [0x2f3640, 0x4a4238, 0x1c1e22, 0x6a6258, 0x3a4a5c, 0x26282c];
-const CREW_TOP = [[0xff5a36, 0xc8401f, 0x8a2a14, 0x1c1e22, 0xe8e4da], [0x2fb6ff, 0x1f86c8, 0x145a8a, 0x1c1e22, 0xe8e4da]];
-// what someone wears follows from who they are: crews in their colour, bystanders in none of it
-function makeLook(seed, team) {
+// what someone wears follows from who they are: crews in their colour, police in blue, people at work in what the job gives them, bystanders in whatever
+const ROLE = { none: 0, staff: 1, hand: 2 };   // staff: behind a counter or a stall. hand: yards, docks, workshops
+function makeLook(seed, team, role) {
   const r = rng32(seed * 7919 + 13), L = { skin: pick(r, SKIN), hair: pick(r, HAIRC), h: .93 + r() * .1 };
-  if (team === 0 || team === 1) { const C = CREW_TOP[team]; L.top = pick(r, C.slice(0, 4)); L.gear = pick(r, ['cap', 'beanie', 'hood', 'hair', 'hood', 'cap']); L.gearCol = L.gear === 'hood' ? L.top : L.gear === 'hair' ? L.hair : pick(r, [C[0], C[1], 0x1c1e22]); L.mask = r() < .45; L.maskCol = C[0]; L.pants = pick(r, [0x1c1e22, 0x2f3640, 0x26282c, 0x4a4238]); if (L.top === 0x1c1e22) { L.gearCol = C[0]; L.mask = true; } }
+  if (team >= 0 && team < NCREW) { const C = CREWS[team].tops.concat([0xe8e4da]); L.top = pick(r, C.slice(0, 4)); L.gear = pick(r, ['cap', 'beanie', 'hood', 'hair', 'hood', 'cap']); L.gearCol = L.gear === 'hood' ? L.top : L.gear === 'hair' ? L.hair : pick(r, [C[0], C[1], 0x1c1e22]); L.mask = r() < .45; L.maskCol = C[0]; L.pants = pick(r, [0x1c1e22, 0x2f3640, 0x26282c, 0x4a4238]); if (L.top === 0x1c1e22) { L.gearCol = C[0]; L.mask = true; } }
   else if (team === TEAM_COP) { L.top = 0x1c2a4a; L.pants = 0x161d30; L.gear = 'cap'; L.gearCol = 0x101626; L.mask = false; }
+  else if (role === ROLE.staff) { L.top = pick(r, [0xf2efe6, 0xe8e4da, 0xd8d6cc]); L.pants = pick(r, [0x1c1e22, 0x2f3640]); L.gear = pick(r, ['cap', 'hair', 'cap']); L.gearCol = L.gear === 'hair' ? L.hair : pick(r, [0x1d5c3a, 0xa3221b, 0x15467a]); L.mask = false; }
+  else if (role === ROLE.hand) { L.top = pick(r, [0x4a5a6a, 0x5a6a5a, 0x6a5a48]); L.pants = L.top; L.gear = 'cap'; L.gearCol = pick(r, [0xf2efe6, 0xe0a224]); L.mask = false; }
   else { L.top = pick(r, CIV_TOP); L.pants = pick(r, PANTS); L.gear = pick(r, ['hair', 'hair', 'hair', 'cap', 'beanie']); L.gearCol = L.gear === 'hair' ? L.hair : pick(r, [0x4a4238, 0x6b7a6a, 0x26282c, 0x8a7a5c]); L.mask = false; }
-  L.tee = r() < .35 && L.gear !== 'hood'; L.shorts = r() < .18; L.shoe = pick(r, [0xe8e4da, 0x1c1e22, 0xe8e4da, 0x5a3d25, 0xb3261e]);
+  L.tee = r() < .35 && L.gear !== 'hood'; L.shorts = r() < .18 && role !== ROLE.hand; L.shoe = pick(r, [0xe8e4da, 0x1c1e22, 0xe8e4da, 0x5a3d25, 0xb3261e]);
   return L;
 }
 const chars = [], charFree = []; for (let i = CHAR_MAX - 1; i >= 0; i--) charFree.push(i);
@@ -64,31 +66,55 @@ function makeChar(look) {
 function hideChar(c) { if (!c.shown) return; c.shown = false; const i = c.idx; for (const k in CP) { const m = CP[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } c.gun = null; }
 function freeChar(c) { if (!c) return; c.shown = true; hideChar(c); const k = chars.indexOf(c); if (k >= 0) chars.splice(k, 1); charFree.push(c.idx); }
 const _mz = new T.Vector3();
+// What someone is doing when they are not walking, fighting or driving. The number travels with them between machines.
+const ACT = { none: 0, talk: 1, sit: 2, lean: 3, handsup: 4, phone: 5, dance: 6, ball: 7, cower: 8, browse: 9, smoke: 10, carry: 11 };
 /* Pose one figure. s: { x, y, z, yaw, pitch, spd, air, wpn, aim 0..1, reload, seat ('drive' | 'ride' | null), twist (radians the chest turns, for firing from a seat),
-   dead (seconds since death, or -1), knock 0..1, punch 0..1, sprint } */
+   dead (seconds since death, or -1), knock 0..1, punch 0..1, sprint, act (one of ACT), shoot 0..1 (arms up for a shot at the basket) } */
 function poseChar(c, s, dt) {
-  const r = c.rig, q = Math.min(1, dt * 12), spd = s.spd || 0, seated = !!s.seat;
+  const r = c.rig, q = Math.min(1, dt * 12), spd = s.spd || 0, act = s.dead >= 0 || s.knock > .5 ? 0 : (s.act | 0), seated = !!s.seat || act === ACT.sit;
   const moving = spd > .3 && !s.air && !seated;
   if (moving) c.ph += dt * (1 + spd * 2.1);
   c.amp = lerp(c.amp, moving ? clamp(.28 + spd * .09, .3, .95) : 0, q);
   const armed = s.wpn && s.wpn !== 'fist' ? 1 : 0, H = armed ? holdOf(s.wpn) : HOLD.pistol;
-  c.hold = lerp(c.hold, armed && (!seated || s.aim > .1) ? 1 : 0, q); c.aim = lerp(c.aim, s.aim || 0, q); c.sit = lerp(c.sit, seated ? 1 : 0, Math.min(1, dt * 9));
+  const busy = act > 0 && act !== ACT.sit && (!moving || act === ACT.carry);                       // doing something with their hands: a gun stays down, a walk keeps its arms
+  c.hold = lerp(c.hold, armed && (!seated || s.aim > .1) && !(busy && !(s.aim > .1)) ? 1 : 0, q); c.aim = lerp(c.aim, s.aim || 0, q); c.sit = lerp(c.sit, seated ? 1 : 0, Math.min(1, dt * 9));
   const dead = s.dead >= 0 ? 1 : (s.knock || 0); c.fall = lerp(c.fall, dead, Math.min(1, dt * (dead > c.fall ? 9 : 4)));
   c.kick = Math.max(0, c.kick - dt * 5);
+  // what they are doing fades in and out, so a pose never snaps
+  if (busy) { c.actId = act; c.actW = lerp(c.actW || 0, 1, Math.min(1, dt * 6)); } else c.actW = lerp(c.actW || 0, 0, Math.min(1, dt * 8));
+  c.t = (c.t || c.idx * 1.37) + dt;
+  const A = c.actId | 0, w = c.actW < .01 ? 0 : c.actW, t = c.t, shot = s.shoot || 0;
   const sn = Math.sin(c.ph), cs = Math.cos(c.ph), a = c.amp, f = c.fall, st = c.sit;
+  const low = w * (A === ACT.cower ? .42 : A === ACT.ball ? .08 : A === ACT.dance ? .03 + Math.abs(Math.sin(t * 5.2)) * .05 : 0);
   r.root.position.set(s.x, s.y + f * .12, s.z); r.root.rotation.set(-f * 1.5, s.yaw + PI, 0); r.root.scale.setScalar(c.look.h);
-  r.hips.position.y = lerp(.97 - Math.abs(sn) * .035 * a - (s.air ? .04 : 0), .4, st);
-  r.torso.rotation.set(lerp(a * (s.sprint ? .28 : .1), -.16, st), s.twist || 0, f * .2);
+  r.hips.position.y = lerp(.97 - Math.abs(sn) * .035 * a - (s.air ? .04 : 0), .4, st) - low;
+  r.torso.rotation.set(lerp(a * (s.sprint ? .28 : .1), -.16, st) + w * (A === ACT.cower ? .75 : A === ACT.lean ? -.1 : A === ACT.browse ? .1 : A === ACT.ball ? .18 : 0), (s.twist || 0) + (A === ACT.dance ? w * .3 * Math.sin(t * 2.6) : 0), f * .2);
   // legs: thigh swings, knee folds while the leg comes forward
   for (let k = 0; k < 2; k++) { const sg = k ? -1 : 1, hipA = sg * sn * a, kneeA = Math.max(0, -sg * cs) * (a * 1.15 + .08) * (a > .05 ? 1 : 0);
-    r.hip[k].rotation.set(lerp(s.air ? -.35 + k * .5 : hipA, -1.42, st) * (1 - f * .8), 0, (k ? 1 : -1) * f * .22); r.kn[k].rotation.x = lerp(s.air ? .7 : kneeA, 1.3, st) * (1 - f * .6); }
-  // arms: hang and swing, or hold the weapon; the whole shoulder frame tips with the aim
+    let hx = lerp(s.air ? -.35 + k * .5 : hipA, -1.42, st), kx = lerp(s.air ? .7 : kneeA, 1.3, st);
+    if (w) { if (A === ACT.cower) { hx = lerp(hx, -1.25, w); kx = lerp(kx, 2.1, w); } else if (A === ACT.lean && !k) { hx = lerp(hx, -.55, w); kx = lerp(kx, 1.05, w); } else if (A === ACT.ball) { hx = lerp(hx, -.32, w); kx = lerp(kx, .5, w); }
+      else if (A === ACT.dance) { const b = Math.max(0, Math.sin(t * 5.2 + k * PI)); hx = lerp(hx, -.22 * b, w); kx = lerp(kx, .45 * b, w); } }
+    r.hip[k].rotation.set(hx * (1 - f * .8), 0, (k ? 1 : -1) * f * .22); r.kn[k].rotation.x = kx * (1 - f * .6); }
+  // arms: hang and swing, hold the weapon, or do what the moment calls for; the whole shoulder frame tips with the aim
   const h = c.hold, pitch = s.pitch || 0, rl = s.reload ? 1 : 0, pn = s.punch || 0;
   r.up.rotation.x = h * lerp(.72, -pitch * .92, c.aim) + h * rl * .4 - c.kick * .12;
-  r.head.rotation.x = lerp(0, -pitch * .55, Math.max(c.aim, 1 - h)) * (1 - f);
+  r.head.rotation.x = lerp(0, -pitch * .55, Math.max(c.aim, 1 - h)) * (1 - f) + w * (A === ACT.phone ? .38 : A === ACT.browse ? .16 : A === ACT.cower ? .3 : 0);
+  r.head.rotation.y = w * (A === ACT.talk ? .3 * Math.sin(t * .7) : A === ACT.browse ? .45 * Math.sin(t * .5) : A === ACT.lean ? .5 * Math.sin(t * .23) : 0);
   for (let k = 0; k < 2; k++) { const sd = k ? 1 : -1, sg = k ? 1 : -1, hs = k ? H.s1 : H.s0, he = k ? H.e1 : H.e0;
     let ax = sg * sn * a * .8, ay = 0, az = sd * (.07 + f * 1.05), ex = -.15 - a * .4;
     if (st > .01) { const dr = s.seat === 'drive'; ax = lerp(ax, dr ? -1.05 : -.45, st); ay = lerp(ay, dr ? -sd * .22 : 0, st); ex = lerp(ex, dr ? -.45 : -.9, st); }
+    if (w) { let tx = ax, ty = ay, te = ex;
+      if (A === ACT.talk) { const g = k ? Math.max(0, Math.sin(t * 1.1)) : Math.max(0, Math.sin(t * .8 + 2)) * .6; tx = -.25 - g * (.75 + .2 * Math.sin(t * 5)); te = -.5 - g * .9; }
+      else if (A === ACT.lean) { tx = -.55; ty = -sd * .75; te = -1.75; }
+      else if (A === ACT.handsup) { tx = -2.85; ty = sd * .25; te = -.3; }
+      else if (A === ACT.phone) { if (k) { tx = -.85; ty = -.35; te = -2.0; } }
+      else if (A === ACT.dance) { tx = -.6 + .55 * Math.sin(t * 5.2 + k * PI); te = -1.15; ty = sd * .2; }
+      else if (A === ACT.ball) { if (shot > 0) { tx = lerp(-.9, -2.75, shot); te = lerp(-1.2, -.25, shot); } else if (k) { tx = -.55 + .3 * Math.sin(t * 9.5); te = -.85 + .45 * Math.sin(t * 9.5); } else { tx = -.2; te = -.5; } }
+      else if (A === ACT.cower) { tx = -2.5; ty = -sd * .35; te = -2.1; }
+      else if (A === ACT.browse) { tx = .28; ty = -sd * .2; te = -.35; }
+      else if (A === ACT.smoke) { if (k) { const m = Math.pow(Math.max(0, Math.sin(t * .85)), 3); tx = lerp(-.1, -1.0, m); te = lerp(-.3, -2.15, m); ty = lerp(0, -.3, m); } }
+      else if (A === ACT.carry) { tx = -.78; ty = -sd * .12; te = -1.05; }
+      ax = lerp(ax, tx, w); ay = lerp(ay, ty, w); ex = lerp(ex, te, w); }
     if (!k && pn > 0) { ax = lerp(ax, -1.5, pn); ex = lerp(ex, -.1, pn); }
     r.sh[k].rotation.set(lerp(ax, hs[0], h), lerp(ay, hs[1], h), az * (1 - h)); r.el[k].rotation.x = lerp(ex, he - (k ? rl * .7 : 0), h); }
   r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3];

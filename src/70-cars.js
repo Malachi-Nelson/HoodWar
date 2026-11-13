@@ -2,7 +2,7 @@
    7. CARS — bodies are drawn from a side profile and extruded; physics is a simple arcade model:
       drive force along the nose, grip that bleeds off sideways speed, yaw from the front wheels.
    ===================================================================== */
-const CAR_MAX = 44, cars = [], carFree = []; for (let i = CAR_MAX - 1; i >= 0; i--) carFree.push(i);
+const CAR_MAX = 54, cars = [], carFree = []; for (let i = CAR_MAX - 1; i >= 0; i--) carFree.push(i);
 let carSeq = 0;
 const wheelGeo = (() => { const b = new GeoBuf(), c = new T.CylinderGeometry(1, 1, 1, 14); c.rotateZ(PI / 2); b.geo(c, null, hexCol(0x15171a)); c.dispose(); const h = new T.CylinderGeometry(.56, .56, 1.05, 10); h.rotateZ(PI / 2); b.geo(h, null, hexCol(0x9aa0a3)); h.dispose(); return b.build(); })();
 const wheelMesh = new T.InstancedMesh(wheelGeo, lam({}), CAR_MAX * 4); wheelMesh.castShadow = true; wheelMesh.frustumCulled = false; for (let i = 0; i < CAR_MAX * 4; i++) wheelMesh.setMatrixAt(i, ZERO_M); scene.add(wheelMesh);

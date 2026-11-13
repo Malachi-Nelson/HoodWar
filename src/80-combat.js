@@ -1,8 +1,9 @@
 /* =====================================================================
    8. STATE + COMBAT
    ===================================================================== */
-const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 5, cops: true, crew: 0, solo: true, raid: [null, null], raidT: [60, 90], payT: 60, polT: 0, patrolT: 0, robT: [] };
-const ZS = ZONES.map(() => ({ owner: -1, cap: 0, n0: 0, n1: 0, hot: false }));
+const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
+// each turf: who holds it (-1 nobody), which crew is in the middle of taking it and how far along they are, and how many of each crew stand in it
+const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false }));
 const keys = {}, mouse = { down: false, fresh: false, right: false };
 const DBG = { god: false, ammo: false, freeze: false, stats: false, nav: false, notarget: false, scale: 1, fps: 60 };
 const NET = { mode: null, room: null, remotes: {}, me: null, slot: 0 };
@@ -13,11 +14,11 @@ const P = { kind: 'me', team: 0, name: 'Player', slot: 0, x: 60, y: CURB, z: 300
   fireT: 0, reloadT: 0, switchT: 0, ads: 0, punchT: 0, car: null, seat: 0, enter: null, view: 3, streak: 0, shots: 0, shootT: 0, lastHit: -99, safeT: 0, kills: 0, deaths: 0, spd: 0, knock: 0, kick: 0, earn: 0, spent: 0,
   heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: 60, lky: CURB, lkz: 300 };
 function eachActor(fn) { fn(P); for (const k in NET.remotes) fn(NET.remotes[k]); for (let i = 0; i < bots.length; i++) fn(bots[i]); }
-const isCrew = t => t === 0 || t === 1;
-const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !== b.team;          // the two crews
+const isCrew = t => t >= 0 && t < NCREW;
+const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !== b.team;          // any two people from different crews
 const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
 const wanted = a => a.kind !== 'bot' && a.heat > 0;
-// who a bot will open fire on: the other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
+// who a bot will open fire on: any other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
 const hostile = (a, b) => a !== b && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
 const nameOf = a => !a ? 'The city' : a.name || 'Someone';
 const dmgAt = (d, dist) => d.dmg * (dist <= d.range[0] ? 1 : dist >= d.range[1] ? .5 : lerp(1, .5, (dist - d.range[0]) / (d.range[1] - d.range[0])));
@@ -55,13 +56,14 @@ function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
   SFX.shot(d, ox, oy, oz, sh === P);
   if (sh === P) { muzzleLight.position.set(mx, my, mz); muzzleLight.intensity = 2.2; }
   if (AUTH()) GAME.noise(ox, oz, sh);
+  LIFE.bang(ox, oz);
 }
 // a shot seen from another machine: flash, crack and a tracer along where they are aiming; it decides nothing
 function fxShot(a, wid) {
   const d = WEAPONS[wid] || WEAPONS.pistol, m = a.ch ? a.ch.muz : null, ox = m ? m.x : a.x, oy = m ? m.y : a.y + 1.4, oz = m ? m.z : a.z, cp = Math.cos(a.pitch || 0);
   let dx = -Math.sin(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04), dy = Math.sin(a.pitch || 0) + rs(.03), dz = -Math.cos(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04); const l = hyp(dx, dy, dz); dx /= l; dy /= l; dz /= l;
   const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t);
-  FX.muzzle(ox, oy, oz, 1); SFX.shot(d, ox, oy, oz, false); if (a.ch) a.ch.kick = 1;
+  FX.muzzle(ox, oy, oz, 1); SFX.shot(d, ox, oy, oz, false); if (a.ch) a.ch.kick = 1; LIFE.bang(ox, oz);
 }
 function hitActor(t, dmg, head, sh, wid) {
   if (sh === P) {
@@ -81,11 +83,11 @@ function damageBot(b, dmg, head, src, wid) {
     else if (b.team !== TEAM_CIV && src.team !== TEAM_CIV && (b.team === TEAM_COP) !== (src.team === TEAM_COP)) { b.grudge = src; b.grudgeT = G.time + 12; }
     if (b.team !== TEAM_CIV && hostile(b, src) && (!b.tgt || b.tgt.dead)) { b.tgt = src; b.seenT = G.time; b.react = .25; }
   }
-  if (b.team === TEAM_CIV && !b.car) { b.fleeT = 9; b.fleeX = src ? src.x : b.x; b.fleeZ = src ? src.z : b.z; }
+  if (b.team === TEAM_CIV && !b.car) { b.fleeT = 9; b.fleeX = src ? src.x : b.x; b.fleeZ = src ? src.z : b.z; b.fleeing = false; }
   if (b.hp <= 0) killBot(b, src, wid, head);
 }
 function killBot(b, src, wid, head) {
-  if (b.dead) return; b.dead = true; b.deadT = 0; b.hp = 0; b.tgt = null;
+  if (b.dead) return; b.dead = true; b.deadT = 0; b.hp = 0; b.tgt = null; b.act = 0; leavePoi(b); if (b.post) { if (b.post.npc === b) { b.post.npc = null; b.post.t = G.time + 90; } b.post = null; }
   if (b.car) { const c = b.car; c.occ[b.seat] = null; if (b.seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.ai = null; } b.car = null; }
   GAME.onKill(src, b, wid, head);
 }
@@ -103,7 +105,7 @@ function damageCar(c, dmg, src) {
 // everything a blast does on the machine that owns the world
 function explode(x, y, z, owner, power, wid) {
   power = power || 1; const R = 7.5 * power;
-  FX.boom(x, y, z, power); SFX.boom(x, y, z); const pd = hyp(P.x - x, P.z - z); if (pd < 60) shake(clamp(1.4 - pd / 40, 0, 1)); if (pd < 18) flash(.25);
+  FX.boom(x, y, z, power); SFX.boom(x, y, z); const pd = hyp(P.x - x, P.z - z); if (pd < 60) shake(clamp(1.4 - pd / 40, 0, 1)); if (pd < 18) flash(.25); LIFE.bang(x, z, 70);
   if (AUTH()) {
     bots.forEach(b => { if (b.dead) return; const d = hyp(b.x - x, b.y + 1 - y, b.z - z); if (d < R && (!owner || !isCrew(b.team) || b.team !== owner.team || b === owner)) { if (!b.car) { b.knock = 1; b.knockT = 1.6; } damageBot(b, 190 * power * (1 - d / (R * 1.15)), false, owner, wid || 'boom'); } });
     cars.forEach(c => { const d = hyp(c.x - x, c.z - z); if (d < R + 1.5 && !c.wreck) damageCar(c, 520 * power * (1 - d / (R + 3)), owner); });

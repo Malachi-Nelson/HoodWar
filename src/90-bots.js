@@ -2,18 +2,20 @@
    10. BOTS — crew soldiers, bystanders, police, and everyone at a wheel that is not a player
    ===================================================================== */
 let botSeq = 0;
-const BOT_HP = [100, 100, 55, 110];
+const botHp = t => t === TEAM_CIV ? 55 : t === TEAM_COP ? 110 : 100;
 const BOT_GUNS = ['pistol', 'pistol', 'smg', 'smg', 'rifle', 'rifle', 'shotgun', 'smg', 'rifle', 'marksman'];
+// o.role: someone at work (ROLE.staff behind a counter, ROLE.hand in a yard); o.name: what the feed calls them
 function spawnBot(team, x, y, z, o) {
-  o = o || {}; const id = o.id === undefined ? ++botSeq : o.id; if (id > botSeq) botSeq = id;
-  const ch = makeChar(makeLook(id, team)); if (!ch) return null;
+  o = o || {}; let id = o.id; if (id === undefined) { do { botSeq = botSeq >= 46000 ? 1 : botSeq + 1; } while (botById(botSeq)); id = botSeq; } else if (id > botSeq) botSeq = id;      // ids come round again long before they outgrow three characters
+  const role = team === TEAM_CIV ? o.role | 0 : 0, ch = makeChar(makeLook(id, team, role)); if (!ch) return null;
   const r = rng32(id * 131 + 7), wp = o.wpn || (team === TEAM_CIV ? 'fist' : pick(r, BOT_GUNS));
-  const b = { kind: 'bot', id, team, name: team === TEAM_CIV ? 'Bystander' : team === TEAM_COP ? 'Police' : HANDLES[id % HANDLES.length], x, y, z, vy: 0, vx: 0, vz: 0, onGround: true, yaw: r() * TAU, pitch: 0, hp: BOT_HP[team], dead: false, deadT: 0, wpn: wp, mag: WEAPONS[wp].mag || 0,
+  const b = { kind: 'bot', id, team, role, name: o.name || (team === TEAM_CIV ? (role === ROLE.staff ? 'Vendor' : role === ROLE.hand ? 'Worker' : 'Bystander') : team === TEAM_COP ? 'Police' : HANDLES[id % HANDLES.length]), x, y, z, vy: 0, vx: 0, vz: 0, onGround: true, yaw: r() * TAU, pitch: 0, hp: botHp(team), dead: false, deadT: 0, wpn: wp, mag: WEAPONS[wp].mag || 0,
     ch, spd: 0, brainT: r() * .3, goal: null, path: null, pi: 0, tgt: null, seenT: -9, lsx: x, lsz: z, lsy: y, react: 0, burst: 3, fireT: 0, pauseT: 0, strafe: 1, strafeT: 0, stuck: 0, stuckT: 0, lx: x, lz: z, car: null, seat: 0, wantCar: null, shots: 0, aim: 0, reloadT: 0,
-    knock: 0, knockT: 0, skill: .8 + r() * .5, kills: 0, deaths: 0, goalT: 0, idleT: r() * 3, fleeT: 0, temp: !!o.temp, buf: [], walk: 1.3 + r() * .6, side: 0, sideT: 0, hunt: false };
+    knock: 0, knockT: 0, skill: .8 + r() * .5, kills: 0, deaths: 0, goalT: 0, idleT: r() * 3, fleeT: 0, temp: !!o.temp, buf: [], walk: 1.3 + r() * .6, side: 0, sideT: 0, hunt: false,
+    act: 0, poi: null, slot: -1, at: 0, actT: 0, poiT: 0, chatT: 0, post: null, scareT: 0, scare: 0, calm: 0, calmT: 0, leg: 0, legT: 0 };
   bots.push(b); return b;
 }
-function removeBot(b) { const i = bots.indexOf(b); if (i >= 0) bots.splice(i, 1); if (b.car) { if (b.car.occ[b.seat] === b) b.car.occ[b.seat] = null; if (b.seat === 0) b.car.ai = null; b.car = null; } freeChar(b.ch); b.ch = null; b.gone = true; }
+function removeBot(b) { const i = bots.indexOf(b); if (i >= 0) bots.splice(i, 1); if (b.car) { if (b.car.occ[b.seat] === b) b.car.occ[b.seat] = null; if (b.seat === 0) b.car.ai = null; b.car = null; } leavePoi(b); if (b.post) { if (b.post.npc === b) b.post.npc = null; b.post = null; } freeChar(b.ch); b.ch = null; b.gone = true; }
 const botById = id => { for (let i = 0; i < bots.length; i++) if (bots[i].id === id) return bots[i]; return null; };
 // --- walking
 function botWalk(b, tx, tz, speed, dt) {
@@ -38,7 +40,8 @@ function botFollow(b, speed, dt) {   // true once the last node is reached
 // --- seeing and shooting
 const _cand = [];
 function botLook(b) {
-  const ex = b.x, ey = eyeY(b), ez = b.z, range = b.car ? 60 : 120; _cand.length = 0;
+  // someone minding their own turf only looks as far as the street; someone on a raid, in a fight or just shot at looks the length of the block
+  const ex = b.x, ey = eyeY(b), ez = b.z, keen = !!b.tgt || b.hunt || G.time - (b.hurtT || -99) < 14 || (isCrew(b.team) && !!b.goal && b.goal.zone >= 0 && ZS[b.goal.zone].owner !== b.team), range = b.car ? 60 : keen ? 120 : 58; _cand.length = 0;
   eachActor(a => { if (a === b || a.dead || a.gone || !hostile(b, a)) return; if (a === P && (DBG.notarget || P.safeT > 0 || G.state === 'menu')) return; if (a.safe) return; const d = hyp(a.x - ex, a.z - ez); if (d < range) _cand.push([d * (a === b.tgt ? .6 : 1), a]); });
   _cand.sort((p, q) => p[0] - q[0]);
   for (let i = 0; i < _cand.length && i < 3; i++) { const a = _cand[i][1]; if (los(ex, ey, ez, a.x, chestY(a), a.z, 'a')) { if (b.tgt !== a) b.react = (.3 + rand() * .45) / b.skill; b.tgt = a; b.seenT = G.time; b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = false; return true; } }
@@ -145,7 +148,7 @@ function driveAI(c, dt) {
 // --- what each kind of bot wants
 GAME.assigned = (team, zi) => { let n = 0; for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (!b.dead && b.team === team && b.goal && b.goal.zone === zi) n++; } return n; };
 // A crew holds what it has and goes out in force only when a raid is called (see updateRaids). With no turf and no raid, it stays home.
-const BASES = [0, 1].map(t => ({ x: SPAWNS[t][0].x, z: SPAWNS[t][0].z, r: 9 }));
+const BASES = CREWS.map((c, t) => ({ x: SPAWNS[t][0].x, z: SPAWNS[t][0].z, r: 9 }));
 const goalAt = g => g.zone >= 0 ? ZONES[g.zone] : BASES[g.team];
 function pickGoal(b) {
   const R = G.raid[b.team]; let best = -1, bs = -1e9;
@@ -166,7 +169,9 @@ function crewBrain(b) {
   if (dist > 150 && !b.temp && G.time > (b.noCar || 0) && findCarFor(b, b.goal.zone)) return;
   if (!botPathTo(b, z.x, CURB, z.z, false)) b.goalT = 0;
 }
+const IDLE_ACTS = [0, ACT.talk, ACT.talk, ACT.smoke, ACT.phone, ACT.lean, 0];
 function crewAct(b, dt) {
+  b.act = 0;
   if (b.car) { const c = b.car; seatPos(c, b.seat, _sp); b.x = _sp.x; b.z = _sp.z; b.y = c.y; b.yaw = c.yaw; b.spd = 0; b.vx = c.vx; b.vz = c.vz;
     if (b.seat === 0 && c.ai) { driveAI(c, dt); if (c.ai && (c.ai.mode === 'crew' || c.ai.mode === 'driveby') && b.tgt && G.time - b.seenT < .6 && !c.ai.done) c.ai.cruise = 11; else if (c.ai && c.ai.mode === 'crew') c.ai.cruise = 20; }
     if (b.tgt && !b.tgt.dead && G.time - b.seenT < .5 && hyp(b.tgt.x - b.x, b.tgt.z - b.z) < 55 && (b.seat !== 0 || WEAPONS[b.wpn].car)) botShoot(b, dt); else { b.aim = 0; b.ayaw = undefined; }
@@ -194,31 +199,86 @@ function crewAct(b, dt) {
     if (d < 1.3 || hyp(c.x - b.x, c.z - b.z) < 1.8) { if (!c.occ[b.wantSeat] && !c.wreck && (b.team !== TEAM_COP || !c.occ[0] || c.occ[0].team === TEAM_COP)) { const k = b.wantSeat; botEnter(b, c, k);
         if (k === 0 && b.team === TEAM_COP) { const A = aiStart(c, b.chase ? 'cop' : 'traffic', null); A.chase = b.chase || null; A.wait = 1.3; }
         else if (k === 0) { const z = goalAt(b.goal), A = aiStart(c, 'crew', xingOf(z.x, z.z)); A.zone = b.goal.zone; A.wait = 1.6; c.team = b.team; } } else b.wantCar = null; } }
-  else if (b.path) { if (botFollow(b, 5.3, dt)) b.path = null; }
-  else if (b.arrived && b.goal) {   // hold the turf: drift between spots inside it
+  else if (b.path) { if (botFollow(b, b.beat && !b.chase ? 1.6 : 5.3, dt)) b.path = null; }   // an officer on the beat is in no hurry
+  else if (b.arrived && b.goal) {   // hold the turf: drift between spots inside it, and pass the time while standing
     const z = goalAt(b.goal); b.idleT -= dt;
-    if (b.idleT <= 0 || b.holdX === undefined) { b.idleT = 2.5 + rand() * 4; const a = rand() * TAU, r = rand() * z.r * .7; b.holdX = z.x + Math.cos(a) * r; b.holdZ = z.z + Math.sin(a) * r; if (!walkClear(b, { x: b.holdX, y: b.y, z: b.holdZ })) { b.holdX = b.x; b.holdZ = b.z; } b.lookYaw = rand() * TAU; }
-    if (botWalk(b, b.holdX, b.holdZ, 3, dt) < .6) { b.vx *= .5; b.vz *= .5; b.yaw = lerpAng(b.yaw, b.lookYaw, Math.min(1, dt * 3)); }
+    if (b.idleT <= 0 || b.holdX === undefined) { b.idleT = 4 + rand() * 9; const a = rand() * TAU, r = rand() * z.r * .7; b.holdX = z.x + Math.cos(a) * r; b.holdZ = z.z + Math.sin(a) * r; if (!walkClear(b, { x: b.holdX, y: b.y, z: b.holdZ })) { b.holdX = b.x; b.holdZ = b.z; } b.lookYaw = rand() * TAU; b.idleAct = IDLE_ACTS[(rand() * IDLE_ACTS.length) | 0]; }
+    if (botWalk(b, b.holdX, b.holdZ, 3, dt) < .6) { b.vx *= .5; b.vz *= .5; b.yaw = lerpAng(b.yaw, b.lookYaw, Math.min(1, dt * 3)); if (b.spd < .3 && isCrew(b.team) && (b.goal.zone < 0 || !ZS[b.goal.zone].hot)) b.act = b.idleAct | 0; }
   } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .6) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 9));
 }
+// --- bystanders. Most are out for a walk between places where there is something to do; some are at work.
+const ACT_AT = { sit: [ACT.sit], hang: [ACT.talk, ACT.talk, ACT.talk, ACT.phone, ACT.smoke, ACT.lean, 0], browse: [ACT.browse], wait: [ACT.phone, 0, ACT.lean, 0], hoop: [ACT.ball], dance: [ACT.dance] };
+const STAY_AT = { sit: [35, 100], hang: [30, 85], browse: [8, 20], wait: [20, 55], hoop: [60, 140], dance: [40, 100] };
+const freeSlot = p => { const k0 = (rand() * p.cap) | 0; for (let k = 0; k < p.cap; k++) { const q = (k0 + k) % p.cap; if (!p.who[q]) return q; } return -1; };
+const isNight = () => G.tod < 6 || G.tod > 21.5;
+function leavePoi(b) {
+  const p = b.poi; if (!p) return; if (p.who[b.slot] === b) p.who[b.slot] = null;
+  if (b.at === 2 && p.k === 'sit') { b.x = p.fx; b.z = p.fz; b.y = p.y; }                                 // stand up in front of the bench, not inside it
+  b.poi = null; b.slot = -1; b.at = 0; b.act = 0;
+}
+// put someone straight onto their spot: used when they arrive, and when the city fills a place nobody is watching
+function takeSpot(b, p, k) { const s = p.slots[k]; p.who[k] = b; b.poi = p; b.slot = k; b.at = 2; b.x = s.x; b.y = s.y; b.z = s.z; b.yaw = s.yaw; b.vx = b.vz = 0; b.spd = 0; b.path = null; b.onGround = true; b.act = ACT_AT[p.k][(rand() * ACT_AT[p.k].length) | 0]; b.actT = G.time + lerp(STAY_AT[p.k][0], STAY_AT[p.k][1], rand()); b.chatT = G.time + 4 + rand() * 6; }
+function pickSpot(b) {
+  let best = null, bs = 1e9; const night = isNight(); if (!SPOTS.length) return null;
+  for (let k = 0; k < 26; k++) { const p = SPOTS[(rand() * SPOTS.length) | 0], d = hyp(p.x - b.x, p.z - b.z); if (d < 8 || d > 90 || freeSlot(p) < 0) continue;
+    if (p.zone >= 0 && ZS[p.zone].hot) continue; if (night && (p.k === 'hoop' || p.k === 'browse') && rand() < .75) continue;
+    const sc = d * (.5 + rand()); if (sc < bs) { bs = sc; best = p; } }
+  return best;
+}
+const gunUp = a => a === P ? !WEAPONS[P.wpn].melee && (P.ads > .5 || P.shootT > 0) : a.wpn !== 'fist' && !!a.aim;
 function civBrain(b) {
   if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
-  if (b.fleeT > 0 && (!b.path || !b.fleeing)) { let best = -1, bs = -1e9; const from = nearestNode(b.x, b.y, b.z, true); for (let k = 0; k < 8; k++) { const n = NAVOK[(Math.random() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 40 || d > 170) continue; const s = hyp(n.x - b.fleeX, n.z - b.fleeZ) - d * .3; if (s > bs) { bs = s; best = n.i; } } if (best >= 0) { b.path = navPath(from, best, false); b.pi = 0; b.fleeing = true; } return; }
-  if (b.fleeT <= 0 && b.fleeing) { b.fleeing = false; b.path = null; }
-  if (!b.path && b.idleT <= 0) { const from = nearestNode(b.x, b.y, b.z, true); for (let k = 0; k < 6; k++) { const n = NAVOK[(Math.random() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 50 || d > 240) continue; const p = navPath(from, n.i, true); if (p) { b.path = p; b.pi = 0; break; } } if (!b.path) b.idleT = 2; }
+  if (b.post) {   // at work
+    const p = b.post; let threat = false;
+    if (b.fleeT > 0) { if (p.npc === b) { p.npc = null; p.t = G.time + 80; } b.post = null; b.act = 0; }                                                     // hurt: the job can wait
+    else { const hs = humans(); for (let i = 0; i < hs.length; i++) { const a = hs[i]; if (!a.dead && !a.car && Math.abs(a.y - b.y) < 2 && hyp(a.x - b.x, a.z - b.z) < 6.5 && gunUp(a)) threat = true; }
+      if (threat) { b.scare = ACT.handsup; b.scareT = G.time + 2.5; }
+      if (G.time > b.calmT && p.k === 'post' && !p.act) { b.calmT = G.time + 3 + rand() * 6; b.calm = rand() < .55 ? 0 : rand() < .6 ? ACT.talk : ACT.browse; }
+      return; }
+  }
+  if (b.fleeT > 0) { if (b.poi) leavePoi(b);
+    if (!b.path || !b.fleeing) { let best = -1, bs = -1e9; const from = nearestNode(b.x, b.y, b.z, true); for (let k = 0; k < 8; k++) { const n = NAVOK[(Math.random() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 40 || d > 170) continue; const s = hyp(n.x - b.fleeX, n.z - b.fleeZ) - d * .3; if (s > bs) { bs = s; best = n.i; } } if (best >= 0) { b.path = navPath(from, best, false); b.pi = 0; b.fleeing = true; } }
+    return; }
+  if (b.fleeing) { b.fleeing = false; b.path = null; }
+  if (b.poi) { const p = b.poi; if (b.at === 2 && (G.time > b.actT || (p.zone >= 0 && ZS[p.zone].hot))) { leavePoi(b); b.idleT = .4 + rand() * 1.5; } else if (b.at < 2 && G.time > b.poiT) { leavePoi(b); b.path = null; b.idleT = 1; } return; }
+  if (b.path || b.idleT > 0) return;
+  const from = nearestNode(b.x, b.y, b.z, true);
+  if (rand() < .75) { const p = pickSpot(b), path = p ? navPath(from, p.node, 2) : null;   // somewhere to be
+    if (path) { const k = freeSlot(p); let len = hyp(NAV[path[0]].x - b.x, NAV[path[0]].z - b.z); for (let q = 1; q < path.length; q++) len += hyp(NAV[path[q]].x - NAV[path[q - 1]].x, NAV[path[q]].z - NAV[path[q - 1]].z);
+      p.who[k] = b; b.poi = p; b.slot = k; b.at = 0; b.path = path; b.pi = path.length > 1 && walkClear(b, NAV[path[1]]) ? 1 : 0; b.poiT = G.time + 25 + len / b.walk * 1.5; return; } }
+  for (let k = 0; k < 8; k++) { const n = NAVOK[(Math.random() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 30 || d > 130) continue; const p = navPath(from, n.i, true); if (p) { b.path = p; b.pi = 0; break; } }
+  if (!b.path) b.idleT = 2;
 }
+function civStand(b, dt, yaw) { b.vx = b.vz = 0; b.spd = 0; if (yaw !== undefined) b.yaw = lerpAng(b.yaw, yaw, Math.min(1, dt * 5)); }
 function civAct(b, dt) {
   if (b.car) { const c = b.car; seatPos(c, b.seat, _sp); b.x = _sp.x; b.z = _sp.z; b.y = c.y; b.yaw = c.yaw; b.spd = 0; if (b.seat === 0 && c.ai) driveAI(c, dt); return; }
   if (b.fleeT > 0) b.fleeT -= dt; b.idleT -= dt;
-  if (b.path) { if (botFollow(b, b.fleeT > 0 ? 6.4 : b.walk, dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : 1 + rand() * 5; } } else botWalk(b, b.x, b.z, 0, dt);
+  if (b.post && b.fleeT <= 0) { const p = b.post, scared = G.time < b.scareT;
+    if (p.k === 'post' || scared) { civStand(b, dt, p.slots[0].yaw); b.act = scared ? b.scare : b.calm; if (p.k === 'post' && !scared && hyp(b.x - p.slots[0].x, b.z - p.slots[0].z) > .5) { b.x = p.slots[0].x; b.z = p.slots[0].z; } return; }
+    // a job done between two places: work a while here, carry something over there, work a while, walk back
+    if (b.leg === 0 || b.leg === 2) { civStand(b, dt); b.act = ACT.browse; if (G.time > b.actT) { const to = b.leg === 0 ? p.bnode : p.node, path = navPath(nearestNode(b.x, b.y, b.z, true), to, false); if (path) { b.path = path; b.pi = 0; b.leg++; b.legT = G.time + 60; } else b.actT = G.time + 5; } }
+    else { const tx = b.leg === 1 ? p.bx : p.x, tz = b.leg === 1 ? p.bz : p.z; b.act = b.leg === 1 ? ACT.carry : 0;
+      if (b.path) { if (botFollow(b, 1.45, dt)) b.path = null; } else if (botWalk(b, tx, tz, 1.45, dt) < .6 || G.time > b.legT) { b.leg = (b.leg + 1) % 4; b.actT = G.time + 4 + rand() * 6; }
+      if (b.spd > .3) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8)); }
+    return; }
+  if (b.poi && b.fleeT <= 0) { const p = b.poi, s = p.slots[b.slot];
+    if (b.at === 2) { civStand(b, dt, s.yaw);                                                              // there: do what the place is for
+      if (p.k === 'hang' && G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 9; b.act = ACT_AT.hang[(rand() * ACT_AT.hang.length) | 0]; } return; }
+    if (b.at === 0) { if (botFollow(b, b.walk, dt)) { b.path = null; b.at = 1; b.poiD = 1e9; b.poiP = G.time; b.poiT = G.time + 8 + hyp(p.fx - b.x, p.fz - b.z) / b.walk * 1.5; } }   // on the way
+    else { const d = botWalk(b, p.fx, p.fz, b.walk, dt); if (d < b.poiD - .05) { b.poiD = d; b.poiP = G.time; }                                              // the last few steps
+      if (d < .55 || (d < 2.6 && G.time - b.poiP > 1)) takeSpot(b, p, b.slot); else if (G.time - b.poiP > 2.2) { leavePoi(b); b.idleT = .5; return; } }      // something is parked in the way: near enough will do, or think again
+    if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8)); return; }
+  b.act = 0;
+  if (b.path) { if (botFollow(b, b.fleeT > 0 ? 6.4 : b.walk, dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
-// a loud thing happened at (x,z): bystanders run, crew who have nothing better to do come and look
+// a loud thing happened at (x,z): bystanders run, people at work get down, crew who have nothing better to do come and look
 GAME.noise = (x, z, src, r) => {
-  r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false;
+  r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false; const rc = r > 45 ? r : 32;   // people on the pavement mind a gunshot down the street less than one beside them
   for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.dead) continue; const d = hyp(b.x - x, b.z - z); if (d > r) continue; if (b.team === TEAM_COP) law = true;
-    if (b.team === TEAM_CIV) { if (b.car) { if (b.car.ai) b.car.ai.panic = 6; } else if (b.fleeT <= 0) { b.fleeT = 7 + rand() * 4; b.fleeX = x; b.fleeZ = z; b.path = null; b.fleeing = false; } }
+    if (b.team === TEAM_CIV) { if (d > rc) continue; if (b.car) { if (b.car.ai) b.car.ai.panic = 6; } else if (b.post) { if (b.scare !== ACT.handsup || G.time > b.scareT) b.scare = ACT.cower; b.scareT = Math.max(b.scareT, G.time + 3.5 + rand() * 3.5); if (b.path) b.path = null; }
+      else if (b.fleeT <= 0) { b.fleeT = 6 + rand() * 4; b.fleeX = x; b.fleeZ = z; b.path = null; b.fleeing = false; } }
     else if (!b.car && !b.tgt && !b.hunt && src && hostile(b, src) && d > 6 && rand() < .5) { b.lsx = x; b.lsz = z; b.lsy = src.y; b.hunt = true; b.path = null; if (!botPathTo(b, x, src.y, z, false)) b.hunt = false; } }
   if (law && src && src.kind !== 'bot') GAME.crime(src, 10, 0, 3);
 };
@@ -236,5 +296,5 @@ function botVisual(b, dt) {
   if ((b.dead && b.deadT > 7) || hyp(b.x - camera.position.x, b.z - camera.position.z) > 300) { hideChar(ch); return; }
   let seat = null, twist = 0, x = b.x, y = b.y, z = b.z;
   if (b.car) { seat = b.seat === 0 ? 'drive' : 'ride'; seatPos(b.car, b.seat, _sp); x = _sp.x; y = _sp.y; z = _sp.z; if (b.aim > .5 && b.ayaw !== undefined) twist = clamp(angTo(b.car.yaw, b.ayaw), -1.5, 1.5); }
-  poseChar(ch, { x, y, z, yaw: b.car ? b.car.yaw : b.yaw, pitch: b.pitch, spd: b.spd, air: !b.onGround && !b.car, wpn: b.team === TEAM_CIV ? null : b.wpn, aim: b.aim, reload: b.reloadT > 0, seat, twist, dead: b.dead ? b.deadT : -1, knock: b.knock, sprint: b.spd > 5.9 }, dt);
+  poseChar(ch, { x, y, z, yaw: b.car ? b.car.yaw : b.yaw, pitch: b.pitch, spd: b.spd, air: !b.onGround && !b.car, wpn: b.team === TEAM_CIV ? null : b.wpn, aim: b.aim, reload: b.reloadT > 0, seat, twist, dead: b.dead ? b.deadT : -1, knock: b.knock, sprint: b.spd > 5.9, act: b.car ? 0 : b.act, shoot: b.shootK || 0 }, dt);
 }

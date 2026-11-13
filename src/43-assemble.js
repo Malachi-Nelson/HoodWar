@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------
    4d. Put the city together: one generator per block, then kerbs, lamps, parking and the walking graph.
    --------------------------------------------------------------------- */
-const DIST = ['hhwoowi', 'hPwtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgid', 'hhcwiid'];
+const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgJd', 'hhcwYid'];   // one letter per block, west to east, north row first
 const RING = [];
 let mallLightAt = null;
 for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
@@ -12,7 +12,11 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
     case 'o': genOffices(L); break;
     case 't': genTower(L, i === 3 ? 96 : 124, i === 4, i === 4); break;
     case 'z': genCivic(L); break;
-    case 'i': genIndustrial(L); break;
+    case 'i': genIndustrial(L, false); break;
+    case 'J': genIndustrial(L, true); break;
+    case 'N': genYard(L, 2, false, { h: 8.2, mat: 'brick2', col: 0x6a5a8a, col2: 0x8a7a9a, kind: 'n', style: 'north', tag: 'tagN', motto: 'NORTH SIDE', shop: 'N.G. MOTORS', station: 2 }); break;
+    case 'Y': genYard(L, 3, true, { h: 9, mat: 'corr', col: 0xa89a3a, col2: 0x8a7f4a, kind: 'y', style: 'steel', tag: 'tagS', motto: 'SOUTH SIDE', shop: 'YARD WORKS', station: 0 }); break;
+    case 'K': genMarket(L); break;
     case 'd': genDocks(L, false); break;
     case 'D': genDocks(L, true); ZONES.push({ id: 'E', name: 'The Docks', x: L.cx, z: L.cz, r: 18 }); navNode(L.cx, CURB, L.cz); break;
     case 'P': genCourts(L); break;
@@ -28,6 +32,7 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
     case 'c': genChurch(L); break;
     case 'L': terrace(L, 'n', { x0: L.x0 + 4 }); terrace(L, 's', { x0: L.x0 + 4 }); ground(L.x0, L.z0 + 21, L.x1, L.z1 - 21, 'plaza'); bench(L.x0 + 20, L.cz - 4, true); bench(L.x0 + 34, L.cz + 4, true); planter(L.x0 + 27, L.cz - 6, 1.5); planter(L.x0 + 50, L.cz + 6, 1.5);
       addBox(L.x0 + 9, L.x0 + 13, CURB, CURB + 2.8, L.cz - 2, L.cz + 2, 'flat', { col: 0x2f5d3a, a: false }); sign('NEWS · COFFEE', 'gold', L.x0 + 11, CURB + 2.3, L.cz + 2.05, 3.6, .6, 's');
+      POI.push({ k: 'post', role: 1, x: L.x0 + 14, z: L.cz + .6, yaw: -PI / 2, name: 'Vendor' }, { k: 'browse', x: L.x0 + 15.7, z: L.cz + .6, yaw: PI / 2, cap: 2 }, { k: 'hang', x: L.x0 + 42, z: L.cz - 3, cap: 3 }, { k: 'hang', x: L.x1 - 14, z: L.cz + 5, cap: 3 });
       navNode(L.x0 + 6, CURB, L.cz + 5); navNode(L.cx, CURB, L.cz); navNode(L.x1 - 3, CURB, L.cz); break;
   }
   // kerbside: lamps, a hydrant, a bin, sometimes a stop sign; then the pavement ring that people walk
@@ -36,9 +41,14 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
   PROPS[PROPS.length - 6].yaw = PROPS[PROPS.length - 5].yaw = 0; PROPS[PROPS.length - 4].yaw = PROPS[PROPS.length - 3].yaw = PI; PROPS[PROPS.length - 2].yaw = PI / 2; PROPS[PROPS.length - 1].yaw = -PI / 2;
   prop('hydrant', L.x0 + wr(24, 56), L.z0 - k + .1); prop('bin', L.x0 + 3, L.z1 + WALK - 1.1); if (W() < .5) prop('bin', L.x1 - 3, L.z0 - WALK + 1.1);
   if (W() < .6) prop('sign', L.x0 - k, L.z0 - k); if (W() < .6) prop('sign', L.x1 + k, L.z1 + k);
-  if ('wotzLSC'.includes(d)) { tree(L.x0 + 27, L.z0 - .9, .85); tree(L.x1 - 27, L.z0 - .9, .85); tree(L.x0 + 27, L.z1 + .9, .85); tree(L.x1 - 27, L.z1 + .9, .85); }
+  if ('wotzLSCK'.includes(d)) { tree(L.x0 + 27, L.z0 - .9, .85); tree(L.x1 - 27, L.z0 - .9, .85); tree(L.x0 + 27, L.z1 + .9, .85); tree(L.x1 - 27, L.z1 + .9, .85); }
   for (let q = 0; q < 3; q++) { PARK.push({ x: L.x0 + 16 + q * 22 + wr(-2, 2), z: L.z0 - WALK - 1.15, yaw: -PI / 2 }); PARK.push({ x: L.x0 + 20 + q * 22 + wr(-2, 2), z: L.z1 + WALK + 1.15, yaw: PI / 2 }); }
   for (let q = 0; q < 2; q++) { PARK.push({ x: L.x0 - WALK - 1.15, z: L.z0 + 18 + q * 26 + wr(-2, 2), yaw: 0 }); PARK.push({ x: L.x1 + WALK + 1.15, z: L.z0 + 22 + q * 26 + wr(-2, 2), yaw: PI }); }
+  // people on the pavement: windows worth stopping at where a terrace of shops faces the street, and the odd knot of people by a corner
+  { const north = 'wLK'.includes(d), south = 'wLC'.includes(d), xs = [18, 38, 44, 64];
+    xs.forEach(q => { if (north && WP() < .6) POI.push({ k: 'browse', x: L.x0 + q + WP() * 4 - 2, z: L.z0 - .85, yaw: PI, cap: WP() < .35 ? 2 : 1 }); if (south && WP() < .6) POI.push({ k: 'browse', x: L.x0 + q + WP() * 4 - 2, z: L.z1 + .85, yaw: 0, cap: WP() < .35 ? 2 : 1 }); });
+    if (WP() < .5) POI.push({ k: 'hang', x: L.x0 + 4 + WP() * 5, z: L.z0 - 1, cap: 2 + ((WP() * 2) | 0) }); if (WP() < .5) POI.push({ k: 'hang', x: L.x1 - 4 - WP() * 5, z: L.z1 + 1, cap: 2 + ((WP() * 2) | 0) });
+    if (WP() < .3) POI.push({ k: 'hang', x: L.x1 + 1, z: L.z0 + 8 + WP() * 40, cap: 2 }); }
   const o = WALK / 2, R = { nw: navNode(L.x0 - o, CURB, L.z0 - o), n: navNode(L.cx, CURB, L.z0 - o), ne: navNode(L.x1 + o, CURB, L.z0 - o), e: navNode(L.x1 + o, CURB, L.cz), se: navNode(L.x1 + o, CURB, L.z1 + o), s: navNode(L.cx, CURB, L.z1 + o), sw: navNode(L.x0 - o, CURB, L.z1 + o), w: navNode(L.x0 - o, CURB, L.cz) };
   ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach((key, q, arr) => navLink(R[key], R[arr[(q + 1) % 8]], true));
   (RING[i] || (RING[i] = []))[j] = R;
@@ -48,6 +58,7 @@ for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const R = RING[i][j]
   if (j + 1 < NZ) { navLink(R.sw, RING[i][j + 1].nw, true); navLink(R.se, RING[i][j + 1].ne, true); } }
 genLine();
 ZONES.sort((a, b) => a.id < b.id ? -1 : 1);
+for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) if ((i * 7 + j * 3) % 5 === 0) { const x = RX(i) + 2.6, z = RZ(j) + 14; paint(x - .42, z - .42, x + .42, z + .42, 0x1c1e20); VENTS.push([x, z]); }   // manholes that breathe steam
 billboard(-5.6, 150, 8, 'CALDER LAGER · BREWED BY THE LAKE', 'gold', 'e'); billboard(-5.6, 390, 8, 'WKPC 94.7 · THE BLOCK', 'neon', 'e'); billboard(260, -5.6, 8, 'INJURED? CALL 555-0144', 'white', 's'); billboard(560, -5.6, 8, 'PORT CALDER LOTTERY · $4 MILLION', 'green', 's');
 
 // --- knockable street furniture: one instanced mesh per kind
@@ -104,6 +115,10 @@ NAV.forEach(n => { const k = Math.floor(n.x / NAVCELL) + ',' + Math.floor(n.z / 
 // anything that cannot be reached from the middle of town is not a place to send anyone
 { const start = NAV.reduce((b, n) => hyp(n.x - CITY.w / 2, n.z - CITY.d / 2) + n.y * 9 < hyp(b.x - CITY.w / 2, b.z - CITY.d / 2) + b.y * 9 ? n : b, NAV[0]), seen = new Set([start.i]), q = [start.i]; while (q.length) { const a = q.pop(); NAV[a].e.forEach(e => { if (!seen.has(e[0])) { seen.add(e[0]); q.push(e[0]); } }); } NAV.forEach(n => { n.iso = !seen.has(n.i); }); }
 const NAVOK = NAV.filter(n => !n.iso && n.y < 1);   // street-level places that are safe to pick at random
+// which block a spot belongs to, its pavement included; -1 out on a carriageway
+const blockOf = (x, z) => { const i = Math.floor((x - EDGE) / PX), j = Math.floor((z - EDGE) / PZ); if (i < 0 || j < 0 || i >= NX || j >= NZ) return -1; const L = lotOf(i, j); return x >= L.x0 - WALK - .3 && x <= L.x1 + WALK + .3 && z >= L.z0 - WALK - .3 && z <= L.z1 + WALK + .3 ? j * NX + i : -1; };
+// e[3]: a link someone out for a walk may use. Pavements and crossings, and anything that stays inside one block or off the ground; never a short cut over a road.
+NAV.forEach(n => { const bn = blockOf(n.x, n.z); n.e.forEach(e => { const m = NAV[e[0]]; e[3] = e[2] || n.y > 1 || m.y > 1 || (bn >= 0 && bn === blockOf(m.x, m.z)); }); });
 function nearestNode(x, y, z, needLos) {
   let best = -1, bd = 1e9; const cx = Math.floor(x / NAVCELL), cz = Math.floor(z / NAVCELL);
   for (let gx = cx - 1; gx <= cx + 1; gx++) for (let gz = cz - 1; gz <= cz + 1; gz++) { const L = navGrid[gx + ',' + gz]; if (!L) continue;
@@ -112,7 +127,7 @@ function nearestNode(x, y, z, needLos) {
   if (best < 0) { for (let i = 0; i < NAV.length; i++) { const n = NAV[i]; if (n.iso) continue; const d = hyp(n.x - x, n.z - z) + Math.abs(n.y - y) * 5; if (d < bd) { bd = d; best = i; } } }
   return best;
 }
-// A* over the walking graph. civ: keep to pavements and crossings.
+// A* over the walking graph. civ: true keeps to pavements and crossings; 2 also allows the way into a block (a park, a court, a market) but still never jaywalks.
 const _open = [], _g = new Float32Array(4096), _f = new Float32Array(4096), _from = new Int16Array(4096), _mark = new Uint16Array(4096); let _stamp = 0;
 function navPath(a, b, civ) {
   if (a < 0 || b < 0) return null; if (a === b) return [a];
@@ -123,12 +138,37 @@ function navPath(a, b, civ) {
     const cur = _open[bi]; _open[bi] = _open[_open.length - 1]; _open.pop();
     if (cur === b) { const path = []; for (let n = b; n >= 0; n = _from[n]) path.push(n); return path.reverse(); }
     const E = NAV[cur].e;
-    for (let i = 0; i < E.length; i++) { const e = E[i]; if (civ && !e[2]) continue; const to = e[0], g = _g[cur] + e[1] * (e[2] ? 1 : 1.05);
+    for (let i = 0; i < E.length; i++) { const e = E[i]; if (civ === 2 ? !e[3] : civ && !e[2]) continue; const to = e[0], g = _g[cur] + e[1] * (e[2] ? 1 : civ === 2 ? 1.3 : 1.05);
       if (_mark[to] === _stamp && g >= _g[to]) continue; const fresh = _mark[to] !== _stamp || !_open.includes(to); _mark[to] = _stamp; _g[to] = g; _f[to] = g + hyp(NAV[to].x - B.x, NAV[to].y - B.y, NAV[to].z - B.z); _from[to] = cur; if (fresh) _open.push(to); }
   }
   return null;
 }
-const zoneNode = ZONES.map(z => nearestNode(z.x, z.id === 'D' ? CURB : CURB, z.z, false));
+const zoneNode = ZONES.map(z => nearestNode(z.x, CURB, z.z, false));
+// --- places to be. Each one is checked against the finished city: moved out of anything solid, tied to the walking graph, and given
+//     its standing spots. One that cannot be reached is dropped.
+{ const free = (x, z, y) => !pushOut(x, z, .3, y + .6, y + 1.6, 'p');
+  for (let i = POI.length - 1; i >= 0; i--) { const p = POI[i]; p.y = p.y === undefined ? CURB : p.y; p.cap = p.cap || 1; let ok = true;
+    if (p.k === 'sit') {   // which way a bench faces: toward the more open side
+      const a = p.ax ? [0, 1] : [1, 0], open = s => { let n = 0; for (let d = .8; d < 4; d += .8) if (free(p.x + a[0] * d * s, p.z + a[1] * d * s, p.y)) n++; else break; return n; }, f = open(1) >= open(-1) ? 1 : -1;
+      p.yaw = yawOf(a[0] * f, a[1] * f); p.fx = p.x + a[0] * f * .75; p.fz = p.z + a[1] * f * .75; ok = free(p.fx, p.fz, p.y);
+      p.slots = [-.45, .45].map(s => ({ x: p.x + (p.ax ? s : 0) + a[0] * f * .12, z: p.z + (p.ax ? 0 : s) + a[1] * f * .12, y: p.y + .2, yaw: p.yaw }));
+    } else {
+      if (!p.inside && pushOut(p.x, p.z, .34, p.y + .6, p.y + 1.6, 'p')) { if (hyp(COL.x - p.x, COL.z - p.z) > 1.6) ok = false; p.x = COL.x; p.z = COL.z; }
+      p.fx = p.x; p.fz = p.z; if (p.yaw === undefined) p.yaw = 0;
+      const fx = -Math.sin(p.yaw), fz = -Math.cos(p.yaw), rx = Math.cos(p.yaw), rz = -Math.sin(p.yaw);
+      if (p.k === 'hang' || p.k === 'dance') p.slots = Array.from({ length: p.cap }, (_, k) => { const a = k / p.cap * TAU + i, r = p.k === 'dance' ? 1.1 : .85, x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r; return { x, z, y: p.y, yaw: p.k === 'dance' ? yawOf(p.x - x, p.z - 1.9 - z) : yawOf(p.x - x, p.z - z) }; });
+      else if (p.k === 'hoop') p.slots = [[3.4, 0], [5.2, -2.7], [5.2, 2.7]].slice(0, p.cap).map(q => ({ x: p.x + p.dir * q[0], z: p.z + q[1], y: p.y, yaw: yawOf(-p.dir * q[0], -q[1]) }));
+      else p.slots = Array.from({ length: p.cap }, (_, k) => ({ x: p.x + rx * (k - (p.cap - 1) / 2) * .8, z: p.z + rz * (k - (p.cap - 1) / 2) * .8, y: p.y, yaw: p.yaw }));
+      if (!p.inside) p.slots = p.slots.filter(s => free(s.x, s.z, p.y));
+      if (p.k === 'hoop' && p.slots.length) { p.fx = p.slots[0].x; p.fz = p.slots[0].z; }                 // walk up to the free-throw line, not into the post
+    }
+    const staff = p.k === 'post';                                                                       // someone who works here appears at their post; nobody has to walk to it
+    p.node = ok && p.slots.length ? nearestNode(p.fx, p.y, p.fz, !staff) : -1;
+    if (p.node < 0 || (!staff && (NAV[p.node].iso || hyp(NAV[p.node].x - p.fx, NAV[p.node].z - p.fz) > 34 || Math.abs(NAV[p.node].y - p.y) > 1.2 || !walkClear(NAV[p.node], { x: p.fx, y: p.y, z: p.fz })))) { POI.splice(i, 1); continue; }
+    if (p.k === 'work') { if (pushOut(p.bx, p.bz, .34, p.y + .6, p.y + 1.6, 'p')) { p.bx = COL.x; p.bz = COL.z; } p.bnode = nearestNode(p.bx, p.y, p.bz, true); if (p.bnode < 0 || NAV[p.bnode].iso) { POI.splice(i, 1); continue; } }
+    p.cap = p.slots.length; p.who = p.slots.map(() => null); }
+  POI.forEach((p, i) => { p.i = i; p.zone = ZONES.findIndex(z => hyp(z.x - p.x, z.z - p.z) < z.r + 5); p.npc = null; p.t = 0; }); }
+const POSTS = POI.filter(p => p.k === 'post' || p.k === 'work'), SPOTS = POI.filter(p => p.k !== 'post' && p.k !== 'work');
 // --- the driving graph is the street grid itself: crossings (i, j), i = 0..NX, j = 0..NZ
 const xingOf = (x, z) => [clamp(Math.round((x - EDGE) / PX), 0, NX), clamp(Math.round((z - EDGE) / PZ), 0, NZ)];
 const LANE = 2.1;

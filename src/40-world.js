@@ -10,7 +10,12 @@ const FOOT = [];          // building footprints for the radar: [x0, z0, x1, z1,
 const PATCH = [];         // ground patches for the radar: [x0, z0, x1, z1, colour]
 const PARK = [];          // kerbside and lot parking spots: { x, z, yaw }
 const PROPS = [];         // street furniture a car can knock flat: { type, x, z, y, box, down }
-const ZONES = [], SHOPS = [], ROBS = [], GARAGES = [], SPAWNS = [[], []], BASECARS = [[], []];
+const ZONES = [], SHOPS = [], ROBS = [], GARAGES = [], SPAWNS = CREWS.map(() => []), BASECARS = CREWS.map(() => []);
+// Places where people do something other than walk past. k: 'sit' a bench, 'hang' a knot of people talking, 'browse' a window or a stall,
+// 'wait' a stop or a platform, 'hoop' a basket, 'dance' by a speaker, 'post' where a vendor or a clerk works, 'work' a job done between two spots.
+const POI = [];
+const VENTS = [], STACKS = [], ROOSTS = [], SPEAKERS = [], GRILLS = [];   // steam from the street, smoke from chimneys, where pigeons gather, where music plays, where food is cooking
+const WP = rng32(77123);                                       // its own dice, so adding a bench never reshuffles the buildings
 const LAMPS = [];
 const wr = (a, b) => a + (b - a) * W();
 const wi = (a, b) => a + Math.floor(W() * (b - a + 1));
@@ -31,7 +36,8 @@ function addBox(x0, x1, y0, y1, z0, z1, mat, o) {
 }
 const deco = (x0, x1, y0, y1, z0, z1, col, o) => addBox(x0, x1, y0, y1, z0, z1, 'flat', Object.assign({ nocol: true, col }, o || {}));
 // a flat patch of another surface laid on the block (grass, a parking lot, a court)
-function ground(x0, z0, x1, z1, mat, col, y) { const d = MATS[mat], h = (y === undefined ? CURB : y) + .03; SB(mat).quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, x0 / d.tu, -z1 / d.tv, x1 / d.tu, -z0 / d.tv, colOf(col)); if (y === undefined) PATCH.push([x0, z0, x1, z1, mat]); }
+const LAYER = { grass: .014, dirt: .018, lot: .022, plaza: .026, tile: .03, court: .034 };   // patches laid over one another sit at slightly different heights, softest ground lowest
+function ground(x0, z0, x1, z1, mat, col, y) { const d = MATS[mat], h = (y === undefined ? CURB : y) + (LAYER[mat] || .03); SB(mat).quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, x0 / d.tu, -z1 / d.tv, x1 / d.tu, -z0 / d.tv, colOf(col)); if (y === undefined) PATCH.push([x0, z0, x1, z1, mat]); }
 function paint(x0, z0, x1, z1, col, y) { const h = (y === undefined ? 0 : y) + .05; SB('paint').quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, 0, 0, 1, 1, colOf(col === undefined ? 0xd8d6cc : col)); }
 function cyl(x, y0, y1, z, r, mat, col, o) { o = o || {}; const g = new T.CylinderGeometry(o.rTop === undefined ? r : o.rTop, r, y1 - y0, o.seg || 12); SB(mat).geo(g, new T.Matrix4().makeTranslation(x, (y0 + y1) / 2, z), colOf(col)); g.dispose(); if (!o.nocol) solid(x - r * .8, x + r * .8, y0, y1, z - r * .8, z + r * .8, o); }
 // a straight flight of steps from (ax,az) at y0 up to (bx,bz) at y1; each step is solid down to the bottom
@@ -55,7 +61,7 @@ function wall(axis, p0, p1, a, b, y0, y1, ops, mat, o) {
 const SIGNS = [], SIGN_COLS = 4, SIGN_ROWS = 32, signCanvas = texCanvas(1024, 2048), signTex = asTex(signCanvas, false);
 defMat('sign', new T.MeshLambertMaterial({ map: signTex, emissiveMap: signTex, emissive: 0x000000, alphaTest: .35 }), 1, 1, { cast: false });
 const SIGN_STYLES = { shop: ['#16181c', '#f2efe6'], red: ['#a3221b', '#fff4e0'], gold: ['#d9a521', '#1a1408'], blue: ['#15467a', '#eaf4ff'], green: ['#1d5c3a', '#eafbea'], white: ['#ece8dc', '#1c1c1c'], neon: ['#0c0d12', '#ff5fa2'], cyan: ['#0c0d12', '#5fe9ff'],
-  ember: ['#1a0d0a', '#ff5a36'], tide: ['#07131c', '#2fb6ff'], tagE: [null, '#ff5a36'], tagT: [null, '#2fb6ff'], tagW: [null, '#f2efe6'] };
+  ember: ['#1a0d0a', '#ff5a36'], tide: ['#07131c', '#2fb6ff'], north: ['#120c1c', '#b684ff'], steel: ['#17150a', '#f2d21b'], tagE: [null, '#ff5a36'], tagT: [null, '#2fb6ff'], tagN: [null, '#b684ff'], tagS: [null, '#f2d21b'], tagW: [null, '#f2efe6'] };
 function signCell(text, style) { const k = style + '|' + text; let i = SIGNS.findIndex(s => s.k === k); if (i < 0) { i = SIGNS.length; SIGNS.push({ k, text, style }); } return i % (SIGN_COLS * SIGN_ROWS); }
 function drawSigns() {
   const g = signCanvas.getContext('2d'); g.clearRect(0, 0, 1024, 2048);
@@ -106,7 +112,7 @@ function fence(x0, z0, x1, z1, h, kind, y) {   // chain-link stops people and ca
 function dumpster(x, z, alongX) { const a = alongX ? 1.1 : .7, b = alongX ? .7 : 1.1; addBox(x - a, x + a, CURB, CURB + 1.25, z - b, z + b, 'flat', { col: pick(W, [0x2f5d3a, 0x2d4f7a, 0x5a3a2a]), a: false }); deco(x - a - .04, x + a + .04, CURB + 1.25, CURB + 1.32, z - b - .04, z + b + .04, 0x1c1e20); }
 function barrier(x, z, alongX) { const a = alongX ? 1.5 : .3, b = alongX ? .3 : 1.5; addBox(x - a, x + a, 0, .85, z - b, z + b, 'concrete', { a: false }); }
 function crate(x, z, s, y) { y = y === undefined ? CURB : y; addBox(x - s / 2, x + s / 2, y, y + s, z - s / 2, z + s / 2, 'flat', { col: pick(W, [0x8a6a44, 0x7a5c3a, 0x99794f]), a: s > 1.4 }); }
-function bench(x, z, alongX) { const a = alongX ? .9 : .25, b = alongX ? .25 : .9; addBox(x - a, x + a, CURB, CURB + .45, z - b, z + b, 'flat', { col: 0x6a4d33, a: false, s: false, n: false }); }
+function bench(x, z, alongX) { const a = alongX ? .9 : .25, b = alongX ? .25 : .9; addBox(x - a, x + a, CURB, CURB + .45, z - b, z + b, 'flat', { col: 0x6a4d33, a: false, s: false, n: false }); POI.push({ k: 'sit', x, z, ax: !!alongX, cap: 2 }); }
 
 // --- roofs
 function gable(x0, x1, z0, z1, y, rise, ridgeAlongZ, col, wallCol) {

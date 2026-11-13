@@ -27,12 +27,17 @@ const CFG = {
   stars: [10, 30, 60, 100, 150],   // heat it takes to reach each wanted star
   robEvery: 240,              // seconds before a till that was emptied is worth robbing again
 };
-// Two invented crews. 0 holds the west side, 1 holds the docks.
+// Four invented crews, named for the parts of town they come from. Each has a yard and starts with two turfs.
+// `tops` is what its people wear; `paint` is the colour of its cars.
 const CREWS = [
-  { name: 'Ember Row', short: 'EMBER', color: 0xff5a36, css: '#ff5a36', dark: 0x7a2415 },
-  { name: 'Tidewater', short: 'TIDE',  color: 0x2fb6ff, css: '#2fb6ff', dark: 0x124a6e },
+  { name: 'Ember Row', short: 'EMBER', side: 'West side',  holds: 'The Courts and The Corner',       color: 0xff5a36, css: '#ff5a36', rgb: '255,90,54',   dark: 0x7a2415, paint: 0xc8401f, tops: [0xff5a36, 0xc8401f, 0x8a2a14, 0x1c1e22] },
+  { name: 'Tidewater', short: 'TIDE',  side: 'Dock side',  holds: 'the Station and The Docks',       color: 0x2fb6ff, css: '#2fb6ff', rgb: '47,182,255',  dark: 0x124a6e, paint: 0x1f86c8, tops: [0x2fb6ff, 0x1f86c8, 0x145a8a, 0x1c1e22] },
+  { name: 'Northgate', short: 'NORTH', side: 'North side', holds: 'Civic Square and Uptown Market',  color: 0xb684ff, css: '#b684ff', rgb: '182,132,255', dark: 0x4a2f7a, paint: 0x7a4fd0, tops: [0xb684ff, 0x8a5fe0, 0x5a3a9a, 0x1c1e22] },
+  { name: 'Steelyard', short: 'STEEL', side: 'South side', holds: 'Gas & Auto Row and The Foundry',  color: 0xf2d21b, css: '#f2d21b', rgb: '242,210,27',  dark: 0x6e5d0c, paint: 0xd9b80f, tops: [0xf2d21b, 0xd0b010, 0x8a7a14, 0x1c1e22] },
 ];
-const TEAM_CIV = 2, TEAM_COP = 3;
+const NCREW = CREWS.length, TEAM_CIV = NCREW, TEAM_COP = NCREW + 1;
+// which crew holds each turf when a session starts; anything not listed is nobody's
+const TURF_START = { A: 0, B: 0, D: 1, E: 1, F: 2, G: 2, H: 3, J: 3 };
 // range: [full damage out to, half damage from] in metres. `car`: can be fired from a vehicle.
 const WEAPONS = {
   fist:     { name: 'Fists',          slot: 0, melee: true, dmg: 34, rpm: 115, reach: 2.1, kick: 0, zoom: 62, snd: [.05, 500] },
@@ -67,5 +72,5 @@ const CARS = {
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];
-const CREW_PAINT = [0xc8401f, 0x1f86c8], COP_PAINT = 0x14181f;
+const CREW_PAINT = CREWS.map(c => c.paint), COP_PAINT = 0x14181f;
 const HANDLES = ['Ghost', 'Tiny', 'Smoke', 'Lucky', 'Ace', 'Duke', 'Rook', 'Juno', 'Mako', 'Onyx', 'Vega', 'Nix', 'Zed', 'Kilo', 'Moss', 'Rio', 'Sable', 'Jinx', 'Tank', 'Dot', 'Wren', 'Cruz', 'Bishop', 'Echo', 'Pax', 'Lark', 'Ozzy', 'Remy', 'Sol', 'Trey', 'Ivy', 'Knox'];

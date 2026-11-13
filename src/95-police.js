@@ -57,7 +57,7 @@ function updatePolice() {    // four times a second
     if (seen) { a.seenT = G.time; a.lostT = 0; a.lkx = a.x; a.lky = a.y; a.lkz = a.z; } else if (!close) a.lostT = (a.lostT || 0) + .25;
     a.evade = !seen && a.lostT > 1.5;
     if (a.lostT > 14 + a.heat * 4) { GAME.clearHeat(a); return; }                                              // they have got away
-    if (mine < a.heat * 2 && G.time > (a.dispT || 0) && cops <= 10 && manned < 5) { if (spawnCopUnit(a)) { a.dispT = G.time + (a.heat >= 3 ? 4 : 6); cops += 2; manned++; } else a.dispT = G.time + 1.5; }
+    if (mine < a.heat * 2 && G.time > (a.dispT || 0) && cops <= 12 && manned < 5) { if (spawnCopUnit(a)) { a.dispT = G.time + (a.heat >= 3 ? 4 : 6); cops += 2; manned++; } else a.dispT = G.time + 1.5; }
   });
   if (G.cops && !anyHeat && manned === 0 && G.time > G.patrolT) { G.patrolT = G.time + 25; spawnPatrol(); }
   // cruisers left standing with nobody to come back to them are cleared away: at once when out of the way, and from the far end of the scene when the streets are filling up

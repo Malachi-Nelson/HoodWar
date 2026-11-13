@@ -55,8 +55,8 @@ function terrace(L, face, o) {
       building(x, z0, x + w, z1, h, { mat: W() < .5 ? 'brick' : 'brick2', shop, tank: W() < .3 });
       if (shop) { shopFront(x, x + w, n ? z0 : z1, face); if (x === L.x0) shopFrontX(z0 + 1, z1 - 1, x, 'w'); if (Math.abs(x + w - L.x1) < .1) shopFrontX(z0 + 1, z1 - 1, x + w, 'e'); }
       if (floors >= 4 && W() < .7) fireEscape(x + w / 2, n ? z1 : z0, n ? 's' : 'n', floors);
-      if (W() < .5) dumpster(x + wr(2, w - 2), n ? z1 + 1.2 : z0 - 1.2, true);
-      if (W() < .25) crate(x + wr(1, w - 1), n ? z1 + wr(2.5, 5) : z0 - wr(2.5, 5), 1.2);
+      if (!o.clean && W() < .5) dumpster(x + wr(2, w - 2), n ? z1 + 1.2 : z0 - 1.2, true);
+      if (!o.clean && W() < .25) crate(x + wr(1, w - 1), n ? z1 + wr(2.5, 5) : z0 - wr(2.5, 5), 1.2);
     }
     x += w;
   }
@@ -79,6 +79,7 @@ function genOffices(L) {
   building(L.x0 + 4, L.z1 - 22, L.x0 + 28, L.z1 - 3, wr(12, 20), { mat: 'brick2', shop: true, kind: 'o' }); shopFront(L.x0 + 4, L.x0 + 28, L.z1 - 3, 's');
   planter(L.cx + 6.5, L.cz - 19, 1.6); planter(L.x0 + 30, L.cz + 7, 1.6); bench(L.cx + 4, L.cz - 12, true); bench(L.x0 + 14, L.cz + 8, false);
   // the plaza is a set of passages between the four buildings: one node in each and one where they meet
+  POI.push({ k: 'hang', x: L.x0 + 13, z: L.cz + 6.5, cap: 3 }, { k: 'hang', x: L.cx + 3.5, z: L.z0 + 11, cap: 2 });
   navNode(L.cx, CURB, L.cz - 6); navNode(L.cx - 1, CURB, L.cz - 1.5); navNode(L.x0 + 20, CURB, L.cz + 3.5); navNode(L.x0 + 34, CURB, L.z1 - 10); navNode(L.x1 - 18, CURB, L.cz - 5); navNode(L.cx + 2, CURB, L.z0 + 7);
 }
 function genTower(L, h, crown, noEast) {
@@ -94,7 +95,8 @@ function genTower(L, h, crown, noEast) {
   if (!noEast) for (let k = 0; k < 4; k++) planter(L.x1 - 4, L.z0 + 4 + k * 18.6, 1.3);
   navNode(L.cx, CURB, L.z0 + 4); navNode(L.cx, CURB, L.z1 - 4); navNode(L.x0 + 3.5, CURB, L.cz); navNode(L.x1 - 3.5, CURB, L.cz);
 }
-function genCivic(L) {   // an open square: fountain, steps, two office slabs
+// F — Civic Square: a fountain between two office slabs
+function genCivic(L) {
   ground(L.x0, L.z0, L.x1, L.z1, 'plaza');
   building(L.x0 + 2, L.z0 + 5, L.x0 + 22, L.z1 - 5, 31, { mat: 'office', shop: true, shopCol: 0x8a949c, col: 0xcfd3d6, kind: 'o' });
   building(L.x1 - 22, L.z0 + 5, L.x1 - 2, L.z1 - 5, 40, { mat: 'tower', shop: true, shopCol: 0x6f7c86, col: 0x9fb4c4, kind: 'o' });
@@ -104,6 +106,8 @@ function genCivic(L) {   // an open square: fountain, steps, two office slabs
     put(L.cx - 14, L.z0 + 12, .3, .25, .5, 9, 2.4); put(L.cx - 12, L.z0 + 11, -.35, -.3, .5, 7, 2); put(L.cx - 13, L.z0 + 13.5, .1, -.6, .5, 6, 1.6); solid(L.cx - 15, L.cx - 11, CURB, CURB + 5, L.z0 + 10, L.z0 + 14.5, { a: false }); }
   [[-9, -16], [9, -16], [-9, 16], [9, 16]].forEach(q => planter(L.cx + q[0], L.cz + q[1], 1.5));
   bench(L.cx - 9, L.cz, false); bench(L.cx + 9, L.cz, false); bench(L.cx, L.cz + 10, true);
+  cart(L.cx + 13, L.cz - 20, 's', 'HOT DOGS', 'red'); POI.push({ k: 'hang', x: L.cx - 10, z: L.cz + 20, cap: 3 }, { k: 'hang', x: L.cx + 4, z: L.cz - 12, cap: 3 }); ROOSTS.push([L.cx - 3, L.cz + 9], [L.cx + 11, L.cz + 12]);
+  ZONES.push({ id: 'F', name: 'Civic Square', x: L.cx, z: L.cz, r: 17 });
   navNode(L.cx, CURB, L.cz - 10); navNode(L.cx, CURB, L.cz + 12); navNode(L.cx - 12, CURB, L.cz); navNode(L.cx + 12, CURB, L.cz);
 }
 const CORR = [0x9aa3a8, 0x7d8a94, 0xa08a78, 0x6f7f6a, 0xb0885a, 0x8892a0];
@@ -120,16 +124,18 @@ function warehouse(x0, z0, x1, z1, h, doorFace, o) {
 }
 const BOXCOL = [0xb3261e, 0x1f4e8c, 0xd9a521, 0x1d6b45, 0x8c9299, 0xc85a1c, 0x2a7f86, 0x6b3fa0, 0xd8d6cc];
 function container(x, z, alongZ, level) { const a = alongZ ? 1.22 : 6.1, b = alongZ ? 6.1 : 1.22, y = CURB + level * 2.6; addBox(x - a, x + a, y, y + 2.6, z - b, z + b, 'corr', { col: pick(W, BOXCOL), tu: 1.2, tv: 5.2 }); if (!level) FOOT.push([x - a, z - b, x + a, z + b, 'c']); }
-function genIndustrial(L) {
+function genIndustrial(L, zone) {   // zone: this yard is a turf (J, The Foundry)
   ground(L.x0, L.z0, L.x1, L.z1, 'lot');
   warehouse(L.x0 + 4, L.z0 + 4, L.x0 + 52, L.z0 + 28, wr(9, 12), 's');
   warehouse(L.x1 - 36, L.z1 - 28, L.x1 - 4, L.z1 - 4, wr(8, 10.5), 'n');
   fence(L.x0 + .4, L.z0 + 34, L.x0 + .4, L.z1 - .4, 2.6, 'link'); fence(L.x0 + .4, L.z1 - .4, L.x0 + 22, L.z1 - .4, 2.6, 'link'); fence(L.x0 + 30, L.z1 - .4, L.x1 - 38, L.z1 - .4, 2.6, 'link');
   fence(L.x1 - .4, L.z0 + .4, L.x1 - .4, L.z0 + 14, 2.6, 'link'); fence(L.x1 - .4, L.z0 + 22, L.x1 - .4, L.z1 - 30, 2.6, 'link'); fence(L.x0 + 54, L.z0 + .4, L.x1 - 8, L.z0 + .4, 2.6, 'link');
   cyl(L.x1 - 8, CURB, CURB + 7.5, L.z0 + 8, 3.2, 'corr', 0xd8d6cc, { seg: 14 }); cyl(L.x1 - 16, CURB, CURB + 6, L.z0 + 8, 2.8, 'corr', 0xc9ced2, { seg: 14 }); FOOT.push([L.x1 - 11, L.z0 + 5, L.x1 - 5, L.z0 + 11, 'i'], [L.x1 - 18.6, L.z0 + 5.4, L.x1 - 13.4, L.z0 + 10.6, 'i']);
-  if (W() < .6) { cyl(L.x0 + 10, CURB, CURB + 30, L.z1 - 10, 1.3, 'concrete', 0x8a5548, { seg: 10, rTop: .9 }); FOOT.push([L.x0 + 8.7, L.z1 - 11.3, L.x0 + 11.3, L.z1 - 8.7, 'i']); }
+  if (W() < .6) { cyl(L.x0 + 10, CURB, CURB + 30, L.z1 - 10, 1.3, 'concrete', 0x8a5548, { seg: 10, rTop: .9 }); FOOT.push([L.x0 + 8.7, L.z1 - 11.3, L.x0 + 11.3, L.z1 - 8.7, 'i']); STACKS.push([L.x0 + 10, CURB + 30.4, L.z1 - 10]); }
   for (let k = 0; k < 3; k++) { const x = L.x0 + 14 + k * 9 + wr(-1, 1), z = L.z1 - 9; container(x, z, true, 0); if (W() < .5) container(x, z, true, 1); }
   for (let k = 0; k < 5; k++) crate(wr(L.x0 + 6, L.x1 - 40), wr(L.z0 + 36, L.z1 - 18), wr(1, 1.6));
+  if (zone) { ZONES.push({ id: 'J', name: 'The Foundry', x: L.x0 + 27, z: L.z0 + 42, r: 14 }); navNode(L.x0 + 27, CURB, L.z0 + 42); sign('CALDER FOUNDRY', 'white', L.x0 + 28, CURB + 6.2, L.z0 + 28.08, 14, 1.3, 's'); }
+  POI.push({ k: 'work', role: 2, x: L.x0 + 20, z: L.z0 + 33, bx: L.x0 + 36, bz: L.z1 - 14 }, { k: 'post', role: 2, act: 'smoke', x: L.x1 - 42, z: L.z0 + 31.5, yaw: PI, name: 'Yard hand' });
   PARK.push({ x: L.x1 - 44, z: L.z0 + 34, yaw: PI / 2, lot: true, truck: true });
   navNode(L.cx - 1, CURB, L.cz + 5); navNode(L.x0 + 28, CURB, L.z0 + 38);
   navLink(navNode(L.x0 + 26, CURB, L.z1 - 2), navNode(L.x0 + 26, CURB, L.z1 + WALK / 2)); navLink(navNode(L.x1 - 2, CURB, L.z0 + 18), navNode(L.x1 + WALK / 2, CURB, L.z0 + 18)); navLink(navNode(L.x0 + 2, CURB, L.z0 + 31), navNode(L.x0 - WALK / 2, CURB, L.z0 + 31));
@@ -146,4 +152,5 @@ function genDocks(L, zone) {
   for (let z = L.z0 + 4; z < L.z1; z += 12) addBox(L.x1 + WALK - 1.2, L.x1 + WALK - .6, CURB, CURB + .7, z - .3, z + .3, 'flat', { col: 0x25282b, a: false, n: false });
   for (let r = 0; r < 5; r++) { const x = L.x0 + 14.3 + r * 12.6; [L.z0 + 1.5, L.cz, L.z1 - 1.5].forEach(z => navNode(x, CURB, z)); }
   navNode(L.x0 + 1.5, CURB, L.cz); navNode(L.x1 - 1.5, CURB, L.cz);
+  POI.push({ k: 'work', role: 2, x: L.x0 + 14.3, z: L.z0 + 1.5, bx: L.x0 + 52.1, bz: L.z1 - 1.5 }, { k: 'work', role: 2, x: L.x0 + 39.5, z: L.cz, bx: L.x0 + 64.7, bz: L.z0 + 1.5 });
 }

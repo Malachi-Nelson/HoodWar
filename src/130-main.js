@@ -10,29 +10,34 @@ function showOverlay(mode) {
   const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = false; if (inGame) $('co-roster').hidden = true;
   if (mode === 'paused') { $('o-eyebrow').textContent = 'Paused'; $('o-text').textContent = NET.mode ? 'The city keeps moving while this menu is open.' : 'The city waits.'; $('deploy').textContent = 'Resume'; $('deploy').hidden = false;
     let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span><span>Deaths <b>${P.deaths | 0}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span>`; return; }
-  $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; $('crew0').disabled = $('crew1').disabled = false;
+  $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; crewLock(false);
   if (mode === 'lost') { $('o-eyebrow').textContent = 'Session closed'; $('o-text').textContent = 'The host left, so the session closed. Open a new lobby or play solo. Your cash and guns are kept.'; }
-  else { $('o-eyebrow').textContent = 'Open world · free roam · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
+  else { $('o-eyebrow').textContent = 'Open world · four crews · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
   if (!NET.mode) NET.lobby();
 }
 const MENU_TEXT = $('o-text').textContent;
 // what the player looks like and which side the menu shows; setCrew is the player choosing, wearCrew is being told
-function wearCrew(t) { P.team = t ? 1 : 0; $('crew0').setAttribute('aria-pressed', String(!P.team)); $('crew1').setAttribute('aria-pressed', String(!!P.team)); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
-const ownCrew = () => { let c = P.team; try { const v = localStorage.getItem('pc-crew'); if (v === '0' || v === '1') c = +v; } catch (e) {} if (c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
+// one button per crew, built from the crew table
+CREWS.forEach((c, t) => { const b = document.createElement('button'), n = document.createElement('b'), d = document.createElement('small'), m = document.createElement('i'); b.className = 'crew'; b.id = 'crew' + t; b.type = 'button'; b.style.setProperty('--c', c.css); b.style.setProperty('--c-rgb', c.rgb); b.setAttribute('aria-pressed', 'false');
+  n.textContent = c.name; d.textContent = c.side + '. Holds ' + c.holds + '.'; m.textContent = 'YOUR CREW'; b.append(n, d, m); b.addEventListener('click', () => setCrew(t)); $('crews').appendChild(b); });
+function crewLock(v) { for (let t = 0; t < NCREW; t++) $('crew' + t).disabled = v; }
+function wearCrew(t) { P.team = clamp(t | 0, 0, NCREW - 1); for (let q = 0; q < NCREW; q++) $('crew' + q).setAttribute('aria-pressed', String(q === P.team)); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
+const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && +v >= 0 && +v < NCREW) return +v | 0; } catch (e) {} return -1; };
+const ownCrew = () => { const c = savedCrew(); if (c >= 0 && c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
 function setCrew(t) { wearCrew(t); try { localStorage.setItem('pc-crew', String(P.team)); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); }
 // cash and guns are kept in this browser between sessions: with no rounds, there is nothing else to reset them
 function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save') || 'null'); if (s && isFinite(s.c)) return s; } catch (e) {} return null; }
 function saveGame() { if (G.state === 'menu') return; try { localStorage.setItem('pc-save', JSON.stringify({ c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades })); } catch (e) {} }
-const readSettings = () => { G.botsPer = +$('set-bots').value || 5; G.cops = $('set-cops').value !== '0'; };
+const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 4); }
   Object.assign(P, { bank: sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
   hudCache.heat = 0; $('h-stars').hidden = true; closeShop(); $('dead').hidden = true; $('board').hidden = true; $('bigmap').hidden = true;
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
   banner('Port Calder', 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
-  P.hintAt = G.time; P.hints = [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Stand in a rival ring to take the turf: each one pays your crew'], [22, 'Pink dots are tills to rob · yellow dots fix and respray a car']];
+  P.hintAt = G.time; P.hints = [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Stand in a ring your crew does not hold to take the turf: each one pays'], [22, 'Pink dots are tills to rob · pale blue dots fix and respray a car']];
 }
-function startAttract() { readSettings(); startWorld(); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }
+function startAttract() { readSettings(); startWorld({ x: ZONES[1].x + 18, z: ZONES[1].z }); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }   // the menu looks out over The Corner, so that is where the city gathers
 function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; saveGame(); showOverlay('paused'); }
 function leaveSession() { saveGame(); if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
 $('deploy').addEventListener('click', () => {
@@ -42,7 +47,6 @@ $('deploy').addEventListener('click', () => {
   readSettings(); G.solo = true; startWorld(); beginPlay();
 });
 $('leave').addEventListener('click', leaveSession);
-$('crew0').addEventListener('click', () => setCrew(0)); $('crew1').addEventListener('click', () => setCrew(1));
 $('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); });
 $('set-view').addEventListener('change', () => { P.view = +$('set-view').value === 1 ? 1 : 3; try { localStorage.setItem('pc-view', String(P.view)); } catch (e) {} });
 $('set-gfx').addEventListener('change', () => { GFX.low = $('set-gfx').value === 'low'; try { localStorage.setItem('pc-gfx', GFX.low ? 'low' : 'high'); } catch (e) {} applyGfx(); resize(); });
@@ -51,7 +55,7 @@ $('co-join').addEventListener('click', () => { if (NET.room && NET.room.peers().
 $('co-ready').addEventListener('click', () => { if (NET.lob) lobbySet({ lead: NET.lob.lead, ready: !NET.lob.ready }); });
 $('co-start').addEventListener('click', () => { if (NET.lob && NET.lob.lead) { readSettings(); coopBegin('host'); } });
 $('co-leave').addEventListener('click', () => { ownCrew(); lobbySet(null); });
-try { $('co-name').value = cleanName(localStorage.getItem('pc-name') || '').replace(/^Player$/, ''); const c = localStorage.getItem('pc-crew'); if (c === '1') P.team = 1; if (localStorage.getItem('pc-view') === '1') P.view = 1; } catch (e) {}
+try { $('co-name').value = cleanName(localStorage.getItem('pc-name') || '').replace(/^Player$/, ''); if (savedCrew() >= 0) P.team = savedCrew(); if (localStorage.getItem('pc-view') === '1') P.view = 1; } catch (e) {}
 $('set-view').value = String(P.view); $('set-gfx').value = GFX.low ? 'low' : 'high';
 $('co-name').addEventListener('change', () => { try { localStorage.setItem('pc-name', myName()); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); });
 $('co-name').addEventListener('keydown', e => e.stopPropagation());
@@ -100,7 +104,7 @@ function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.d
 function devClose() { if (G.state !== 'dev') return; $('dev').hidden = true; G.state = 'playing'; wasLocked = false; requestLock(); }
 Object.keys(DEV_FLAGS).forEach(k => $(DEV_FLAGS[k]).addEventListener('change', e => devSet(k, e.target.checked)));
 CID.forEach(id => $('dv-car').add(new Option(CARS[id].name + ' (' + id + ')', id)));
-const TELEPORTS = {}; ZONES.forEach(z => { TELEPORTS['Turf ' + z.id + ' · ' + z.name] = [z.x + 4, z.id === 'D' ? 0 : CURB, z.z + 6]; }); TELEPORTS['Ember Row yard'] = [SPAWNS[0][0].x, CURB, SPAWNS[0][0].z]; TELEPORTS['Tidewater yard'] = [SPAWNS[1][0].x, CURB, SPAWNS[1][0].z]; TELEPORTS['Station platform'] = [LINE.x + 9, LINE.y1, LINE.sz + 6]; TELEPORTS['Mall, upper floor'] = [ZONES[2].x + 6.2, CURB + 5.2, ZONES[2].z - 14];
+const TELEPORTS = {}; ZONES.forEach(z => { TELEPORTS['Turf ' + z.id + ' · ' + z.name] = [z.x + 4, z.id === 'D' ? 0 : CURB, z.z + 6]; }); CREWS.forEach((c, t) => { TELEPORTS[c.name + ' yard'] = [SPAWNS[t][0].x, CURB, SPAWNS[t][0].z]; }); TELEPORTS['Station platform'] = [LINE.x + 9, LINE.y1, LINE.sz + 6]; TELEPORTS['Mall, upper floor'] = [ZONES[2].x + 6.2, CURB + 5.2, ZONES[2].z - 14];
 SHOPS.forEach((s, i) => { TELEPORTS['Shop ' + (i + 1) + ' · ' + s.name] = [s.x + 1.5, CURB, s.z + 1.5]; });
 Object.keys(TELEPORTS).forEach(id => $('dv-tp').add(new Option(id, id)));
 const devOn = (id, fn) => $(id).addEventListener('click', fn);
@@ -127,11 +131,13 @@ function visuals(dt, now) {
   if (G.state === 'menu') { menuA += dt * .05; const z = ZONES[1], r = 62; camera.position.set(z.x + 40 + Math.sin(menuA) * r, 26 + Math.sin(menuA * .7) * 5, z.z + Math.cos(menuA) * r); camera.rotation.set(-.3, menuA + .5, 0); if (Math.abs(camera.fov - 62) > .1) { camera.fov = 62; camera.updateProjectionMatrix(); } skyDome.position.copy(camera.position); EAR.x = camera.position.x; EAR.y = 200; EAR.z = camera.position.z; vmRoot.visible = false; }
   else { updateCamera(dt); updatePlayerLook(dt); }
   updateSun(G.state === 'menu' ? camera.position.x - Math.sin(menuA + .5) * 50 : P.x, 0, G.state === 'menu' ? camera.position.z - Math.cos(menuA + .5) * 50 : P.z);
+  lifePoses(dt);
   for (let i = 0; i < bots.length; i++) botVisual(bots[i], dt);
   for (const k in NET.remotes) remoteVisual(NET.remotes[k], dt);
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
+  updateLife(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -156,5 +162,6 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { la
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect();
 if (TEST) window.__pc = { G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
-  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals };
+  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
+  initAudio, RADIO, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);
