@@ -40,7 +40,7 @@ await run('aimed headshot', () => { const g = __pc; g.P.x = g.ZONES[7].x - 12; g
   g.mouse.right = false; return { dead: t.dead, tries, hpLeft: Math.round(t.hp), rp: g.P.rp - rp0 }; });
 
 await run('rank', () => { const g = __pc, r0 = g.P.rank; g.addRP(g.rpFor(2) - g.P.rp + 10); const banner = document.querySelector('#h-banner .sub').textContent; g.step(3, 1 / 30); for (let i = 0; i < 3; i++) g.visuals(1 / 30);
-  return { from: r0, to: g.P.rank, rp: g.P.rp, banner, badge: document.getElementById('rk-n').textContent, bar: document.getElementById('rk-fill').style.width, maxHp: g.maxHp(), shopLock: (() => { g.openMenu({ kind: 'gun', x: g.P.x, z: g.P.z, title: 'x' }); const t = [...document.querySelectorAll('#shop-list li')].map(li => li.textContent).join(' | '); g.closeShop(); return t; })() }; });
+  return { from: r0, to: g.P.rank, rp: g.P.rp, banner, badge: document.getElementById('rk-n').textContent, bar: document.getElementById('rk-fill').style.width, maxHp: g.maxHp(), shopLock: (() => { g.openMenu({ kind: 'gun', x: g.P.x, z: g.P.z, title: 'x', items: g.gunItems }); g.buy('7'); const t = [...document.querySelectorAll('#shop-list li')].map(li => li.textContent).join(' | '); g.closeShop(); return t; })() }; });
 
 await run('phone', () => { const g = __pc; g.openPhone(); const open = !document.getElementById('shop').hidden, cls = document.getElementById('shop').className, items = [...document.querySelectorAll('#shop-list li')].map(li => li.className + ':' + li.textContent);
   g.buy('1'); g.step(2, 1 / 30); const hm = g.bots.filter(b => b.homie === g.P); return { open, cls, items, homies: hm.length, dist: hm.map(b => Math.round(Math.hypot(b.x - g.P.x, b.z - g.P.z))), shopShut: document.getElementById('shop').hidden }; });

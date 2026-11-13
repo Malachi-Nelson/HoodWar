@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------
    4d. Put the city together: one generator per block, then kerbs, lamps, parking and the walking graph.
    --------------------------------------------------------------------- */
-const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgJd', 'QhcwYiR'];   // one letter per block, west to east, north row first
+const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtVi', 'AwCkwwD', 'hpwwgJd', 'QhcwYiR'];   // one letter per block, west to east, north row first
 const RING = [];
 let mallLightAt = null;
 for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
@@ -32,6 +32,7 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
     case 'p': genProjects(L); break;
     case 'g': genGas(L); break;
     case 'c': genChurch(L); break;
+    case 'V': genBank(L); break;
     case 'L': terrace(L, 'n', { x0: L.x0 + 4 }); terrace(L, 's', { x0: L.x0 + 4 }); ground(L.x0, L.z0 + 21, L.x1, L.z1 - 21, 'plaza'); bench(L.x0 + 20, L.cz - 4, true); bench(L.x0 + 34, L.cz + 4, true); planter(L.x0 + 27, L.cz - 6, 1.5); planter(L.x0 + 50, L.cz + 6, 1.5);
       addBox(L.x0 + 9, L.x0 + 13, CURB, CURB + 2.8, L.cz - 2, L.cz + 2, 'flat', { col: 0x2f5d3a, a: false }); sign('NEWS · COFFEE', 'gold', L.x0 + 11, CURB + 2.3, L.cz + 2.05, 3.6, .6, 's');
       POI.push({ k: 'post', role: 1, x: L.x0 + 14, z: L.cz + .6, yaw: -PI / 2, name: 'Vendor' }, { k: 'browse', x: L.x0 + 15.7, z: L.cz + .6, yaw: PI / 2, cap: 2 }, { k: 'hang', x: L.x0 + 42, z: L.cz - 3, cap: 3 }, { k: 'hang', x: L.x1 - 14, z: L.cz + 5, cap: 3 });

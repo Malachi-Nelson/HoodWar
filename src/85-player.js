@@ -116,7 +116,7 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
-  { const bp = bizPrompt(); if (bp) { prompt = bp; return; } }
+  { const bp = bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
@@ -171,7 +171,7 @@ function gunItems(pg) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash') SFX.cash(); } }
+    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot

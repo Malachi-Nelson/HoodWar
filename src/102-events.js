@@ -30,7 +30,7 @@ function evStart(E) { E.id = ++evtSeq; E.t0 = G.time; EVTS.push(E); GAME.ev('en'
 function evEnd(E, ok, amt, who) {
   const i = EVTS.indexOf(E); if (i < 0) return; EVTS.splice(i, 1); E.over = true;
   if (ok && amt) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
-  if (ok) humans().forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
+  if (ok) (E.k === 'smug' ? [E.owner] : humans()).forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
   (E.guards || []).forEach(g => { g.guardOf = false; g.until = G.time + 30; });
   GAME.ev('ed', E.id, EV_KINDS.indexOf(E.k), ok ? 1 : 0, amt | 0, GAME.ref(who), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone);
 }
@@ -201,9 +201,14 @@ function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
+    else if (kind === 'bank' || kind === 'jewel') { banner(I.name, kind === 'bank' ? 'Calder Savings on Calder Avenue · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'smug') return;
     else note(I.name + ' · ' + areaName(e[4], e[5]) + ' · ' + I.how, 'g'); }
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
+    if (kind === 'smug') { if (who === P) { if (ok) { banner('Product sold', 'The buyer paid · check your cash', 2.8, 'gold'); SFX.streak(); } else banner('Run failed', 'The product is gone', 2.4); } return; }
+    if ((kind === 'bank' || kind === 'jewel') && !ok) { banner(I.name, 'It fell apart · no payout', 2.6); return; }
+    if ((kind === 'bank' || kind === 'jewel') && ok) { banner(kind === 'bank' ? 'Bank job done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
     else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
@@ -216,12 +221,13 @@ function evNews(e, mine) {
 }
 // --- what the host says about its events, and what a joined player makes of it
 const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : 0,
-  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.team === undefined ? -1 : E.team]);
+  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
+  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]);
 function evFromHost(list) {
   const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
   (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
-    if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+    if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null;
+    if (k === 'bank') { E.stage = q[5]; if (E.stage === 1) E.drill = q[6] / 100; else E.take = q[6] * 100; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
 }
 // where an event's marker belongs on this machine: on the thing itself when it can be seen, else where the host says
 function evSpot(E, o) {
@@ -231,7 +237,7 @@ function evSpot(E, o) {
   else if (E.k === 'hit') { const b = botById(ref); if (b && !b.dead) { o.x = b.x; o.z = b.z; o.y = b.y; } }
   return o;
 }
-const evMine = E => (E.k === 'stash' && E.carrier === P) || (E.k === 'chop' && P.car && (E.car ? E.car === P.car : P.car.id === E.ref));
+const evMine = E => (E.k === 'stash' && E.carrier === P) || (E.k === 'chop' && P.car && (E.car ? E.car === P.car : P.car.id === E.ref)) || (E.k === 'smug' && (E.owner === P || E.ref === GAME.ref(P)));
 // --- markers: a tall beam in the event's colour with its sign floating above, and the race's checkpoints as rings on the road
 const evMarks = [0, 1, 2, 3].map(() => { const g = new T.Group(), bm = new T.Mesh(new T.CylinderGeometry(.55, .55, 60, 8, 1, true), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .22, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false })); bm.position.y = 30; g.add(bm);
   const cv = texCanvas(128), sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, depthTest: false, fog: false })); sp.renderOrder = 8; g.add(sp); g.visible = false; scene.add(g); return { g, bm, sp, cv, id: 0, kind: '', x: 0, z: 0 }; });

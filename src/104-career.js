@@ -77,6 +77,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
+  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
@@ -94,7 +95,7 @@ function phoneItems(pg) {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
-  out.push(page('Online · cars', 'cars'));
+  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'));
   return out;
 }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
@@ -217,7 +218,7 @@ function nitrous(c, dt, want) {
 // --- each second or so: business marks, the car you were promised, the phone menu kept current
 function careerTick(dt) {
   PH.tickT = (PH.tickT || 0) - dt; if (PH.tickT > 0) return; PH.tickT = .5;
-  bizMarks();
+  bizMarks(); labTick();
   if (P.pvAsk && G.time > P.pvAsk && G.state === 'playing' && (AUTH() || NET.slot > 0)) { P.pvAsk = 0; sendPV(); }
   if (shopOpen && shopOpen.kind === 'phone') renderShop();
 }

@@ -135,6 +135,7 @@ function genIndustrial(L, zone) {   // zone: this yard is a turf (J, The Foundry
   for (let k = 0; k < 3; k++) { const x = L.x0 + 14 + k * 9 + wr(-1, 1), z = L.z1 - 9; container(x, z, true, 0); if (W() < .5) container(x, z, true, 1); }
   for (let k = 0; k < 5; k++) crate(wr(L.x0 + 6, L.x1 - 40), wr(L.z0 + 36, L.z1 - 18), wr(1, 1.6));
   if (zone) { ZONES.push({ id: 'J', name: 'The Foundry', x: L.x0 + 27, z: L.z0 + 42, r: 14 }); navNode(L.x0 + 27, CURB, L.z0 + 42); sign('CALDER FOUNDRY', 'white', L.x0 + 28, CURB + 6.2, L.z0 + 28.08, 14, 1.3, 's'); }
+  else { LABS.push({ x: L.x0 + 40, z: L.z0 + 30, i: L.i, j: L.j, park: { x: L.x1 - 44, z: L.z0 + 34, yaw: PI / 2 } }); sign('UNIT ' + (LABS.length * 7 + 3), 'shop', L.x0 + 40, CURB + 3.6, L.z0 + 28.08, 4, .7, 's'); }   // a warehouse unit somebody could set a lab up in
   POI.push({ k: 'work', role: 2, x: L.x0 + 20, z: L.z0 + 33, bx: L.x0 + 36, bz: L.z1 - 14 }, { k: 'post', role: 2, act: 'smoke', x: L.x1 - 42, z: L.z0 + 31.5, yaw: PI, name: 'Yard hand' });
   PARK.push({ x: L.x1 - 44, z: L.z0 + 34, yaw: PI / 2, lot: true, truck: true });
   navNode(L.cx - 1, CURB, L.cz + 5); navNode(L.x0 + 28, CURB, L.z0 + 38);

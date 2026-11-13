@@ -127,6 +127,29 @@ function genYard(L, t, flip, o) {
   boombox(X(60), L.z0 + 25, o.station);
   navNode(X(78), CURB, g); navNode(X(43), CURB, L.z1 - 2); navNode(X(46), CURB, g + 4); navNode(X(36), CURB, L.z0 + 28); navNode(X(66), CURB, L.z0 + 22);
 }
+// V — Calder Avenue plaza: two shop terraces, and between them Calder Savings & Trust, a lobby with a counter and a strongroom
+//     at the back behind a round vault door (the door itself, which opens, belongs to 106-heists.js)
+function genBank(L) {
+  terrace(L, 'n', { x0: L.x0 + 4 }); terrace(L, 's', { x0: L.x0 + 4 }); ground(L.x0, L.z0 + 21, L.x1, L.z1 - 21, 'plaza');
+  bench(L.x0 + 20, L.cz - 4, true); planter(L.x0 + 27, L.cz - 6, 1.5); planter(L.x0 + 33, L.cz + 6, 1.5);
+  addBox(L.x0 + 9, L.x0 + 13, CURB, CURB + 2.8, L.cz - 2, L.cz + 2, 'flat', { col: 0x2f5d3a, a: false }); sign('NEWS · COFFEE', 'gold', L.x0 + 11, CURB + 2.3, L.cz + 2.05, 3.6, .6, 's');
+  POI.push({ k: 'post', role: 1, x: L.x0 + 14, z: L.cz + .6, yaw: -PI / 2, name: 'Vendor' }, { k: 'browse', x: L.x0 + 15.7, z: L.cz + .6, yaw: PI / 2, cap: 2 });
+  const x0 = L.x0 + 40, x1 = L.x1 - 6, z0 = L.cz - 6.5, z1 = L.cz + 6.5, y = CURB, top = y + 5.4, t = .5, vx = x1 - 9, wc = { col: 0xdcd5c4 };
+  ground(x0, z0, x1, z1, 'tile');
+  wall('z', x0, x0 + t, z0, z1, y, top, [[L.cz - 1.6, L.cz + 1.6, 0, 3.3]], 'concrete', wc); wall('z', x1 - t, x1, z0, z1, y, top, null, 'concrete', wc);
+  wall('x', z0, z0 + t, x0 + t, x1 - t, y, top, null, 'concrete', wc); wall('x', z1 - t, z1, x0 + t, x1 - t, y, top, null, 'concrete', wc);
+  wall('z', vx, vx + .9, z0 + t, z1 - t, y, top, [[L.cz - 1.15, L.cz + 1.15, 0, 2.7]], 'concrete', { col: 0x8f959c });   // the strongroom wall, a round door's width open in it
+  addBox(x0 - .4, x1 + .4, top, top + .55, z0 - .4, z1 + .4, 'roof', { top: 'roof' });
+  addBox(x0 + 8, x0 + 9, y, y + 1.15, z0 + 2.5, z1 - 4.5, 'flat', { col: 0x6a4a32 }); deco(x0 + 7.9, x0 + 9.1, y + 1.15, y + 1.22, z0 + 2.4, z1 - 4.4, 0x2a2420);   // the counter
+  [[x0 + 3, z0 + 2], [x0 + 3, z1 - 2], [x0 + 14, z0 + 2], [x0 + 14, z1 - 2]].forEach(q => cyl(q[0], y, top, q[1], .32, 'concrete', 0xe8e2d2, { seg: 10 }));
+  for (let k = 0; k < 3; k++) addBox(x0 + 3 + k * 6, x0 + 5 + k * 6, top - .06, top - .02, L.cz - .5, L.cz + .5, 'glow', { nocol: true, col: 0xfff3d0 });   // lights in the ceiling
+  deco(vx + 1.4, x1 - 1, y, y + 2.2, z0 + .6, z0 + 1.2, 0x5a6066); deco(vx + 1.4, x1 - 1, y, y + 2.2, z1 - 1.2, z1 - .6, 0x5a6066);   // deposit boxes along the strongroom walls
+  [-2.4, 2.4].forEach(d => cyl(x0 - 1.4, y, y + 4.2, L.cz + d, .38, 'concrete', 0xece6d6, { seg: 12 }));
+  sign('CALDER SAVINGS & TRUST', 'white', x0 - .06, y + 4.3, L.cz, 12, 1.1, 'w');
+  BANK = { x0, x1, z0, z1, cz: L.cz, vx, door: { x: x0 - 3, z: L.cz }, vault: { x: vx - 1.1, z: L.cz }, top };
+  navNode(L.x0 + 6, CURB, L.cz + 5); navNode(L.x0 + 30, CURB, L.cz); navNode(x0 - 4, CURB, L.cz); navNode(x0 + 4, CURB, L.cz);
+  navNode(x0 - 2, CURB, L.z0 + 23.2); navNode(x1 + 2, CURB, L.z0 + 23.2); navNode(x0 - 2, CURB, L.z1 - 23.2); navNode(x1 + 2, CURB, L.z1 - 23.2); navNode(L.x1 - 2, CURB, L.cz);
+}
 // G — Uptown Market: a square of stalls under awnings, with a row of shops behind
 function genMarket(L) {
   ground(L.x0, L.z0, L.x1, L.z1, 'plaza');
@@ -256,7 +279,7 @@ function genMall(L) {
   wall('z', x0, x0 + t, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc); wall('z', x1 - t, x1, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc);
   FOOT.push([x0, z0, x1, z1, 'm']);
   sign('CALDER MALL', 'cyan', cx, y + 7.6, z0 - .06, 20, 2.6, 'n'); sign('CALDER MALL', 'cyan', cx, y + 7.6, z1 + .06, 20, 2.6, 's'); sign('CALDER MALL', 'cyan', x0 - .06, y + 7.6, cz, 16, 2.2, 'w'); sign('CALDER MALL', 'cyan', x1 + .06, y + 7.6, cz, 16, 2.2, 'e');
-  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); if (a[1] < CURB + 5) FRONTS.push({ x: a[0] + FACE[a[5]][0] * 1.6, z: a[2] + FACE[a[5]][1] * 1.6, name: t }); };   // ground-floor shops can be bought
+  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); if (a[1] < CURB + 5) FRONTS.push({ x: a[0] + FACE[a[5]][0] * 1.6, z: a[2] + FACE[a[5]][1] * 1.6, name: t, face: a[5], mall: true }); };   // ground-floor shops can be bought
   [[x0 + t, cx - 8, z0 + t, cz - 7], [cx + 8, x1 - t, z0 + t, cz - 7], [x0 + t, cx - 8, cz + 7, z1 - t], [cx + 8, x1 - t, cz + 7, z1 - t]].forEach((q, k) => {
     addBox(q[0], q[1], y, top - .1, q[2], q[3], 'shop', { tv: 5.2, tu: 8.2, col: 0xd9d2c4, faces: 15 });
     const west = k % 2 === 0, north = k < 2, fx = west ? q[1] : q[0], fz = north ? q[3] : q[2];                    // the two faces that look onto the concourses

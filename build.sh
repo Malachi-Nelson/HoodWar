@@ -4,7 +4,7 @@
 #   dist/claude.html  the same game without the relay, for publishing as a Claude artifact (multiplayer there is Claude's own shared room)
 # PROTO names the multiplayer wire format: change it whenever what players send each other changes, so old tabs and new ones never mix.
 cd "$(dirname "$0")"
-PROTO=${PROTO:-v5}
+PROTO=${PROTO:-v6}
 BUILD=${BUILD:-"build $(date -u '+%d %b %H:%M') UTC"}
 mkdir -p dist
 { cat src/00-head.html; for f in $(ls src/*.js | sort -V); do cat "$f"; echo; done; cat src/99-tail.html; } > dist/claude.html

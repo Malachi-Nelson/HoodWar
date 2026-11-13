@@ -155,12 +155,14 @@ const SHOP_NAMES = ['PORT CITY PIZZA', 'HARBOR DINER', 'FADE FACTORY BARBERS', '
 const AWN = [0xa3221b, 0x1d5c3a, 0x15467a, 0xd9a521, 0x2a2c30, 0x7a3a8a, 0xc85a1c];
 let shopN = 0;
 const FRONTS = [];   // every shop front's door on the pavement, with the name over it: a few of them are for sale (see 104-career.js)
+const LABS = [];     // warehouses where a lab can be set up (see 106-heists.js)
+let BANK = null;     // Calder Savings & Trust: where the bank job happens
 const SHOP_STYLES = ['shop', 'red', 'gold', 'blue', 'green', 'white', 'neon', 'cyan'];
 const styleOf = name => { let h = 0; for (let i = 0; i < name.length; i++) h = h * 31 + name.charCodeAt(i) | 0; return SHOP_STYLES[Math.abs(h) % SHOP_STYLES.length]; };   // one board per name, so the sign sheet stays small
 function shopFront(x0, x1, z, face) { const n = Math.max(1, Math.round((x1 - x0) / 9)), w = (x1 - x0) / n, d = FACE[face][1] * .1;
-  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); FRONTS.push({ x: cx, z: z + FACE[face][1] * 1.7, name: nm }); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); FRONTS.push({ x: cx, z: z + FACE[face][1] * 1.7, name: nm, face }); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
 function shopFrontX(z0, z1, x, face) { const n = Math.max(1, Math.round((z1 - z0) / 9)), w = (z1 - z0) / n, d = FACE[face][0] * .1;
-  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); FRONTS.push({ x: x + FACE[face][0] * 1.7, z: cz, name: nm }); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); FRONTS.push({ x: x + FACE[face][0] * 1.7, z: cz, name: nm, face }); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
 
 // --- the ground, the roads, the paint on them
 addBox(WORLD.x0, WORLD.x1, -3, 0, WORLD.z0, WORLD.z1, null);

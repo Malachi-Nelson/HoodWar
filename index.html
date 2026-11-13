@@ -380,12 +380,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 15:48 UTC';
+  const BUILD = 'build 13 Nov 16:04 UTC';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const STALE = 7000;   // a player the relay has not heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v5/' + code + '/';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v6/' + code + '/';
   const table = {}, seen = {}, subs = [];
   let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
@@ -948,12 +948,14 @@ const SHOP_NAMES = ['PORT CITY PIZZA', 'HARBOR DINER', 'FADE FACTORY BARBERS', '
 const AWN = [0xa3221b, 0x1d5c3a, 0x15467a, 0xd9a521, 0x2a2c30, 0x7a3a8a, 0xc85a1c];
 let shopN = 0;
 const FRONTS = [];   // every shop front's door on the pavement, with the name over it: a few of them are for sale (see 104-career.js)
+const LABS = [];     // warehouses where a lab can be set up (see 106-heists.js)
+let BANK = null;     // Calder Savings & Trust: where the bank job happens
 const SHOP_STYLES = ['shop', 'red', 'gold', 'blue', 'green', 'white', 'neon', 'cyan'];
 const styleOf = name => { let h = 0; for (let i = 0; i < name.length; i++) h = h * 31 + name.charCodeAt(i) | 0; return SHOP_STYLES[Math.abs(h) % SHOP_STYLES.length]; };   // one board per name, so the sign sheet stays small
 function shopFront(x0, x1, z, face) { const n = Math.max(1, Math.round((x1 - x0) / 9)), w = (x1 - x0) / n, d = FACE[face][1] * .1;
-  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); FRONTS.push({ x: cx, z: z + FACE[face][1] * 1.7, name: nm }); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); FRONTS.push({ x: cx, z: z + FACE[face][1] * 1.7, name: nm, face }); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
 function shopFrontX(z0, z1, x, face) { const n = Math.max(1, Math.round((z1 - z0) / 9)), w = (z1 - z0) / n, d = FACE[face][0] * .1;
-  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); FRONTS.push({ x: x + FACE[face][0] * 1.7, z: cz, name: nm }); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); FRONTS.push({ x: x + FACE[face][0] * 1.7, z: cz, name: nm, face }); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
 
 // --- the ground, the roads, the paint on them
 addBox(WORLD.x0, WORLD.x1, -3, 0, WORLD.z0, WORLD.z1, null);
@@ -1133,6 +1135,7 @@ function genIndustrial(L, zone) {   // zone: this yard is a turf (J, The Foundry
   for (let k = 0; k < 3; k++) { const x = L.x0 + 14 + k * 9 + wr(-1, 1), z = L.z1 - 9; container(x, z, true, 0); if (W() < .5) container(x, z, true, 1); }
   for (let k = 0; k < 5; k++) crate(wr(L.x0 + 6, L.x1 - 40), wr(L.z0 + 36, L.z1 - 18), wr(1, 1.6));
   if (zone) { ZONES.push({ id: 'J', name: 'The Foundry', x: L.x0 + 27, z: L.z0 + 42, r: 14 }); navNode(L.x0 + 27, CURB, L.z0 + 42); sign('CALDER FOUNDRY', 'white', L.x0 + 28, CURB + 6.2, L.z0 + 28.08, 14, 1.3, 's'); }
+  else { LABS.push({ x: L.x0 + 40, z: L.z0 + 30, i: L.i, j: L.j, park: { x: L.x1 - 44, z: L.z0 + 34, yaw: PI / 2 } }); sign('UNIT ' + (LABS.length * 7 + 3), 'shop', L.x0 + 40, CURB + 3.6, L.z0 + 28.08, 4, .7, 's'); }   // a warehouse unit somebody could set a lab up in
   POI.push({ k: 'work', role: 2, x: L.x0 + 20, z: L.z0 + 33, bx: L.x0 + 36, bz: L.z1 - 14 }, { k: 'post', role: 2, act: 'smoke', x: L.x1 - 42, z: L.z0 + 31.5, yaw: PI, name: 'Yard hand' });
   PARK.push({ x: L.x1 - 44, z: L.z0 + 34, yaw: PI / 2, lot: true, truck: true });
   navNode(L.cx - 1, CURB, L.cz + 5); navNode(L.x0 + 28, CURB, L.z0 + 38);
@@ -1282,6 +1285,29 @@ function genYard(L, t, flip, o) {
   boombox(X(60), L.z0 + 25, o.station);
   navNode(X(78), CURB, g); navNode(X(43), CURB, L.z1 - 2); navNode(X(46), CURB, g + 4); navNode(X(36), CURB, L.z0 + 28); navNode(X(66), CURB, L.z0 + 22);
 }
+// V — Calder Avenue plaza: two shop terraces, and between them Calder Savings & Trust, a lobby with a counter and a strongroom
+//     at the back behind a round vault door (the door itself, which opens, belongs to 106-heists.js)
+function genBank(L) {
+  terrace(L, 'n', { x0: L.x0 + 4 }); terrace(L, 's', { x0: L.x0 + 4 }); ground(L.x0, L.z0 + 21, L.x1, L.z1 - 21, 'plaza');
+  bench(L.x0 + 20, L.cz - 4, true); planter(L.x0 + 27, L.cz - 6, 1.5); planter(L.x0 + 33, L.cz + 6, 1.5);
+  addBox(L.x0 + 9, L.x0 + 13, CURB, CURB + 2.8, L.cz - 2, L.cz + 2, 'flat', { col: 0x2f5d3a, a: false }); sign('NEWS · COFFEE', 'gold', L.x0 + 11, CURB + 2.3, L.cz + 2.05, 3.6, .6, 's');
+  POI.push({ k: 'post', role: 1, x: L.x0 + 14, z: L.cz + .6, yaw: -PI / 2, name: 'Vendor' }, { k: 'browse', x: L.x0 + 15.7, z: L.cz + .6, yaw: PI / 2, cap: 2 });
+  const x0 = L.x0 + 40, x1 = L.x1 - 6, z0 = L.cz - 6.5, z1 = L.cz + 6.5, y = CURB, top = y + 5.4, t = .5, vx = x1 - 9, wc = { col: 0xdcd5c4 };
+  ground(x0, z0, x1, z1, 'tile');
+  wall('z', x0, x0 + t, z0, z1, y, top, [[L.cz - 1.6, L.cz + 1.6, 0, 3.3]], 'concrete', wc); wall('z', x1 - t, x1, z0, z1, y, top, null, 'concrete', wc);
+  wall('x', z0, z0 + t, x0 + t, x1 - t, y, top, null, 'concrete', wc); wall('x', z1 - t, z1, x0 + t, x1 - t, y, top, null, 'concrete', wc);
+  wall('z', vx, vx + .9, z0 + t, z1 - t, y, top, [[L.cz - 1.15, L.cz + 1.15, 0, 2.7]], 'concrete', { col: 0x8f959c });   // the strongroom wall, a round door's width open in it
+  addBox(x0 - .4, x1 + .4, top, top + .55, z0 - .4, z1 + .4, 'roof', { top: 'roof' });
+  addBox(x0 + 8, x0 + 9, y, y + 1.15, z0 + 2.5, z1 - 4.5, 'flat', { col: 0x6a4a32 }); deco(x0 + 7.9, x0 + 9.1, y + 1.15, y + 1.22, z0 + 2.4, z1 - 4.4, 0x2a2420);   // the counter
+  [[x0 + 3, z0 + 2], [x0 + 3, z1 - 2], [x0 + 14, z0 + 2], [x0 + 14, z1 - 2]].forEach(q => cyl(q[0], y, top, q[1], .32, 'concrete', 0xe8e2d2, { seg: 10 }));
+  for (let k = 0; k < 3; k++) addBox(x0 + 3 + k * 6, x0 + 5 + k * 6, top - .06, top - .02, L.cz - .5, L.cz + .5, 'glow', { nocol: true, col: 0xfff3d0 });   // lights in the ceiling
+  deco(vx + 1.4, x1 - 1, y, y + 2.2, z0 + .6, z0 + 1.2, 0x5a6066); deco(vx + 1.4, x1 - 1, y, y + 2.2, z1 - 1.2, z1 - .6, 0x5a6066);   // deposit boxes along the strongroom walls
+  [-2.4, 2.4].forEach(d => cyl(x0 - 1.4, y, y + 4.2, L.cz + d, .38, 'concrete', 0xece6d6, { seg: 12 }));
+  sign('CALDER SAVINGS & TRUST', 'white', x0 - .06, y + 4.3, L.cz, 12, 1.1, 'w');
+  BANK = { x0, x1, z0, z1, cz: L.cz, vx, door: { x: x0 - 3, z: L.cz }, vault: { x: vx - 1.1, z: L.cz }, top };
+  navNode(L.x0 + 6, CURB, L.cz + 5); navNode(L.x0 + 30, CURB, L.cz); navNode(x0 - 4, CURB, L.cz); navNode(x0 + 4, CURB, L.cz);
+  navNode(x0 - 2, CURB, L.z0 + 23.2); navNode(x1 + 2, CURB, L.z0 + 23.2); navNode(x0 - 2, CURB, L.z1 - 23.2); navNode(x1 + 2, CURB, L.z1 - 23.2); navNode(L.x1 - 2, CURB, L.cz);
+}
 // G — Uptown Market: a square of stalls under awnings, with a row of shops behind
 function genMarket(L) {
   ground(L.x0, L.z0, L.x1, L.z1, 'plaza');
@@ -1411,7 +1437,7 @@ function genMall(L) {
   wall('z', x0, x0 + t, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc); wall('z', x1 - t, x1, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc);
   FOOT.push([x0, z0, x1, z1, 'm']);
   sign('CALDER MALL', 'cyan', cx, y + 7.6, z0 - .06, 20, 2.6, 'n'); sign('CALDER MALL', 'cyan', cx, y + 7.6, z1 + .06, 20, 2.6, 's'); sign('CALDER MALL', 'cyan', x0 - .06, y + 7.6, cz, 16, 2.2, 'w'); sign('CALDER MALL', 'cyan', x1 + .06, y + 7.6, cz, 16, 2.2, 'e');
-  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); if (a[1] < CURB + 5) FRONTS.push({ x: a[0] + FACE[a[5]][0] * 1.6, z: a[2] + FACE[a[5]][1] * 1.6, name: t }); };   // ground-floor shops can be bought
+  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); if (a[1] < CURB + 5) FRONTS.push({ x: a[0] + FACE[a[5]][0] * 1.6, z: a[2] + FACE[a[5]][1] * 1.6, name: t, face: a[5], mall: true }); };   // ground-floor shops can be bought
   [[x0 + t, cx - 8, z0 + t, cz - 7], [cx + 8, x1 - t, z0 + t, cz - 7], [x0 + t, cx - 8, cz + 7, z1 - t], [cx + 8, x1 - t, cz + 7, z1 - t]].forEach((q, k) => {
     addBox(q[0], q[1], y, top - .1, q[2], q[3], 'shop', { tv: 5.2, tu: 8.2, col: 0xd9d2c4, faces: 15 });
     const west = k % 2 === 0, north = k < 2, fx = west ? q[1] : q[0], fz = north ? q[3] : q[2];                    // the two faces that look onto the concourses
@@ -1481,7 +1507,7 @@ function genLine() {
 /* ---------------------------------------------------------------------
    4d. Put the city together: one generator per block, then kerbs, lamps, parking and the walking graph.
    --------------------------------------------------------------------- */
-const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgJd', 'QhcwYiR'];   // one letter per block, west to east, north row first
+const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtVi', 'AwCkwwD', 'hpwwgJd', 'QhcwYiR'];   // one letter per block, west to east, north row first
 const RING = [];
 let mallLightAt = null;
 for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
@@ -1512,6 +1538,7 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
     case 'p': genProjects(L); break;
     case 'g': genGas(L); break;
     case 'c': genChurch(L); break;
+    case 'V': genBank(L); break;
     case 'L': terrace(L, 'n', { x0: L.x0 + 4 }); terrace(L, 's', { x0: L.x0 + 4 }); ground(L.x0, L.z0 + 21, L.x1, L.z1 - 21, 'plaza'); bench(L.x0 + 20, L.cz - 4, true); bench(L.x0 + 34, L.cz + 4, true); planter(L.x0 + 27, L.cz - 6, 1.5); planter(L.x0 + 50, L.cz + 6, 1.5);
       addBox(L.x0 + 9, L.x0 + 13, CURB, CURB + 2.8, L.cz - 2, L.cz + 2, 'flat', { col: 0x2f5d3a, a: false }); sign('NEWS · COFFEE', 'gold', L.x0 + 11, CURB + 2.3, L.cz + 2.05, 3.6, .6, 's');
       POI.push({ k: 'post', role: 1, x: L.x0 + 14, z: L.cz + .6, yaw: -PI / 2, name: 'Vendor' }, { k: 'browse', x: L.x0 + 15.7, z: L.cz + .6, yaw: PI / 2, cap: 2 }, { k: 'hang', x: L.x0 + 42, z: L.cz - 3, cap: 3 }, { k: 'hang', x: L.x1 - 14, z: L.cz + 5, cap: 3 });
@@ -2357,11 +2384,11 @@ let pickSeq = 0;
 function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
   // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
-  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag' || type === 'loot') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : type === 'loot' ? 0xffc83d : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
-  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' ? 1e9 : 40, g, amt: type === 'cash' ? (team | 0) * 100 : 0 }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
-  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' || type === 'loot' ? 1e9 : 40, g, amt: type === 'cash' || type === 'loot' ? (team | 0) * 100 : 0 }; /* loot: a heist's money bag (team: hundreds of dollars) */ if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag' && q.type !== 'loot'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
   return p;
 }
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }
@@ -2484,7 +2511,7 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
-  { const bp = bizPrompt(); if (bp) { prompt = bp; return; } }
+  { const bp = bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
@@ -2539,7 +2566,7 @@ function gunItems(pg) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash') SFX.cash(); } }
+    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot
@@ -3345,6 +3372,7 @@ function onEvent(e, mine) {
   else if (k === 'hw') { const z = ZONES[e[2]]; note(CREWS[e[3]].name + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
+  else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st') heistNews(e);
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
@@ -3699,7 +3727,7 @@ function evStart(E) { E.id = ++evtSeq; E.t0 = G.time; EVTS.push(E); GAME.ev('en'
 function evEnd(E, ok, amt, who) {
   const i = EVTS.indexOf(E); if (i < 0) return; EVTS.splice(i, 1); E.over = true;
   if (ok && amt) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
-  if (ok) humans().forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
+  if (ok) (E.k === 'smug' ? [E.owner] : humans()).forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
   (E.guards || []).forEach(g => { g.guardOf = false; g.until = G.time + 30; });
   GAME.ev('ed', E.id, EV_KINDS.indexOf(E.k), ok ? 1 : 0, amt | 0, GAME.ref(who), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone);
 }
@@ -3870,9 +3898,14 @@ function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
+    else if (kind === 'bank' || kind === 'jewel') { banner(I.name, kind === 'bank' ? 'Calder Savings on Calder Avenue · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'smug') return;
     else note(I.name + ' · ' + areaName(e[4], e[5]) + ' · ' + I.how, 'g'); }
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
+    if (kind === 'smug') { if (who === P) { if (ok) { banner('Product sold', 'The buyer paid · check your cash', 2.8, 'gold'); SFX.streak(); } else banner('Run failed', 'The product is gone', 2.4); } return; }
+    if ((kind === 'bank' || kind === 'jewel') && !ok) { banner(I.name, 'It fell apart · no payout', 2.6); return; }
+    if ((kind === 'bank' || kind === 'jewel') && ok) { banner(kind === 'bank' ? 'Bank job done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
     else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
@@ -3885,12 +3918,13 @@ function evNews(e, mine) {
 }
 // --- what the host says about its events, and what a joined player makes of it
 const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : 0,
-  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.team === undefined ? -1 : E.team]);
+  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
+  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]);
 function evFromHost(list) {
   const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
   (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
-    if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+    if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null;
+    if (k === 'bank') { E.stage = q[5]; if (E.stage === 1) E.drill = q[6] / 100; else E.take = q[6] * 100; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
 }
 // where an event's marker belongs on this machine: on the thing itself when it can be seen, else where the host says
 function evSpot(E, o) {
@@ -3900,7 +3934,7 @@ function evSpot(E, o) {
   else if (E.k === 'hit') { const b = botById(ref); if (b && !b.dead) { o.x = b.x; o.z = b.z; o.y = b.y; } }
   return o;
 }
-const evMine = E => (E.k === 'stash' && E.carrier === P) || (E.k === 'chop' && P.car && (E.car ? E.car === P.car : P.car.id === E.ref));
+const evMine = E => (E.k === 'stash' && E.carrier === P) || (E.k === 'chop' && P.car && (E.car ? E.car === P.car : P.car.id === E.ref)) || (E.k === 'smug' && (E.owner === P || E.ref === GAME.ref(P)));
 // --- markers: a tall beam in the event's colour with its sign floating above, and the race's checkpoints as rings on the road
 const evMarks = [0, 1, 2, 3].map(() => { const g = new T.Group(), bm = new T.Mesh(new T.CylinderGeometry(.55, .55, 60, 8, 1, true), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .22, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false })); bm.position.y = 30; g.add(bm);
   const cv = texCanvas(128), sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, depthTest: false, fog: false })); sp.renderOrder = 8; g.add(sp); g.visible = false; scene.add(g); return { g, bm, sp, cv, id: 0, kind: '', x: 0, z: 0 }; });
@@ -3994,6 +4028,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
+  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
@@ -4011,7 +4046,7 @@ function phoneItems(pg) {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
-  out.push(page('Online · cars', 'cars'));
+  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'));
   return out;
 }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
@@ -4134,9 +4169,168 @@ function nitrous(c, dt, want) {
 // --- each second or so: business marks, the car you were promised, the phone menu kept current
 function careerTick(dt) {
   PH.tickT = (PH.tickT || 0) - dt; if (PH.tickT > 0) return; PH.tickT = .5;
-  bizMarks();
+  bizMarks(); labTick();
   if (P.pvAsk && G.time > P.pvAsk && G.state === 'playing' && (AUTH() || NET.slot > 0)) { P.pvAsk = 0; sendPV(); }
   if (shopOpen && shopOpen.kind === 'phone') renderShop();
+}
+
+/* =====================================================================
+   11c. HEISTS AND THE PRODUCT TRADE — the bank on Calder Avenue and the jewelers in the mall, done by everyone in the session
+        together; and a lab of your own whose product you smuggle across town to a buyer. Started from the phone (or the lab's
+        own door). The machine that runs the world runs them as events, so they are in everyone's list and on everyone's map.
+   ===================================================================== */
+const JOBS = { bank: { name: 'Bank job', cost: 2500, rank: 4, cool: 600, bag: 3500 }, jewel: { name: 'Jewelry store', cost: 1000, rank: 2, cool: 420 } };
+const LAB = { price: 25000, cap: 20, unit: 600, hour: 100 };   // a lab: what it costs, what it holds, what a unit sells for, seconds to make one
+EV_KINDS.push('bank', 'jewel', 'smug');
+Object.assign(EV_INFO, {
+  bank:  { name: 'Bank job', icon: '$', col: '#ffc83d', hex: 0xffc83d, how: 'Calder Savings: drill the vault, bag the cash, lose the police, reach the drop' },
+  jewel: { name: 'Jewelry store', icon: '◇', col: '#9fd0ff', hex: 0x9fd0ff, how: 'Gold Rush Jewelers in the mall: smash the cases and get out' },
+  smug:  { name: 'Smuggling run', icon: '▣', col: '#c8ff7d', hex: 0xc8ff7d, how: 'Drive the van to the buyer' },
+});
+CFG.rp.job.bank = 1000; CFG.rp.job.jewel = 500; CFG.rp.job.smug = 300;
+const zoneById = id => ZONES.find(z => z.id === id);
+// the drop, or the buyer: somewhere a long way across town from where the job was
+function dropFar(x, z) { const all = [CHOP, zoneById('E'), zoneById('J'), zoneById('I'), zoneById('B'), zoneById('A')].filter(Boolean).map(q => ({ x: q.x, z: q.z })), far = all.filter(q => hyp(q.x - x, q.z - z) > 230); const list = far.length ? far : all; return list[(rand() * list.length) | 0]; }
+const jobOn = () => EVTS.find(E => E.k === 'bank' || E.k === 'jewel') || null;
+G.jobT = {};
+// the last leg of a heist: anyone in the crew at the drop, with the police off them, ends it and everyone is paid a share
+function dropLeg(E) {
+  const hs = humans().filter(h => !h.dead), h = hs.find(q => hyp(q.x - E.x, q.z - E.z) < 10); if (!h) return;
+  if (h.heat > 0) { if (G.time - (E.warnT || -9) > 6) { E.warnT = G.time; GAME.ev('hj', E.id, 9); } return; }
+  G.jobT[E.k] = G.time + JOBS[E.k].cool; evEnd(E, true, Math.round(E.take / Math.max(1, humans().length) / 10) * 10, h);
+}
+function jobFail(E) { (E.bags || []).forEach(b => { if (!b.gone) removePickup(b); }); G.jobT[E.k] = G.time + JOBS[E.k].cool / 2; evEnd(E, false); }
+
+// --- the bank: get in and the alarm goes; stand at the vault while the drill runs; bag the cash; get it to the drop clean
+EV_START.bank = () => {
+  if (!BANK || jobOn() || G.time < (G.jobT.bank || 0)) return false;
+  evStart({ k: 'bank', stage: 0, x: BANK.door.x, z: BANK.door.z, until: G.time + 900, drill: 0, take: 0, bags: [], guards: [] }); return true;
+};
+const inBank = h => !!BANK && h.x > BANK.x0 && h.x < BANK.x1 && h.z > BANK.z0 && h.z < BANK.z1 && h.y < 4;
+EV_TICK.bank = E => {
+  const hs = humans().filter(h => !h.dead);
+  if (E.stage === 0) { if (hs.some(inBank)) { E.stage = 1; E.x = BANK.vault.x; E.z = BANK.vault.z;
+      hs.forEach(h => { if (hyp(h.x - BANK.door.x, h.z - BANK.door.z) < 80) GAME.crime(h, 60, 3); });
+      for (let k = 0; k < 3; k++) { const g = spawnBot(TEAM_COP, BANK.x0 + 4 + k * 2.6, CURB, BANK.cz + (k - 1) * 3.5, { temp: true, wpn: k === 1 ? 'smg' : 'pistol', name: 'Guard' }); if (g) { g.until = G.time + 400; g.skill = 1.15; g.hp = 130; E.guards.push(g); } }
+      GAME.ev('hj', E.id, 1); } }
+  else if (E.stage === 1) { const at = hs.filter(h => hyp(h.x - BANK.vault.x, h.z - BANK.vault.z) < 2.8);
+    if (at.length) { E.drill = Math.min(1, E.drill + .25 / 45 * (1 + .3 * (at.length - 1))); hs.forEach(h => { if (inBank(h)) GAME.crime(h, 0, 3); }); }
+    if (E.drill >= 1) { E.stage = 2; E.x = (BANK.vx + BANK.x1) / 2; E.z = BANK.cz; E.openT = G.time; const n = Math.min(8, 2 + 2 * hs.length);
+      for (let k = 0; k < n; k++) { const p = addPickup('loot', BANK.vx + 1.9 + (k % 4) * 1.35, CURB + .25, BANK.cz - 1.3 + Math.floor(k / 4) * 2.6, JOBS.bank.bag / 100); p.ev = E; E.bags.push(p); }
+      GAME.ev('hj', E.id, 2); } }
+  else if (E.stage === 2) { if (!E.bags.some(b => !b.gone) || (G.time - E.openT > 75 && E.take > 0)) { E.bags.forEach(b => { if (!b.gone) removePickup(b); }); E.stage = 3; const d = dropFar(BANK.door.x, BANK.door.z); E.x = d.x; E.z = d.z; GAME.ev('hj', E.id, 3); } }
+  else if (E.stage === 3) dropLeg(E);
+  if (G.time > E.until) jobFail(E);
+};
+GAME.takeLoot = (p, who) => { if (p.gone) return; removePickup(p); const E = p.ev; if (E && !E.over) { E.take += p.amt; GAME.ev('lt', E.id, GAME.ref(who), p.amt, E.take); } };
+// the strongroom door: shut and solid until the drill is through, then it swings open
+const vaultDoor = (() => { if (!BANK) return null; const g = new T.Group(), m = new T.Mesh(new T.CylinderGeometry(1.25, 1.25, .5, 24), new T.MeshLambertMaterial({ color: 0x9aa2aa })); m.rotation.z = PI / 2; m.position.set(0, 0, 1.15); g.add(m);
+  const hub = new T.Mesh(new T.CylinderGeometry(.35, .35, .7, 12), new T.MeshLambertMaterial({ color: 0x6a7078 })); hub.rotation.z = PI / 2; hub.position.set(-.1, 0, 1.15); g.add(hub);
+  g.position.set(BANK.vx + .45, CURB + 1.3, BANK.cz - 1.15); scene.add(g); BANK.vbox = solid(BANK.vx, BANK.vx + .9, CURB, CURB + 2.7, BANK.cz - 1.15, BANK.cz + 1.15); return g; })();
+let vaultA = 0;
+function heistVisuals(dt) {
+  if (vaultDoor) { const E = EVTS.find(q => q.k === 'bank'), open = !!E && E.stage >= 2; vaultA = lerp(vaultA, open ? 1.75 : 0, Math.min(1, dt * 1.6)); vaultDoor.rotation.y = -vaultA;
+    BANK.vbox.off = vaultA > .6; }   // shut, it is part of the wall
+  jewelCases();
+}
+
+// --- the jewelers: smash the cases (the alarm goes at the first), then get the take to the fence clean
+const JEWEL = (() => { const f = FRONTS.find(q => q.name === 'GOLD RUSH JEWELERS' && q.mall) || FRONTS.filter(q => q.mall).sort((p, q) => hyp(p.x - zoneById('C').x, p.z - zoneById('C').z) - hyp(q.x - zoneById('C').x, q.z - zoneById('C').z))[0]; if (!f) return null;
+  const n = FACE[f.face], tx = -n[1], tz = n[0], cases = [];
+  for (let k = 0; k < 5; k++) { const o = (k - 2) * 1.5, x = f.x + n[0] * 1.2 + tx * o, z = f.z + n[1] * 1.2 + tz * o, g = new T.Group();
+    const base = new T.Mesh(new T.BoxGeometry(1.1, .8, .6), new T.MeshLambertMaterial({ color: 0x2a2620 })), glass = new T.Mesh(new T.BoxGeometry(1.06, .4, .56), new T.MeshLambertMaterial({ color: 0xbfe6ff, transparent: true, opacity: .32 })), gold = new T.Mesh(new T.BoxGeometry(.7, .08, .3), new T.MeshLambertMaterial({ color: 0xffc83d, emissive: 0x5a4210 }));
+    base.position.y = .4; glass.position.y = 1.0; gold.position.y = .85; g.add(base, glass, gold); g.position.set(x, CURB, z); g.rotation.y = Math.atan2(tx, tz); scene.add(g); cases.push({ x, z, glass, gold }); solid(x - .45, x + .45, CURB, CURB + .8, z - .45, z + .45); }
+  return { door: { x: f.x, z: f.z }, cases, name: titleCase(f.name) }; })();
+function jewelCases() { if (!JEWEL) return; const E = EVTS.find(q => q.k === 'jewel'), m = E ? E.cases | 0 : 0; JEWEL.cases.forEach((c, i) => { const broke = !!(m >> i & 1); c.glass.visible = !broke; c.gold.visible = !broke; }); }
+EV_START.jewel = () => { if (!JEWEL || jobOn() || G.time < (G.jobT.jewel || 0)) return false; evStart({ k: 'jewel', stage: 1, x: JEWEL.door.x, z: JEWEL.door.z, until: G.time + 600, take: 0, cases: 0, alarm: false }); return true; };
+GAME.smash = (i, who) => {
+  const E = EVTS.find(q => q.k === 'jewel'); if (!E || E.stage !== 1 || (E.cases >> i & 1) || !JEWEL.cases[i]) return;
+  E.cases |= 1 << i; const v = Math.round(lerp(1200, 2000, rand()) / 50) * 50; E.take += v;
+  if (!E.alarm) { E.alarm = true; E.alarmT = G.time; humans().forEach(h => { if (hyp(h.x - JEWEL.door.x, h.z - JEWEL.door.z) < 70) GAME.crime(h, 40, 2); }); }
+  GAME.ev('js', E.id, i, GAME.ref(who), v, E.take);
+};
+EV_TICK.jewel = E => {
+  if (E.stage === 1 && E.alarm && (E.cases === 31 || G.time - E.alarmT > 50)) { E.stage = 3; const d = dropFar(JEWEL.door.x, JEWEL.door.z); E.x = d.x; E.z = d.z; GAME.ev('hj', E.id, 3); }
+  else if (E.stage === 3) dropLeg(E);
+  if (G.time > E.until) jobFail(E);
+};
+function jewelPrompt() {
+  const E = EVTS.find(q => q.k === 'jewel'); if (!E || (E.stage | 0) !== 1 || !JEWEL) return null;
+  for (let i = 0; i < JEWEL.cases.length; i++) { const c = JEWEL.cases[i]; if ((E.cases >> i & 1) || hyp(c.x - P.x, c.z - P.z) > 1.5) continue;
+    return { text: '<b>F</b>Smash the case', act: () => { SFX.crash(c.x, CURB + 1, c.z, 4); FX.sparks(c.x, CURB + 1, c.z, 6); if (AUTH()) GAME.smash(i, P); else { NET.req('js', i); E.cases |= 1 << i; } } }; }
+  return null;
+}
+
+// --- a lab of your own: it makes product, a unit every in-game hour up to twenty; when you want the money, a van takes it
+//     across town to a buyer. Rival crews hear about it and come for the van.
+LABS.forEach((L, i) => { L.name = (L.j <= 1 ? 'North' : L.j >= 4 ? 'South' : 'River') + ' side lab'; L.idx = i; L.m = mark(L.x, L.z, 0xc8ff7d, .8); });
+function labTick() {
+  const L = P.lab; if (!L || G.state !== 'playing' || G.phase !== 'play') { if (L) L.at = G.time; return; }
+  L.prog = (L.prog || 0) + Math.max(0, G.time - (L.at === undefined ? G.time : L.at)) / LAB.hour; L.at = G.time;
+  while (L.prog >= 1) { L.prog -= 1; if (L.stock < LAB.cap) { L.stock++; if (L.stock === LAB.cap) note('Your lab is full · smuggle the product to get paid', 'g'); } }
+}
+const smugMine = () => EVTS.find(E => E.k === 'smug' && (E.owner === P || E.ref === GAME.ref(P))) || null;
+function buyLab(i) { if (P.lab || !LABS[i] || !payCash(LAB.price)) return; P.lab = { site: i, stock: 0, prog: 0, at: G.time }; addRP(CFG.rp.buy * 2); saveGame(); SFX.buy(); banner(LABS[i].name, 'Yours · it makes a unit of product every hour, twenty at most', 3, 'gold'); closeShop(); }
+function startSmuggle() {
+  const L = P.lab; if (!L || L.stock < 3 || smugMine()) { SFX.deny(); return; }
+  const units = L.stock; L.stock = 0; L.prog = 0; saveGame(); closeShop();
+  if (AUTH()) { if (!EV_START.smug(P, L.site, units)) { L.stock = units; note('No van could get to the lab · try again in a moment', 'g'); } } else NET.req('sm', L.site, units);
+  banner('Smuggling run', units + ' units in the van at the ' + LABS[L.site].name + ' · drive it to the buyer', 3, 'gold');
+}
+EV_START.smug = (who, site, units) => {
+  const L = LABS[site]; if (!L || !who) return false; units = clamp(units | 0, 1, LAB.cap);
+  const c = spawnCar('van', L.park.x, L.park.z, L.park.yaw, { color: 0x3f4a3a }); if (!c) return false; c.temp = true; c.smug = true;
+  const d = dropFar(L.x, L.z); evStart({ k: 'smug', owner: who, units, value: units * LAB.unit, car: c, x: c.x, z: c.z, drop: d, until: G.time + 480, tailT: G.time + 18 }); return true;
+};
+EV_TICK.smug = E => {
+  const c = E.car; if (!c || c.gone || c.wreck || c.burn > 0) return evEnd(E, false, 0, E.owner);
+  const dr = c.occ[0], human = !!dr && (dr === P || dr.kind === 'rp'); if (human) { E.x = E.drop.x; E.z = E.drop.z; } else { E.x = c.x; E.z = c.z; }
+  if (human && !E.tailed && G.time > E.tailT) { E.tailed = true; const ai = aiCrews(); if (ai.length) spawnHitSquad(dr, ai[(rand() * ai.length) | 0], 3); GAME.ev('st', E.id); }   // word got out: somebody wants the van
+  if (human && hyp(c.x - E.drop.x, c.z - E.drop.z) < 11 && carSpeed(c) < 5) { GAME.pay(E.owner, E.value); c.smug = false; return evEnd(E, true, 0, E.owner); }
+  if (G.time > E.until) evEnd(E, false, 0, E.owner);
+};
+function labPrompt() {
+  for (let i = 0; i < LABS.length; i++) { const L = LABS[i]; if (hyp(L.x - P.x, L.z - P.z) > 2.4 || Math.abs(P.y - CURB) > 1.2) continue;
+    if (P.lab && P.lab.site === i) return P.lab.stock >= 3 && !smugMine() ? { text: '<b>F</b>Your lab · ' + P.lab.stock + ' of ' + LAB.cap + ' · smuggle it for $' + (P.lab.stock * LAB.unit).toLocaleString('en-US'), act: startSmuggle } : { text: 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap + (smugMine() ? ' · a run is on' : ' · needs three units for a run') };
+    if (P.lab) return { text: 'You already run the ' + LABS[P.lab.site].name };
+    return P.cash >= LAB.price ? { text: '<b>F</b>Set up a lab here · $' + LAB.price.toLocaleString('en-US'), act: () => buyLab(i) } : { text: 'A lab here costs $' + LAB.price.toLocaleString('en-US') }; }
+  return null;
+}
+
+// --- the phone's pages for these: jobs to start, the lab
+function jobItems() {
+  const on = jobOn(), out = [];
+  Object.keys(JOBS).forEach(k => { const J = JOBS[k];
+    out.push(on ? { label: J.name, sub: on.k === k ? 'On now · see the job line at the top' : 'Another job is on', off: true } : J.rank > (P.rank || 1) ? { label: J.name, sub: 'Opens at rank ' + J.rank, off: true, lock: 'Opens at rank ' + J.rank }
+      : { label: J.name, sub: (k === 'bank' ? 'Drill the vault at Calder Savings · everyone in the session goes in' : 'Smash the cases at ' + (JOBS && JEWEL ? JEWEL.name : 'the jewelers') + ' · quick and loud') + ' · setup', cost: J.cost, act: () => startJob(k) }); });
+  return out.concat([back()]);
+}
+function startJob(k) { const J = JOBS[k]; if (jobOn() || !payCash(J.cost)) return; closeShop(); if (AUTH()) { if (!EV_START[k]()) { P.spent -= J.cost; P.cash += J.cost; gain(J.cost); note(J.name + ' is not ready yet · try again later', 'g'); } } else NET.req('hs', k); SFX.tick(); }
+function labItems() {
+  if (!P.lab) return LABS.map((L, i) => ({ label: L.name, sub: 'Set up a lab here: it makes product you smuggle to a buyer', cost: LAB.price, act: () => buyLab(i) })).concat([back()]);
+  const L = P.lab, run = smugMine();
+  return [{ label: LABS[L.site].name, sub: L.stock + ' of ' + LAB.cap + ' units · worth $' + (L.stock * LAB.unit).toLocaleString('en-US') + ' · makes one every hour', off: true, own: true },
+    run ? { label: 'Smuggle', sub: 'A run is on now', off: true } : L.stock < 3 ? { label: 'Smuggle', sub: 'Needs three units at least', off: true } : { label: 'Smuggle the product', sub: 'A van at the lab takes it across town to a buyer', act: startSmuggle }, back()];
+}
+// the line at the top that says what the job wants now
+function jobLine() {
+  const E = EVTS.find(q => q.k === 'bank' || q.k === 'jewel' || (q.k === 'smug' && (q.owner === P || q.ref === GAME.ref(P)))); if (!E) return '';
+  const st = E.stage | 0, cash = n => '$' + Math.round(n).toLocaleString('en-US');
+  if (E.k === 'bank') return 'Bank job · ' + (st === 0 ? 'get inside Calder Savings' : st === 1 ? 'hold the vault while the drill runs · ' + Math.round((E.drill === undefined ? (E.aux | 0) / 100 : E.drill) * 100) + '%' : st === 2 ? 'bag the cash · ' + cash(E.take === undefined ? (E.aux | 0) * 100 : E.take) : 'lose the police, then reach the drop');
+  if (E.k === 'jewel') { const m = E.cases | 0; let n = 0; for (let i = 0; i < 5; i++) if (m >> i & 1) n++; return 'Jewelry store · ' + (st === 1 ? 'smash the cases · ' + n + ' of 5 · ' + cash(E.take || 0) : 'lose the police, then reach the fence · ' + cash(E.take || 0)); }
+  return 'Smuggling run · ' + (P.car && P.car.smug ? 'get the van to the buyer' : 'get in the van') + ' · ' + cash((E.units || 0) * LAB.unit);
+}
+// --- what the jobs say as they go, on every machine
+function heistNews(e) {
+  const k = e[1], E = EVTS.find(q => q.id === e[2]);
+  if (k === 'hj') { const st = e[3];
+    if (st === 1) { banner('The alarm is going', 'Get to the vault and hold it while the drill runs', 3, 'gold'); SFX.star(); }
+    else if (st === 2) { banner('The vault is open', 'Bag the cash · a few seconds each', 2.8, 'gold'); SFX.cap(true); }
+    else if (st === 3) { banner(E && E.k === 'jewel' ? 'Get it to the fence' : 'Get the money to the drop', 'Lose the police first · the drop is on your map', 3, 'gold'); SFX.tick(); }
+    else if (st === 9) note('Lose the police before the drop · they followed you here', 'c'); }
+  else if (k === 'lt') { const a = GAME.unref(e[3]); if (a === P) banner('+$' + e[4].toLocaleString('en-US'), 'In the bag · $' + e[5].toLocaleString('en-US') + ' so far', 1.6, 'gold'); else note((a ? nameOf(a) : 'Someone') + ' bagged $' + e[4].toLocaleString('en-US'), 'g'); if (E) E.take = e[5]; SFX.cash(); }
+  else if (k === 'js') { const a = GAME.unref(e[4]); if (E) { E.cases |= 1 << e[3]; E.take = e[6]; } if (a === P) banner('+$' + e[5].toLocaleString('en-US'), 'Take so far $' + e[6].toLocaleString('en-US'), 1.4, 'gold'); if (JEWEL && JEWEL.cases[e[3]]) { const c = JEWEL.cases[e[3]]; SFX.crash(c.x, CURB + 1, c.z, 3); } }
+  else if (k === 'st') { if (E && (E.owner === P || E.ref === GAME.ref(P))) { banner('They know about the van', 'A crew is coming for it · keep moving', 2.6, 'gold'); SFX.star(); } }
 }
 
 /* =====================================================================
@@ -4271,7 +4465,7 @@ function decCars(s, pk) {
   for (let i = cars.length - 1; i >= 0; i--) if (!live[cars[i].id]) { if (P.car === cars[i]) { P.car = null; setHorn(false); radioVolume(0); } removeCar(cars[i]); }
   for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.car && (r.car.gone || r.car.occ[r.seat] !== r)) r.car = null; }
 }
-const PICK_TY = { chain: 'c', cash: '$', bag: 'b' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag' };
+const PICK_TY = { chain: 'c', cash: '$', bag: 'b', loot: 'l' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag', l: 'loot' };
 const encPicks = () => pickups.map(p => B36(p.id, 3) + (PICK_TY[p.type] || String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : B36(p.team, 1))).join('');
 function decPicks(s) {
   const live = {};
@@ -4298,7 +4492,10 @@ NET.host = dt => {
       else if (k === 'lw') GAME.clearHeat(r);
       else if (k === 'jb') GAME.forceJob();
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
-      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else removePickup(p); } }
+      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else if (p.type === 'loot') GAME.takeLoot(p, r); else removePickup(p); } }
+      else if (k === 'hs') { if (EV_START[q[2]] && JOBS[q[2]]) EV_START[q[2]](); }
+      else if (k === 'js') GAME.smash(q[2] | 0, r);
+      else if (k === 'sm') EV_START.smug(r, q[2] | 0, q[3] | 0);
       else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4], pw = clamp((+q[5] || 10) / 10, .5, 2), kind = BOOM[q[6]] ? q[6] : 'nade'; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(r)); explode(x, y + .3, z, r, pw, kind); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
@@ -4405,7 +4602,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-5'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-6'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();
@@ -4559,7 +4756,7 @@ function updateHud(dt) {
   { const gs = AUTH() ? CREWS.map((c, t) => skullsOf(P.gn ? P.gn[t] : 0)).join('') : P.gs || ''; if (hudCache.gs !== gs) { const was = hudCache.gs || ''; hudCache.gs = gs; const e = $('h-gang'); e.textContent = ''; let any = false;
       for (let t = 0; t < NCREW; t++) { const n = +gs[t] || 0; if (!n) continue; any = true; const sp = document.createElement('span'); inkOf(sp, t); sp.title = CREWS[t].name; sp.textContent = '☠\uFE0E'.repeat(n); e.appendChild(sp); if (n > (+was[t] || 0) && n >= 2 && !P.dead) note(CREWS[t].name + ' notoriety · ' + n + ' skulls', 'k' + t); }
       e.hidden = !any; } }
-  { const on = RACE.on; if (hudCache.race !== on) { hudCache.race = on; $('h-race').hidden = !on; } if (on) setHud('h-race', 'Race · checkpoint ' + (RACE.i + 1) + ' of ' + RACE.cps.length + ' · ' + Math.max(0, Math.ceil(RACE.left)) + 's'); }
+  { const tx = RACE.on ? 'Race · checkpoint ' + (RACE.i + 1) + ' of ' + RACE.cps.length + ' · ' + Math.max(0, Math.ceil(RACE.left)) + 's' : G.state === 'menu' ? '' : jobLine(), on = !!tx; if (hudCache.race !== on) { hudCache.race = on; $('h-race').hidden = !on; } if (on) setHud('h-race', tx); }   // a race, or whatever the job on now wants
   evlT -= dt; if (evlT <= 0) { evlT = .25; drawEventList(); }
   radarT -= dt; if (radarT <= 0) { radarT = 1 / 30; drawRadar(); if (!$('bigmap').hidden) drawBigMap(); }
   if (DBG.stats) setHud('h-dev', `fps ${DBG.fps.toFixed(0)}  calls ${renderer.info.render.calls}  tris ${(renderer.info.render.triangles / 1000).toFixed(0)}k\nbots ${bots.length}  cars ${cars.length}  people ${chars.length}\nnet ${NET.mode || 'solo'}  ${NET.bytes} B  slot ${NET.slot}\npos ${P.x.toFixed(1)} ${P.y.toFixed(1)} ${P.z.toFixed(1)}  ${G.tod.toFixed(1)}h`); else setHud('h-dev', '');
@@ -4767,7 +4964,7 @@ function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save')
 function saveData() {
   const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
   return { v: 4, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null,
-    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0 };
+    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0, lab: P.lab ? [P.lab.site, P.lab.stock] : null };
 }
 function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
 function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); SAVE.lastR = Math.round(P.rp || 0); writeSave(saveData()); }
@@ -4806,6 +5003,8 @@ const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
+  P.lab = sv && Array.isArray(sv.lab) && LABS[sv.lab[0] | 0] ? { site: sv.lab[0] | 0, stock: clamp(sv.lab[1] | 0, 0, LAB.cap), prog: 0, at: G.time } : null;
+  if (P.lab && sv.t) { const made = Math.floor(Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6) * 2); if (made > 0) { const was = P.lab.stock; P.lab.stock = Math.min(LAB.cap, was + made); if (P.lab.stock > was) P.hints.unshift([4.5, 'Your lab made ' + (P.lab.stock - was) + ' units while you were away']); } }   // two units an hour while you are away
   P.rp = sv ? clamp(Math.round(+sv.rp || 0), 0, 9e7) : 0; P.rank = rankOf(P.rp); P.biz = new Set(sv && Array.isArray(sv.b) ? sv.b.map(String) : []); P.pv = sv && pvOk(sv.pv) ? sv.pv : null; P.pvAsk = P.pv ? G.time + 2.5 : 0; P.garage = null;
   let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); });
       BIZ.forEach(b => { const q = sv.z[b.hood]; if (P.biz.has(b.key) && q && q[0] === sv.cr) per += b.pay; }); away = Math.round(per * CFG.offline.rate * hrs / 10) * 10; } }   // businesses on turf the crew still held kept trading too
@@ -4926,7 +5125,7 @@ function visuals(dt, now) {
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
-  updateLife(dt); updateEventMarks(dt); careerTick(dt);
+  updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -4950,7 +5149,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

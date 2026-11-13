@@ -33,7 +33,7 @@ function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save')
 function saveData() {
   const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
   return { v: 4, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null,
-    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0 };
+    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0, lab: P.lab ? [P.lab.site, P.lab.stock] : null };
 }
 function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
 function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); SAVE.lastR = Math.round(P.rp || 0); writeSave(saveData()); }
@@ -72,6 +72,8 @@ const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
+  P.lab = sv && Array.isArray(sv.lab) && LABS[sv.lab[0] | 0] ? { site: sv.lab[0] | 0, stock: clamp(sv.lab[1] | 0, 0, LAB.cap), prog: 0, at: G.time } : null;
+  if (P.lab && sv.t) { const made = Math.floor(Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6) * 2); if (made > 0) { const was = P.lab.stock; P.lab.stock = Math.min(LAB.cap, was + made); if (P.lab.stock > was) P.hints.unshift([4.5, 'Your lab made ' + (P.lab.stock - was) + ' units while you were away']); } }   // two units an hour while you are away
   P.rp = sv ? clamp(Math.round(+sv.rp || 0), 0, 9e7) : 0; P.rank = rankOf(P.rp); P.biz = new Set(sv && Array.isArray(sv.b) ? sv.b.map(String) : []); P.pv = sv && pvOk(sv.pv) ? sv.pv : null; P.pvAsk = P.pv ? G.time + 2.5 : 0; P.garage = null;
   let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); });
       BIZ.forEach(b => { const q = sv.z[b.hood]; if (P.biz.has(b.key) && q && q[0] === sv.cr) per += b.pay; }); away = Math.round(per * CFG.offline.rate * hrs / 10) * 10; } }   // businesses on turf the crew still held kept trading too
@@ -192,7 +194,7 @@ function visuals(dt, now) {
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
-  updateLife(dt); updateEventMarks(dt); careerTick(dt);
+  updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -216,7 +218,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);
