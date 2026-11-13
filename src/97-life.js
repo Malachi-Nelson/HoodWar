@@ -149,6 +149,9 @@ const SAY = {
   ball: ['Shoot it!', 'Nice shot.', 'My ball.', 'Game point.', 'Too easy.'],
   work: ['Coming through.', 'Watch your feet.', 'Heavy one.'],
   bump: ['Hey!', 'Watch it!', 'Easy!'],
+  rain: ['Of course it rains today.', 'Gonna pour all night.', 'I just did my hair!', 'Should have brought a coat.', 'Look at this weather.', 'Soaked. Great.'],
+  storm: ['Did you hear that?', 'Get inside!', 'That one was close!', 'Lights are gonna go out.'],
+  fog: ['Can barely see the lake.', 'Fog rolled in quick.', 'Like soup out here.'],
 };
 const barks = []; for (let i = 0; i < 5; i++) { const c = texCanvas(384, 64), tex = new T.CanvasTexture(c), sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0, fog: false })); sp.visible = false; sp.renderOrder = 6; scene.add(sp); barks.push({ c, tex, sp, t: 0, who: null }); }
 function say(who, kind, css, gap) {
@@ -168,6 +171,7 @@ function updateBarks(dt) {
   for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.dead || b.car || b.knock > .5) { b.aimWas = 0; continue; } const d = hyp(b.x - P.x, b.z - P.z), up = b.aim > .5 && !b.aimWas; b.aimWas = b.aim > .5 ? 1 : 0;
     if (d > 26 || Math.abs(b.y - P.y) > 3) continue;
     if (b.team === TEAM_CIV) {
+      if (b.robbed && d < 30) { say(b, 'snatch', '#ffb3c8', 5); continue; }
       if (b.act === ACT.handsup) { if (d < 9) say(b, 'hands', '#ffd9a0', 5); }
       else if (b.act === ACT.cower) { if (d < 12) say(b, 'cower', '#f2efe6', 7); }
       else if (b.spd > 5 && d < 16) { if (rand() < .35) say(b, 'run', '#f2efe6', 9); }
@@ -176,7 +180,8 @@ function updateBarks(dt) {
       else if (b.role === ROLE.staff && d < 5.5) say(b, 'vendor', '#ffe8b0', 22);
       else if (b.act === ACT.carry && d < 4) say(b, 'work', '#f2efe6', 20);
       else if (b.act === ACT.ball && d < 11 && rand() < .12) say(b, 'ball', '#f2efe6', 16);
-      else if (b.act === ACT.talk && d < 7 && rand() < .1) say(b, 'chat', '#f2efe6', 18);
+      else if (b.act === ACT.talk && d < 7 && rand() < .1) say(b, WX.k === 3 && rand() < .5 ? 'storm' : WX.rain > .3 && rand() < .5 ? 'rain' : WX.fog > .6 && rand() < .4 ? 'fog' : 'chat', '#f2efe6', 18);
+      else if (WX.rain > .4 && b.spd > 1.8 && d < 8 && rand() < .05) say(b, WX.k === 3 && rand() < .4 ? 'storm' : 'rain', '#f2efe6', 25);
       else if (d < 1.1 && P.spd > 5.5 && b.spd < 3) say(b, 'bump', '#f2efe6', 6);
     } else if (b.team === TEAM_COP) { if (up && P.heat > 0 && d < 24) say(b, 'cop', '#9db8ff', 8); }
     else if (b.team === P.team) { if (!P.car && d < 5 && b.act > 0 && rand() < .12) say(b, 'crew', lite(b.team), 30); }

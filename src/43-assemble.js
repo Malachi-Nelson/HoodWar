@@ -96,6 +96,7 @@ function raiseProp(p) { if (!p.down) return; p.down = 0; p.falling = false; p.bo
 function updateProps(dt) { for (let i = 0; i < PROPS.length; i++) { const p = PROPS[i]; if (!p.falling) continue; p.down = Math.min(1, p.down + dt * 3.2); if (p.down >= 1) p.falling = false; propPlace(p); } }
 function resetProps() { PROPS.forEach(raiseProp); }
 
+genBusStops();   // see 42.7-transit.js
 finishStatic();
 drawSigns();
 if (document.fonts && document.fonts.load) Promise.all([document.fonts.load('40px "Anton"'), document.fonts.load('46px "Permanent Marker"')]).then(drawSigns, () => {});

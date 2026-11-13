@@ -147,7 +147,7 @@ function devSet(k, v) {
   DBG[k] = v; const el = $(DEV_FLAGS[k]); if (el) el.checked = v;
   if (k === 'nav') { if (v && !navLines) { const pts = []; NAV.forEach(n => n.e.forEach(e => { if (e[0] > n.i) { const m = NAV[e[0]]; pts.push(new T.Vector3(n.x, n.y + .4, n.z), new T.Vector3(m.x, m.y + .4, m.z)); } })); navLines = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: 0x8fe36b })); scene.add(navLines); } if (navLines) navLines.visible = v; }
 }
-function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); }
+function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); $('dv-wx').value = String(WX.k); }
 function devClose() { if (G.state !== 'dev') return; $('dev').hidden = true; G.state = 'playing'; wasLocked = false; requestLock(); }
 Object.keys(DEV_FLAGS).forEach(k => $(DEV_FLAGS[k]).addEventListener('change', e => devSet(k, e.target.checked)));
 CID.forEach(id => $('dv-car').add(new Option(CARS[id].name + ' (' + id + ')', id)));
@@ -167,20 +167,21 @@ $('sv-reset').addEventListener('click', () => { if (!window.confirm('Start over?
 devOn('dv-spawncar', () => { if (!AUTH()) return; const fx = -Math.sin(P.cyaw), fz = -Math.cos(P.cyaw); spawnCar($('dv-car').value, P.x + fx * 6, P.z + fz * 6, P.cyaw, {}); });
 devOn('dv-go', () => { const t = TELEPORTS[$('dv-tp').value]; if (P.car) GAME.leaveCar(false); P.x = t[0]; P.y = P.camY = t[1]; P.z = t[2]; P.vy = 0; });
 $('dv-tod').addEventListener('input', e => { if (AUTH()) G.tod = +e.target.value; const h = +e.target.value; $('dv-todv').textContent = Math.floor(h) + ':' + String(Math.round(h % 1 * 60)).padStart(2, '0'); });
+$('dv-wx').addEventListener('change', e => { if (!AUTH()) { note('Only the host sets the weather', 'c'); return; } WX.k = clamp(+e.target.value | 0, 0, 4); WX.next = G.time + 400; });
 $('dv-scale').addEventListener('input', e => { DBG.scale = +e.target.value; $('dv-scalev').textContent = DBG.scale + 'x'; });
 devOn('dv-close', devClose);
 window.addEventListener('keydown', e => { if (e.code === 'Backquote' && G.state === 'dev') { e.preventDefault(); devClose(); } });
 
 /* ---- the loop ---- */
 function step(dt) {
-  G.time += dt;
+  G.time += dt; weatherTick(dt);
   if (G.state !== 'menu') { inputTick(); updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
   updateGrenades(dt); updateProj(dt);
 }
 let todT = 0, slowT = 0, menuA = 0, saveT = 15;
 function visuals(dt, now) {
-  todT -= dt; if (todT <= 0) { todT = .2; applyTod(G.tod); }
+  todT -= dt; if (todT <= 0) { todT = .2; applyTod(G.tod); applyWeather(); }
   if (G.state === 'menu') { menuA += dt * .05; const z = ZONES[1], r = 62; camera.position.set(z.x + 40 + Math.sin(menuA) * r, 26 + Math.sin(menuA * .7) * 5, z.z + Math.cos(menuA) * r); camera.rotation.set(-.3, menuA + .5, 0); if (Math.abs(camera.fov - 62) > .1) { camera.fov = 62; camera.updateProjectionMatrix(); } skyDome.position.copy(camera.position); EAR.x = camera.position.x; EAR.y = 200; EAR.z = camera.position.z; vmRoot.visible = false; }
   else { touchAssist(dt); updateCamera(dt); updatePlayerLook(dt); }
   updateTouchUi();
@@ -192,7 +193,7 @@ function visuals(dt, now) {
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
   updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt); coopVisuals(dt); caseVisuals(dt);
-  updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
+  updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
   if (G.state !== 'menu') updateHud(dt);
 }
 let last = performance.now();
@@ -216,7 +217,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

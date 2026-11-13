@@ -18,9 +18,9 @@ Object.assign(EV_INFO, {
 });
 CFG.rp.job.raid = 300; CFG.rp.job.sups = 200; CFG.rp.job.whsl = 400; CFG.rp.job.cour = 300; CFG.rp.job.trade = 0;
 const FENCE = CHOP;                                                       // Calder Auto Body takes product cases, no questions, at a poor price
-const CASE_K = ['cash', 'prod', 'pkg'], CASE_NAME = { cash: 'cash', prod: 'product', pkg: 'package' };
+const CASE_K = ['cash', 'prod', 'pkg', 'purse'], CASE_NAME = { cash: 'cash', prod: 'product', pkg: 'package', purse: 'purse' };
 const CASES = []; let caseSeq = 0;   // briefcases on the ground; carried ones live on their carrier (a.case)
-const caseGeo = new T.BoxGeometry(.48, .36, .13), caseMats = { cash: new T.MeshLambertMaterial({ color: 0x22262c }), prod: new T.MeshLambertMaterial({ color: 0x6b4a2a }), pkg: new T.MeshLambertMaterial({ color: 0x8c7a5a }) };
+const caseGeo = new T.BoxGeometry(.48, .36, .13), caseMats = { cash: new T.MeshLambertMaterial({ color: 0x22262c }), prod: new T.MeshLambertMaterial({ color: 0x6b4a2a }), pkg: new T.MeshLambertMaterial({ color: 0x8c7a5a }), purse: new T.MeshLambertMaterial({ color: 0x8a2433 }) };
 function caseMesh(k) { const m = new T.Mesh(caseGeo, caseMats[k] || caseMats.cash); m.castShadow = true; scene.add(m); return m; }
 function dropCase(k, v, x, y, z, ev, id) { const c = { id: id || ++caseSeq, k, v, x, y, z, ev: ev || null, m: caseMesh(k) }; c.m.position.set(x, y + .2, z); CASES.push(c); if (c.id > caseSeq) caseSeq = c.id; return c; }
 function liftCase(c) { const i = CASES.indexOf(c); if (i >= 0) CASES.splice(i, 1); scene.remove(c.m); c.gone = true; }
@@ -32,7 +32,7 @@ const yardFor = a => a.team === TEAM_COP ? SPAWNS[TEAM_COP][0] : SPAWNS[sideOf(a
 function caseTick() {
   humans().forEach(h => { const q = h.case; if (!q) return; if (q.t === undefined) q.t = G.time;
     if (h.dead || h.down) return GAME.putCase(h);                                          // down: it is on the ground for whoever gets there first
-    if (q.k === 'cash') { const y = yardFor(h), site = labOfRef(h); if (G.time - q.t > 20 && (hyp(h.x - y.x, h.z - y.z) < 12 || (site >= 0 && hyp(h.x - LABS[site].x, h.z - LABS[site].z) < 8))) { h.case = null; GAME.pay(h, q.v); GAME.ev('cb', GAME.ref(h), q.v); } }   // cash is yours once it is home: your side's yard, or your lab
+    if (q.k === 'cash' || (q.k === 'purse' && !q.ev)) { const y = yardFor(h), site = labOfRef(h); if (G.time - q.t > 20 && (hyp(h.x - y.x, h.z - y.z) < 12 || (site >= 0 && hyp(h.x - LABS[site].x, h.z - LABS[site].z) < 8))) { h.case = null; GAME.pay(h, q.v); GAME.ev('cb', GAME.ref(h), q.v); } }   // cash is yours once it is home: your side's yard, or your lab
     else if (q.k === 'prod' && hyp(h.x - FENCE.x, h.z - FENCE.z) < 6 && !(h.car && carSpeed(h.car) > 4)) { h.case = null; const amt = q.v * 450; GAME.pay(h, amt); GAME.ev('cf', GAME.ref(h), q.v, amt); }
     else if (q.k === 'prod') { const site = labOfRef(h); if (site >= 0 && hyp(h.x - LABS[site].x, h.z - LABS[site].z) < 7) { h.case = null; GAME.ev('cl', GAME.ref(h), q.v); } } });
   for (let i = CASES.length - 1; i >= 0; i--) { const c = CASES[i]; if (c.ev && c.ev.over && c.k === 'pkg') liftCase(c); }
@@ -57,7 +57,7 @@ function myCases(dt) {
     if (AUTH()) GAME.takeCase(c.id, P); else { NET.req('ck', c.id); (NET.ckGone || (NET.ckGone = {}))[c.id] = G.time; liftCase(c); P.case = { k: c.k, v: c.v }; } break; }
 }
 function casePrompt() {
-  if (!P.case || P.car) return null; const q = P.case, what = q.k === 'cash' ? '$' + q.v.toLocaleString('en-US') + ' cash' : q.k === 'prod' ? q.v + ' units of product' : 'the package';
+  if (!P.case || P.car) return null; const q = P.case, what = q.k === 'cash' ? '$' + q.v.toLocaleString('en-US') + ' cash' : q.k === 'prod' ? q.v + ' units of product' : q.k === 'purse' ? 'the purse' : 'the package';
   return { text: '<b>F</b>Put the case down · ' + what, act: () => { P.putAt = { x: P.x, z: P.z }; if (AUTH()) GAME.putCase(P); else { NET.req('cq'); P.case = null; } SFX.tick(); } };
 }
 const _cmh = [0, 1, 2, 3].map(() => { const m = caseMesh('cash'); m.visible = false; return m; });

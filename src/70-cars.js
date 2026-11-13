@@ -15,7 +15,7 @@ function carGeo(type) {
   const S = CARS[type], B = S.body, hl = S.len / 2, hw = S.wid / 2, P = new GeoBuf(), M = new GeoBuf(), G = new GeoBuf(), L = new GeoBuf(), dk = hexCol(0x1c1e21), bl = hexCol(0x0e0f11);
   const ext = (buf, pts, width, bv, col) => { const sh = new T.Shape(); pts.forEach((p, i) => i ? sh.lineTo(p[0], p[1]) : sh.moveTo(p[0], p[1])); const d = Math.max(.02, width - bv * 2), g = new T.ExtrudeGeometry(sh, { depth: d, bevelEnabled: true, bevelSize: bv, bevelThickness: bv, bevelSegments: 2, steps: 1 }); g.translate(0, 0, -d / 2); g.rotateY(-PI / 2); buf.geo(g, null, col); g.dispose(); };
   const bar = (buf, x, z0, y0, z1, y1, th, col) => { const len = hyp(z1 - z0, y1 - y0), g = new T.BoxGeometry(th, th * .9, len); g.rotateX(-Math.atan2(y1 - y0, z1 - z0)); g.translate(x, (y0 + y1) / 2, (z0 + z1) / 2); buf.geo(g, null, col); g.dispose(); };
-  const wr = type === 'suv' || type === 'pickup' ? .4 : type === 'van' ? .37 : type === 'hatch' ? .31 : type === 'sport' ? .33 : .34;
+  const bus = type === 'bus', wr = bus ? .5 : type === 'suv' || type === 'pickup' ? .4 : type === 'van' ? .37 : type === 'hatch' ? .31 : type === 'sport' ? .33 : .34;
   const nose = B.belt - .1, zc1 = hl - B.hood, deck = B.trunk > 0 ? B.belt - .03 : B.belt, zr0 = B.trunk > 0 ? -hl + B.trunk : B.bed ? -hl + B.bed : -hl + .07, zf = zc1 - B.rake, zr = zr0 + B.crake;
   ext(P, [[-hl + .1, B.ride], [-hl, B.ride + .14], [-hl, deck - .1], [-hl + .08, deck], [zr0, B.belt], [zc1, B.belt], [hl - .14, nose], [hl, nose - .17], [hl, B.ride + .14], [hl - .1, B.ride]], S.wid, .05);
   ext(G, [[zr0, B.belt - .03], [zr, B.roof], [zf, B.roof], [zc1, B.belt - .03]], S.wid - .2, .015);
@@ -28,11 +28,15 @@ function carGeo(type) {
   M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, hl - .08, hl + .09, dk); M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, -hl - .09, -hl + .08, dk);
   M.box(-.52, .52, nose - .33, nose - .13, hl - .02, hl + .035, bl); M.box(-.27, .27, B.ride + .33, B.ride + .47, -hl - .03, -hl + .02, hexCol(0xe8e4da));
   M.box(-hw + .16, hw - .16, B.ride + .06, B.belt - .28, zr0 - .1, zc1 + .1, bl);
-  const axF = hl - .86, axR = -hl + .9;
+  const axF = bus ? hl - 2.3 : hl - .86, axR = bus ? -hl + 2.7 : -hl + .9;
+  if (bus) {   // a band above the windows, pillars between them, the destination board, the doors on the kerb side
+    const wht = hexCol(0xf2efe6); M.box(-hw - .005, hw + .005, 2.36, B.roof + .03, -hl + .08, hl - .3, wht);
+    for (let z = -hl + 1.0; z < hl - 1.2; z += 1.42) [-1, 1].forEach(s => M.box(Math.min(s * (hw - .02), s * (hw + .012)), Math.max(s * (hw - .02), s * (hw + .012)), B.belt, 2.36, z - .05, z + .05, dk));
+    L.box(-.85, .85, 2.48, 2.78, hl - .31, hl - .24, hexCol(0xffb43c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, hl - 2.25, hl - 1.05, hexCol(0x24303c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, -.9, .3, hexCol(0x24303c)); }
   [axF, axR].forEach(z => [-1, 1].forEach(s => M.box(Math.min(s * (hw - .03), s * (hw + .018)), Math.max(s * (hw - .03), s * (hw + .018)), B.ride - .03, wr * 2 - .04, z - wr - .05, z + wr + .05, bl)));
   [-1, 1].forEach(s => M.box(Math.min(s * hw, s * (hw + .17)), Math.max(s * hw, s * (hw + .17)), B.belt + .04, B.belt + .14, zc1 - .22, zc1 - .1, dk));
   [-1, 1].forEach(s => { L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), nose - .27, nose - .11, hl - .03, hl + .03, hexCol(0xfff2cc)); L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), deck - .27, deck - .12, -hl - .03, -hl + .03, hexCol(0xd6231a)); });
-  return CAR_GEO[type] = { paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 };
+  return CAR_GEO[type] = Object.assign({ paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 }, bus ? { seats: [[-.72, hl - 1.25], [.72, hl - 2.6], [.72, .2], [.72, -2.2]], seatY: .78 } : {});
 }
 const SEATS = [[-.43, .12], [.43, .12], [-.43, -.82], [.43, -.82]];   // [across, along] from the centre: driver sits front left
 // a police car is an ordinary model in black with white doors and a light bar that flashes while its siren is on
@@ -97,7 +101,7 @@ function stepCar(c, dt, inp) {
   else if (thr < 0) { if (vf > .6) vf += 27 * thr * dt; else vf += S.accel * .6 * thr * Math.max(0, 1 + vf / 13) * dt; }
   vf -= vf * (.16 + .0011 * sp) * dt; if (!thr && sp < 1.2) vf -= vf * Math.min(1, dt * 2.5);
   if (inp.hb) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 8 * dt);
-  const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk; c.slip = slide;   // gk: car-shop handling
+  const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = (inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk) * (1 - .2 * WX.wet); c.slip = slide;   // gk: car-shop handling
   vl -= vl * Math.min(1, grip * dt);
   c.vx = fx * vf + rx * vl; c.vz = fz * vf + rz * vl;
   const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1);

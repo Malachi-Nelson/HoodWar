@@ -1,0 +1,36 @@
+// stage five: buses. The stops and shelters on the loop, two buses running it, pulling in at every stop, people getting on and off, riding one
+import { chromium } from '/opt/npm-tools/node_modules/playwright/index.mjs';
+const ROOT = new URL('..', import.meta.url).pathname;
+const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
+const errs = [];
+p.on('console', m => { const t = m.text(); if (m.type() === 'error' && !/ERR_FAILED|404/.test(t)) errs.push(t); });
+p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 5).join('\n')));
+await p.route('**/three.min.js', r => r.fulfill({ path: ROOT + 'node_modules/three/build/three.min.js', contentType: 'application/javascript' }));
+await p.route('**fonts.googleapis.com/**', r => r.abort());
+await p.addInitScript(() => { window.__PC_TEST = true; window.__PC_MANUAL = true; try { localStorage.clear(); } catch (e) {} });
+await p.goto('file://' + ROOT + 'dist/claude.html'); await p.waitForTimeout(1500);
+const log = (k, v) => console.log(k, JSON.stringify(v));
+const run = async (name, fn, arg) => { try { const r = await p.evaluate(fn, arg); log(name, r); return r; } catch (e) { log(name, 'EVAL ERROR ' + e.message.split('\n')[0]); return null; } };
+const shot = async name => { await p.evaluate(() => { const g = __pc; for (let i = 0; i < 8; i++) g.visuals(1 / 30); g.draw(); }); await p.screenshot({ path: '/tmp/' + name + '.png' }); };
+await run('start', () => { const g = __pc; g.DBG.god = true; g.DBG.notarget = true; g.G.solo = true; g.startWorld(); g.beginPlay(); g.step(30 * 3, 1 / 30); g.P.hints = []; g.P.earn += 500;
+  return { stops: g.BUS_STOPS.map(S => [S.id, Math.round(S.x), Math.round(S.z), S.side, S.leg, Math.round(S.s)]), waits: g.POI.filter(p => p.bus !== undefined).map(p => p.bus + ':' + p.cap) }; });
+await p.evaluate(() => { const g = __pc; window.__run = s => { for (let i = 0; i < Math.round(s * 30); i++) { g.step(1, 1 / 30); if (i % 6 === 0) g.visuals(1 / 5); } }; window.__at = (x, z) => { if (g.P.car) g.GAME.leaveCar(false); g.P.x = x; g.P.z = z; g.P.y = g.groundAt(x, z, 2.4, 'p'); g.P.vx = g.P.vz = g.P.vy = 0; }; });
+await run('buses come out', () => { const g = __pc; __run(25); const b = g.cars.filter(c => c.bus); return b.map(c => ({ id: c.id, at: [Math.round(c.x), Math.round(c.z)], mode: c.ai && c.ai.mode, driver: c.occ[0] && c.occ[0].name, spd: +Math.hypot(c.vx, c.vz).toFixed(1) })); });
+await run('pulls in at a stop', () => { const g = __pc, c = g.cars.find(q => q.bus); if (!c) return 'no bus'; const S = g.BUS_STOPS[1], a = g.BUS_ROUTE[S.leg], b = g.BUS_ROUTE[(S.leg + 1) % g.BUS_ROUTE.length];
+  __at(S.x + (S.F.nx ? 0 : 6), S.z + (S.F.nz ? 0 : 6)); g.lanePoint(a, b, S.s - 45, g.LANE, g.__lp || (g.__lp = { x: 0, z: 0 })); c.x = g.__lp.x; c.z = g.__lp.z; c.yaw = Math.atan2(-(b[0] - a[0]), -(b[1] - a[1])); c.vx = c.vz = 0; const A = c.ai; A.from = a; A.to = b; A.ri = (S.leg + 1) % g.BUS_ROUTE.length; A.next = g.BUS_ROUTE[(S.leg + 2) % g.BUS_ROUTE.length]; A.ri = (S.leg + 2) % g.BUS_ROUTE.length; A.served = -1; A.wait = 0; A.off = g.LANE;
+  // two people waiting under the shelter
+  const P0 = g.POI.find(q => q.bus === S.id); let t = 0; for (; t < 30 * 20 && A.served !== S.id; t++) { g.step(1, 1 / 30); if (t % 6 === 0) g.visuals(1 / 5); }
+  const d = Math.hypot(c.x - S.at.x, c.z - S.at.z), boarding = g.bots.filter(q => q.board === c).length; return { secs: +(t / 30).toFixed(1), served: A.served === S.id, wait: +A.wait.toFixed(1), offStop: +d.toFixed(1), spd: +Math.hypot(c.vx, c.vz).toFixed(2), boarding, waitingThere: P0 ? P0.who.filter(Boolean).length : -1, hp: c.hp }; });
+await shot('v12_stop');
+await run('ride it', () => { const g = __pc, c = g.cars.find(q => q.bus && q.ai && q.ai.wait > 0); if (!c) return 'no bus standing at a stop'; const S = g.BUS_STOPS.find(q => q.id === c.ai.atStop), door = g.busDoor(c, {}); __at(door.x + S.F.nx * 1.2, door.z + S.F.nz * 1.2); g.step(3, 1 / 30); const pr = g.findPromptNow(); const c0 = g.P.cash; if (pr && pr.act) pr.act(); g.step(20, 1 / 30);
+  g.visuals(1 / 30); return { prompt: pr && pr.text, paid: c0 - g.P.cash, aboard: g.P.car === c, seat: g.P.seat, hud: document.getElementById('h-car').textContent }; });
+await run('it carries you to the next stop', () => { const g = __pc, c = g.P.car; if (!c) return 'not aboard'; const first = c.ai.atStop, x0 = c.x, z0 = c.z; let t = 0, moved = 0; const dr = c.occ[0], trace = []; for (; t < 30 * 90 && c.ai && !(c.ai.wait > 0 && c.ai.atStop !== first); t++) { g.step(1, 1 / 30); if (t % 6 === 0) g.visuals(1 / 5); if (t % 90 === 0 && c.ai) { const A = c.ai; trace.push([Math.round(c.x), Math.round(c.z), +Math.hypot(c.vx, c.vz).toFixed(1), +A.wait.toFixed(1), +A.hold.toFixed(1), +A.passT.toFixed(1), +A.off.toFixed(1), A.from + '>' + A.to, +c.inp.thr.toFixed(2), c.inp.hb ? 1 : 0]); } } window.__trace = trace;
+  if (!c.ai) return { lostAi: +(t / 30).toFixed(1), driver: dr && { dead: dr.dead, gone: dr.gone, car: !!dr.car, hp: dr.hp, lastHit: dr.lastBy && (dr.lastBy.name || dr.lastBy.kind) }, occ0: c.occ[0] && c.occ[0].name, carHp: c.hp, wreck: c.wreck, feed: document.getElementById('feed').textContent.slice(-200) };
+  return { near: g.cars.filter(q => q !== c && Math.hypot(q.x - c.x, q.z - c.z) < 22).map(q => [q.type, q.id, Math.round(q.x), Math.round(q.z), +q.yaw.toFixed(2), +Math.hypot(q.vx, q.vz).toFixed(1), q.ai ? q.ai.mode + ':' + q.ai.wait.toFixed(1) + ':h' + q.ai.hold.toFixed(1) : 'noai', q.occ.map(o => o ? (o.name || o.kind) : '-').join('/'), q.home ? 'home' : '', q.wreck ? 'wreck' : '']), me: [Math.round(c.x), Math.round(c.z), +c.yaw.toFixed(2)], secs: +(t / 30).toFixed(1), stoppedAt: c.ai.atStop, from: first, still: g.P.car === c, travelled: Math.round(Math.hypot(c.x - x0, c.z - z0)), jams: c.ai.jams, hp: Math.round(c.hp), hud: document.getElementById('h-car').textContent }; });
+await run('get off', () => { const g = __pc, c = g.P.car; if (!c) return 'not aboard'; g.GAME.leaveCar(false); g.step(5, 1 / 30); const S = g.BUS_STOPS.find(q => q.id === c.ai.atStop); return { off: !g.P.car, hurt: g.P.hp, onPavement: S ? +Math.hypot(g.P.x - S.x, g.P.z - S.z).toFixed(1) : null, y: +g.P.y.toFixed(2) }; });
+await run('a lap', () => { const g = __pc, c = g.cars.find(q => q.bus && q.ai); if (!c) return 'no bus'; __at(400, 260); const seen = []; let last = -2, t = 0, down0 = g.PROPS ? g.PROPS.filter(p => p.down).length : 0; const hp0 = c.hp;
+  for (; t < 30 * 420; t++) { g.step(1, 1 / 30); if (t % 15 === 0) g.visuals(1 / 2); if (c.ai && c.ai.atStop !== undefined && c.ai.atStop !== last && c.ai.wait > 0) { last = c.ai.atStop; seen.push(last); } if (!c.ai || c.gone) break; }
+  return { secs: Math.round(t / 30), stops: seen, jams: c.ai && c.ai.jams, gone: !!c.gone, hp: [Math.round(hp0), Math.round(c.hp)], propsDown: g.PROPS ? g.PROPS.filter(p => p.down).length - down0 : 'n/a', buses: g.cars.filter(q => q.bus).length }; });
+console.log(errs.length ? 'ERRORS ' + JSON.stringify(errs.slice(0, 8)) : 'no errors');
+await b.close();

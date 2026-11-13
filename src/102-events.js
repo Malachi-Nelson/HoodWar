@@ -29,14 +29,15 @@ function guardsAt(p, t, n) { const out = []; for (let k = 0; k < n; k++) { const
 function evStart(E) { E.id = ++evtSeq; E.t0 = G.time; EVTS.push(E); GAME.ev('en', E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone); return E; }
 function evEnd(E, ok, amt, who) {
   const i = EVTS.indexOf(E); if (i < 0) return; EVTS.splice(i, 1); E.over = true;
-  if (ok && amt) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
-  if (ok) (E.k === 'smug' ? [E.owner] : humans()).forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
+  if (ok && amt && !E.solo) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
+  if (ok && !E.solo) (E.k === 'smug' ? [E.owner] : humans()).forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));   // solo: an encounter pays whoever settled it, and that is done already
   (E.guards || []).forEach(g => { g.guardOf = false; g.until = G.time + 30; });
   GAME.ev('ed', E.id, EV_KINDS.indexOf(E.k), ok ? 1 : 0, amt | 0, GAME.ref(who), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone);
 }
 function resetEvents() { EVTS.length = 0; RACE.on = false; evMarks.forEach(m => { m.g.visible = false; m.id = 0; }); }
 function updateEvents() {   // four times a second, on the machine that runs the world
   for (let i = EVTS.length - 1; i >= 0; i--) EV_TICK[EVTS[i].k](EVTS[i]);
+  streetEvents();   // the small encounters keep their own clock (109-street.js)
   if (G.phase !== 'play' || G.time < G.evT) return;
   if (EVTS.length >= (humans().length >= 3 ? 3 : 2)) { G.evT = G.time + 10; return; }
   const k = pickJob(); G.evT = G.time + (k && EV_START[k]() ? 50 + rand() * 40 : 8);
@@ -199,6 +200,8 @@ function updateRace(dt) {   // on every machine, for its own player
 // --- news of events, on every machine
 function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
+  if (k === 'ed' && (kind === 'snatch' || kind === 'holdup')) return;   // these tell their own story (109-street.js)
+  if (k === 'en' && (kind === 'snatch' || kind === 'holdup')) { const E = EVTS.find(q => q.id === e[2]); if (hyp(e[4] - P.x, e[5] - P.z) > 260) return; note(EV_INFO[kind].name + ' · ' + areaName(e[4], e[5]) + ' · ' + EV_INFO[kind].how, 'g'); return; }
   if ((k === 'en' || k === 'ed') && (kind === 'raid' || kind === 'sups' || kind === 'whsl' || kind === 'cour' || kind === 'trade')) return tradeEvNews(e, kind);
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }

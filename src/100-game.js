@@ -37,6 +37,7 @@ function onEvent(e, mine) {
   else if (k === 'bt') { const a = GAME.unref(e[2]), v = GAME.unref(e[3]); if (a === P) banner('Bounty', '+$' + e[4] + ' for ' + nameOf(v), 2.4, 'gold'); else if (v === P) note(nameOf(a) + ' collected the bounty on you', 'g'); }
   else if (k === 'wn') { const a = GAME.unref(e[2]); if (P.team === TEAM_COP && a && a !== P) note('Dispatch · ' + nameOf(a) + ' is wanted · ' + '★'.repeat(e[3]), 'g'); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
+  else if (k === 'sn' || k === 'ho') streetNews(e);
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st' || k === 'bg' || k === 'bl' || k === 'bd' || k === 'bx' || k === 'pp' || k === 'pz') heistNews(e);
   else if (k === 'rv' || k === 'pg' || k === 'dn') coopNews(e);
@@ -131,7 +132,7 @@ function updateGangs() {   // four times a second
 }
 // a car of a crew's shooters, a few blocks off, already on its way to whoever they are after
 function spawnHitSquad(a, t, sk) {
-  if (cars.length >= CAR_MAX - 2) return false;
+  if (cars.length >= CAR_MAX - 2 && !cars.some(c => c.wreck || (c.home && !c.spec.air && !c.occ.some(o => o)))) return false;   // a full pool can make room (spawnCar)
   let best = null, bs = -1e9;
   for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - a.x, z - a.z); if (d < 110 || d > 260 || nearHuman(x, z) < 95) continue; const sc = -Math.abs(d - 160) + rand() * 50; if (sc > bs) { bs = sc; best = [i, j]; } }
   if (!best) return false;
@@ -223,7 +224,7 @@ function nearBubble(x, z) { let d = 1e9; const hs = humans(); for (let i = 0; i 
 function spawnPed(start) {
   const hs = humans(), hidden = (x, y, z) => start || nearHuman(x, z) > 60 || (nearHuman(x, z) > 26 && !seenByHuman(x, y, z));
   for (let k = 0; k < 28; k++) { const c = bubbleCentre(hs[(rand() * hs.length) | 0]);
-    if (rand() < .5 && SPOTS.length) { const p = SPOTS[(rand() * SPOTS.length) | 0]; if (hyp(p.x - c.x, p.z - c.z) > 92 || (p.zone >= 0 && ZS[p.zone].hot)) continue; if (isNight() && (p.k === 'hoop' || p.k === 'browse') && rand() < .75) continue;
+    if (rand() < .5 && SPOTS.length) { const p = SPOTS[(rand() * SPOTS.length) | 0]; if (hyp(p.x - c.x, p.z - c.z) > 92 || (p.zone >= 0 && ZS[p.zone].hot)) continue; if (isNight() && (p.k === 'hoop' || p.k === 'browse') && rand() < .75) continue; if (WX.rain > .3 && (p.k === 'hoop' || p.k === 'sit' || p.k === 'browse') && rand() < .7) continue;
       const q = freeSlot(p); if (q < 0 || !hidden(p.slots[q].x, p.y, p.slots[q].z)) continue; const b = spawnBot(TEAM_CIV, p.x, p.y, p.z, {}); if (b) takeSpot(b, p, q); return b; }
     const n = NAVOK[(rand() * NAVOK.length) | 0]; if (hyp(n.x - c.x, n.z - c.z) > 92 || !hidden(n.x, n.y, n.z)) continue; if (ZONES.some((z, i) => ZS[i].hot && hyp(z.x - n.x, z.z - n.z) < z.r + 6)) continue;
     return spawnBot(TEAM_CIV, n.x, n.y, n.z, {}); }
@@ -234,7 +235,7 @@ function spawnCrewBot(team, forward) { const s = spawnPoint(team, forward); cons
 const crewSize = t => G.botsPer;
 // how busy the pavements are: full from morning to dusk, thinner through the evening, quiet but never empty at night
 const todBusy = () => { const h = G.tod; return h < 5 ? .5 : h < 7 ? lerp(.5, 1, (h - 5) / 2) : h < 19 ? 1 : h < 23 ? lerp(1, .6, (h - 19) / 4) : lerp(.6, .5, h - 23); };
-const walkersWanted = () => Math.round((G.civs + 4 * Math.min(3, humans().length - 1)) * todBusy() * (TOUCH.on && NET.mode !== 'host' ? .7 : 1));   // a phone playing alone runs a lighter crowd
+const walkersWanted = () => Math.round((G.civs + 4 * Math.min(3, humans().length - 1)) * todBusy() * (1 - .4 * WX.rain) * (TOUCH.on && NET.mode !== 'host' ? .7 : 1));   // rain keeps people in   // a phone playing alone runs a lighter crowd
 // --- people at work: a vendor at each stall and cart, clerks behind counters, hands in the yards. Each keeps hours, and is only there
 //     when a player is near enough for it to matter.
 const postOpen = p => { const h = G.tod; return p.role === ROLE.hand ? h > 6.5 && h < 20.5 : p.name === 'Vendor' ? h > 7 && h < 23.5 : true; };
@@ -255,6 +256,7 @@ function spawnBeat() {
   return null;
 }
 function populate() {
+  busService();
   for (let t = 0; t < NCREW; t++) { const want = crewSize(t); let live = 0; bots.forEach(b => { if (b.team === t && !b.dead && !b.temp) live++; });
     const Q = G.respawnQ[t]; while (live + Q.length < want) Q.push(G.time + .4 * Q.length); while (live + Q.length > want && Q.length) Q.pop();
     for (let k = Q.length - 1; k >= 0; k--) if (G.time >= Q[k]) { Q.splice(k, 1); spawnCrewBot(t, .45); } }
@@ -308,7 +310,8 @@ function updateDriveBys() {
 }
 function resetWorld() {
   while (bots.length) removeBot(bots[0]); while (cars.length) removeCar(cars[0]); while (pickups.length) removePickup(pickups[0]); grenades.forEach(g => scene.remove(g.m)); grenades.length = 0; resetProps();
-  carSeq = 0; botSeq = 0; pickSeq = 0; EVQ.length = 0; evSeq = 0; $('feed').textContent = '';
+  carSeq = 0; botSeq = 0; pickSeq = 0; EVQ.length = 0; evSeq = 0; $('feed').textContent = ''; weatherReset();
+  G.streetEvT = G.time + 60; BUS.t = 0; DICE.owed = null; DICE.streak = DICE.won = 0; diceSpots().forEach(s => { s.pot = 0; s.coolT = 0; });
   // each crew starts with the two turfs nearest its yard; the mall and the park in the middle are anybody's
   ZS.forEach((s, i) => { const o = TURF_START[ZONES[i].id]; s.owner = o === undefined ? -1 : o; s.by = -1; s.prog = 0; s.n.fill(0); s.hot = false; s.ctrl = s.owner >= 0 ? 100 : 0; s.calmT = -99; s.warnT = -99; });
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
@@ -361,11 +364,11 @@ function payHour() {
 }
 const hourlyNow = () => P.team === TEAM_COP ? CFG.cop.pay + CFG.cop.rankPay * (P.rank | 0) : turfPay(G.rivals ? P.team : G.crew)[1];
 function authTick(dt) {
-  G.tod = (G.tod + dt * TOD_RATE) % 24;
+  G.tod = (G.tod + dt * TOD_RATE) % 24; weatherAuth();
   updateZones(dt); updateRaids(dt);
   G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); airTick(); }
   if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }
-  G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); caseTick(); }
+  G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); caseTick(); diceTick(); }
   if (!DBG.freeze) for (let i = 0; i < bots.length; i++) updateBot(bots[i], dt);
   updateCarsAuth(dt); updateDriveBys();
   G.popT -= dt; if (G.popT <= 0) { G.popT = .5; populate();

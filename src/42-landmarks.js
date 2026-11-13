@@ -13,7 +13,7 @@ function stall(x, z, face, col) {
 }
 // a food cart under an umbrella, with someone selling from it
 function cart(x, z, face, text, style) {
-  const d = FACE[face], ax = d[0] !== 0;
+  const d = FACE[face], ax = d[0] !== 0; CARTS.push({ x, z, text, d });
   addBox(x - (ax ? .6 : 1), x + (ax ? .6 : 1), CURB, CURB + 1.15, z - (ax ? 1 : .6), z + (ax ? 1 : .6), 'flat', { col: 0xd8d6cc, a: false });
   deco(x - .04, x + .04, CURB + 1.15, CURB + 2.5, z - .04, z + .04, 0x8a9096); cyl(x, CURB + 2.35, CURB + 2.9, z, 1.6, 'flat', pick(WP, [0xa3221b, 0x15467a, 0xd9a521, 0x1d5c3a]), { nocol: true, rTop: .08, seg: 8 });
   sign(text, style, x + d[0] * (ax ? .63 : 0), CURB + .68, z + d[1] * (ax ? 0 : .63), 1.7, .5, face); if (style !== 'cyan') GRILLS.push([x, z]);

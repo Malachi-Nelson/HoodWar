@@ -86,6 +86,8 @@ CARS.chopper = { name: 'Skylark', air: 'civ', len: 5.6, wid: 2.4, accel: 17, vma
 // planes (air 'plane'): vmax and vstall are airspeeds, pitchRate and rollRate how quick the controls answer, turn how fast a full bank brings the nose round
 CARS.prop    = { name: 'Mallard', air: 'plane', len: 7.6, wid: 2.2, accel: 8, vmax: 50, vstall: 21, turn: 1.05, pitchRate: .8, rollRate: 2.4, grip: 8, mass: 1.2, hp: 900, seats: 2 };
 CARS.jet     = { name: 'Starling', air: 'plane', len: 11.8, wid: 2.6, accel: 12, vmax: 74, vstall: 33, turn: .92, pitchRate: .66, rollRate: 2.0, grip: 8, mass: 3, hp: 1500, seats: 4 };
+// a city bus: Calder Transit's on the loop round the middle of town (99-transit.js); slow, heavy, a driver up front and three seats to ride in
+CARS.bus     = { name: 'Calder Transit', len: 10.5, wid: 2.55, accel: 6.5, vmax: 23, grip: 8, mass: 4, hp: 3200, seats: 4, body: { ride: .42, belt: 1.15, roof: 3.0, hood: .22, trunk: 0, rake: .1, crake: .06 } };
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];
@@ -94,5 +96,7 @@ const CREW_PAINT = CREWS.map(c => c.paint), COP_PAINT = 0x14181f;
 // gangster taken down, a cruiser, backup on the phone, and the police helicopter on the airport pad.
 const COPSIDE = { name: 'Police', short: 'POLICE', side: 'Port Calder PD', holds: 'nothing: the whole city is the beat', color: 0x2f6bff, css: '#5c98ff', ink: '#7fb0ff', edge: '#5c98ff', rgb: '92,152,255', dark: 0x14224d, paint: COP_PAINT, glow: 0x5c98ff, on: '#06102a', sign: ['#0b1530', '#7fb0ff'], tops: [0x1c2a4a, 0x1c2a4a, 0x16213a, 0x1c1e22] };
 const SIDE = t => t === TEAM_COP ? COPSIDE : CREWS[t] || CREWS[0];      // a player's side, crew or police
+// the weather everywhere: k is what the machine running the world says it is (see 98-weather.js); the rest is each machine's own turn toward it
+const WX = { k: 0, next: 0, cloud: 0, rain: 0, fog: 0, wind: .2, wet: 0, flash: 0, boltT: 6, boltOn: 0, seen: 0, lit: false };
 const sideOf = v => (v | 0) === TEAM_COP ? TEAM_COP : clamp(v | 0, 0, NCREW - 1);
 const HANDLES = ['Ghost', 'Tiny', 'Smoke', 'Lucky', 'Ace', 'Duke', 'Rook', 'Juno', 'Mako', 'Onyx', 'Vega', 'Nix', 'Zed', 'Kilo', 'Moss', 'Rio', 'Sable', 'Jinx', 'Tank', 'Dot', 'Wren', 'Cruz', 'Bishop', 'Echo', 'Pax', 'Lark', 'Ozzy', 'Remy', 'Sol', 'Trey', 'Ivy', 'Knox'];

@@ -178,6 +178,8 @@ NET.host = dt => {
       else if (k === 'lw') GAME.clearHeat(r);
       else if (k === 'jb') GAME.forceJob();
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
+      else if (k === 'pb') GAME.returnPurse(r);
+      else if (k === 'dz') GAME.diceBust(r, q[2] | 0);
       else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else if (p.type === 'loot') GAME.takeLoot(p, r); else if (p.type === 'hbag') GAME.takeHBag(p, r); else removePickup(p); } }
       else if (k === 'hs') { if (EV_START[q[2]] && JOBS[q[2]]) EV_START[q[2]](r, q[3] | 0); }
       else if (k === 'pr') EV_START.prep(r, q[2]);
@@ -211,7 +213,7 @@ NET.host = dt => {
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; if (NET.slots[k] === undefined || !(r.lastS && followsMe(r.lastS))) continue; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0, ks: casesWire() };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0, ks: casesWire(), wx: WX.k };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', ep: NET.ep, fw: null, W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -223,7 +225,7 @@ NET.host = dt => {
 // ---- a joined player: draws the host's world, plays their own body
 function applyHost(s) {
   const W = s.W; if (!W) return;
-  G.tod = W.d; if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; G.rivals = !!W.o[2]; } G.robMask = W.r | 0; G.phase = 'play';
+  G.tod = W.d; if (W.wx !== undefined) WX.k = clamp(W.wx | 0, 0, 4); if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; G.rivals = !!W.o[2]; } G.robMask = W.r | 0; G.phase = 'play';
   if (G.rivals) G.crew = crewOf(W.c);                                                                         // each on the side they picked
   else if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }          // everyone rides with the host's side
   if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
@@ -347,7 +349,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-9'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-10'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { if (NET.mode === 'client') takeOverWorld(); NET.mode = null; G.solo = true; for (const k in NET.remotes) { freeChar(NET.remotes[k].ch); killTag(NET.remotes[k].tag); } NET.remotes = {}; NET.slot = 0; P.slot = 0; banner('Lost the online room', 'Carrying on solo · your progress is saved', 3.5); } });
   NET.lobby();

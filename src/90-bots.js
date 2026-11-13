@@ -92,6 +92,7 @@ function findCarFor(b, zone) {
 const _lp = { x: 0, z: 0 };
 function lanePoint(f, t, s, off, out) { const ax = RX(f[0]), az = RZ(f[1]), bx = RX(t[0]), bz = RZ(t[1]), L = hyp(bx - ax, bz - az) || 1, dx = (bx - ax) / L, dz = (bz - az) / L; out.x = ax + dx * s - dz * off; out.z = az + dz * s + dx * off; return out; }
 function aiNext(A) {
+  if (A.route) return busNext(A);
   const ti = A.to[0], tj = A.to[1], fi = A.from[0], fj = A.from[1], opts = [];
   [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(q => { const ni = ti + q[0], nj = tj + q[1]; if (ni < 0 || nj < 0 || ni > NX || nj > NZ || (ni === fi && nj === fj)) return; opts.push([ni, nj, q[0] === ti - fi && q[1] === tj - fj]); });
   if (!opts.length) return [fi, fj];
@@ -125,17 +126,18 @@ function driveAI(c, dt) {
   let ax = RX(A.from[0]), az = RZ(A.from[1]), bx = RX(A.to[0]), bz = RZ(A.to[1]), L = hyp(bx - ax, bz - az) || 1, dx = (bx - ax) / L, dz = (bz - az) / L, s = (c.x - ax) * dx + (c.z - az) * dz;
   if (s > L - 3.5) { A.from = A.to; A.to = A.next; A.next = aiNext(A); ax = bx; az = bz; bx = RX(A.to[0]); bz = RZ(A.to[1]); L = hyp(bx - ax, bz - az) || 1; dx = (bx - ax) / L; dz = (bz - az) / L; s = (c.x - ax) * dx + (c.z - az) * dz; }
   const turnAt = L - 9.5, look = 6.5 + sp * .5, ts = s + look; if (A.passT > 0) { A.passT -= dt; if (A.passT <= 0) A.off = LANE; }
+  const busCap = A.mode === 'bus' ? busDrive(c, A, s, sp, dt) : 1e9;
   // parking at the journey's end
   const last = A.dest && A.to[0] === A.dest[0] && A.to[1] === A.dest[1] && A.mode === 'crew';
   if (last && s > L - 34) { lanePoint(A.from, A.to, Math.max(s + 4, L - 16), 4.9, _lp); } else if (ts <= turnAt || !A.next) lanePoint(A.from, A.to, Math.max(9.5, Math.min(ts, L)), A.off, _lp); else lanePoint(A.to, A.next, 9.5 + Math.max(0, ts - turnAt - 6), A.off, _lp);
-  const want = yawOf(_lp.x - c.x, _lp.z - c.z), diff = angTo(c.yaw, want); let cruise = A.cruise * (A.panic > 0 ? 1.7 : 1); if (A.panic > 0) A.panic -= dt;
+  const want = yawOf(_lp.x - c.x, _lp.z - c.z), diff = angTo(c.yaw, want); let cruise = Math.min(busCap, A.cruise * (A.panic > 0 ? 1.7 : 1)); if (A.panic > 0) A.panic -= dt;
   const nx = A.next ? RX(A.next[0]) - bx : dx, nz = A.next ? RZ(A.next[1]) - bz : dz, nl = hyp(nx, nz) || 1, turning = (nx * dx + nz * dz) / nl < .5, toX = turnAt - s;
-  if (turning && toX < 34) cruise = Math.min(cruise, lerp(6, cruise, clamp((toX - 3) / 31, 0, 1))); else if (toX < 10 && toX > -10 && A.mode === 'traffic') cruise = Math.min(cruise, 9);
+  if (turning && toX < 34) cruise = Math.min(cruise, lerp(6, cruise, clamp((toX - 3) / 31, 0, 1))); else if (toX < 10 && toX > -10 && (A.mode === 'traffic' || A.mode === 'bus')) cruise = Math.min(cruise, A.mode === 'bus' ? 6.5 : 9);
   if (Math.abs(diff) > .45) cruise = Math.min(cruise, 6.5);
   if (last && s > L - 34) { cruise = Math.min(cruise, Math.max(0, (L - 15 - s) * .7)); if (s > L - 22 && sp < 1.2) A.done = true; }
-  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = blk[0];   // police wait for bystanders and each other, nobody else
+  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
   if (A.mode === 'cop' && gap < 20 && A.passT <= 0) { A.off = -1.8; A.passT = 3.5; }
-  if (gap < 1e8) { cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8); if (gap < 6 && sp < 1) { A.hold += dt; if (A.mode === 'traffic' && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0; if (A.hold > (A.mode === 'traffic' ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } } }   // a person who will not move: back up and go round else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
+  if (gap < 1e8) { cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8); if (gap < 6 && sp < 1) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0; if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } } }   // a person who will not move: back up and go round else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
   if (A.passT > 0 && gap > 1e8) cruise = Math.min(cruise, 9);
   if (A.passT > 0 && blk[2] && gap > 1 && gap < 1e8) cruise = Math.max(cruise, 2.2);       // someone is standing in the road and is not going to move: edge round them
   // stuck against something: back up and try again
@@ -161,6 +163,7 @@ function crewBrain(b) {
   const saw = botLook(b);
   if (b.car) { const c = b.car; if (c.spec.air) { if (c.landed && !c.occ[0]) botExit(b, false); return; } if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!c.occ[0] || c.occ[0].team !== b.team)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); } return; }
   if (saw || b.tgt) return;
+  if (b.holdup) { if (!b.path && b.stay && hyp(b.x - b.stay.x, b.z - b.stay.z) > 1.5) botPathTo(b, b.stay.x, CURB, b.stay.z, false); return; }   // a robber keeps the clerk covered (109-street.js)
   if (b.hunterOf) { const a = b.hunterOf;   // sent after someone: keep looking for them until they are dead or the crew loses interest
     if (a.gone || a.dead || !(a.gn && a.gn[b.team] >= CFG.gang[0])) b.hunterOf = null;
     else if (!b.hunt && hyp(a.x - b.x, a.z - b.z) < 160) { b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = true; b.path = null; if (!botPathTo(b, a.x, a.y, a.z, false)) b.hunt = false; return; } }
@@ -192,6 +195,7 @@ function crewAct(b, dt) {
     if (botFollow(b, 5.8, dt)) { if (botWalk(b, b.lsx, b.lsz, 5, dt) < 1.5 || G.time - b.seenT > 5) { b.tgt = null; b.path = null; b.hunt = false; } }
     if (b.spd > .5) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 9)); return;
   }
+  if (b.holdup && !b.path) { b.vx = b.vz = 0; b.spd = 0; b.aim = Math.min(1, b.aim + dt * 3); b.yaw = lerpAng(b.yaw, b.hyaw, Math.min(1, dt * 6)); b.pitch = lerp(b.pitch, -.12, Math.min(1, dt * 5)); return; }
   b.aim = Math.max(0, b.aim - dt * 2); b.pitch = lerp(b.pitch, 0, Math.min(1, dt * 5));
   if (b.hunt) { if (b.path) { if (botFollow(b, 5.6, dt)) { b.path = null; b.hunt = false; } } else { b.hunt = false; } }
   else if (b.wantCar) { const c = b.wantCar; doorPos(c, b.wantSeat, _d0, .6); let d = hyp(_d0.x - b.x, _d0.z - b.z);
@@ -231,6 +235,7 @@ function pickSpot(b) {
 }
 const gunUp = a => a === P ? !WEAPONS[P.wpn].melee && (P.ads > .5 || P.shootT > 0) : a.wpn !== 'fist' && !!a.aim;
 function civBrain(b) {
+  if (b.gotOn || b.board) return;
   if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
   if (b.post) {   // at work
     const p = b.post; let threat = false;
@@ -253,8 +258,12 @@ function civBrain(b) {
   for (let k = 0; k < 8; k++) { const n = NAVOK[(Math.random() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 30 || d > 130) continue; const p = navPath(from, n.i, true); if (p) { b.path = p; b.pi = 0; break; } }
   if (!b.path) b.idleT = 2;
 }
-function civStand(b, dt, yaw) { b.vx = b.vz = 0; b.spd = 0; if (yaw !== undefined) b.yaw = lerpAng(b.yaw, yaw, Math.min(1, dt * 5)); }
+const wetPace = b => WX.rain > .3 && !umbOf(b) ? 1.65 : 1;   // caught in the rain without an umbrella: hurry
+function civStand(b, dt, yaw) {
+  if (b.robbed) yaw = undefined;   // just had their bag taken: they stand there
+ b.vx = b.vz = 0; b.spd = 0; if (yaw !== undefined) b.yaw = lerpAng(b.yaw, yaw, Math.min(1, dt * 5)); }
 function civAct(b, dt) {
+  if (b.gotOn) return; if (b.board && busBoard(b, dt)) return;
   if (b.car) { const c = b.car; seatPos(c, b.seat, _sp); b.x = _sp.x; b.z = _sp.z; b.y = c.y; b.yaw = c.yaw; b.spd = 0; if (b.seat === 0 && c.ai) driveAI(c, dt); return; }
   if (b.fleeT > 0) b.fleeT -= dt; b.idleT -= dt;
   if (b.post && b.fleeT <= 0) { const p = b.post, scared = G.time < b.scareT;
@@ -268,12 +277,12 @@ function civAct(b, dt) {
   if (b.poi && b.fleeT <= 0) { const p = b.poi, s = p.slots[b.slot];
     if (b.at === 2) { civStand(b, dt, s.yaw);                                                              // there: do what the place is for
       if (p.k === 'hang' && G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 9; b.act = ACT_AT.hang[(rand() * ACT_AT.hang.length) | 0]; } return; }
-    if (b.at === 0) { if (botFollow(b, b.walk, dt)) { b.path = null; b.at = 1; b.poiD = 1e9; b.poiP = G.time; b.poiT = G.time + 8 + hyp(p.fx - b.x, p.fz - b.z) / b.walk * 1.5; } }   // on the way
+    if (b.at === 0) { if (botFollow(b, b.walk * wetPace(b), dt)) { b.path = null; b.at = 1; b.poiD = 1e9; b.poiP = G.time; b.poiT = G.time + 8 + hyp(p.fx - b.x, p.fz - b.z) / b.walk * 1.5; } }   // on the way
     else { const d = botWalk(b, p.fx, p.fz, b.walk, dt); if (d < b.poiD - .05) { b.poiD = d; b.poiP = G.time; }                                              // the last few steps
       if (d < .55 || (d < 2.6 && G.time - b.poiP > 1)) takeSpot(b, p, b.slot); else if (G.time - b.poiP > 2.2) { leavePoi(b); b.idleT = .5; return; } }      // something is parked in the way: near enough will do, or think again
     if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8)); return; }
   b.act = 0;
-  if (b.path) { if (botFollow(b, b.fleeT > 0 ? 6.4 : b.walk, dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
+  if (b.path) { if (botFollow(b, b.fleeT > 0 ? (b.thief ? 5.6 : 6.4) : b.walk * wetPace(b), dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
 // --- street crews: a crew's people on its own corners. They pass the time at a spot until somebody from another crew shows up,

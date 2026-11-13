@@ -14,6 +14,7 @@ const ZONES = [], SHOPS = [], ROBS = [], GARAGES = [], SPAWNS = CREWS.map(() => 
 // Places where people do something other than walk past. k: 'sit' a bench, 'hang' a knot of people talking, 'browse' a window or a stall,
 // 'wait' a stop or a platform, 'hoop' a basket, 'dance' by a speaker, 'post' where a vendor or a clerk works, 'work' a job done between two spots.
 const POI = [];
+const CARTS = [];   // food carts: { x, z, text, d (the way the counter faces) }
 const VENTS = [], STACKS = [], ROOSTS = [], SPEAKERS = [], GRILLS = [];   // steam from the street, smoke from chimneys, where pigeons gather, where music plays, where food is cooking
 const WP = rng32(77123);                                       // its own dice, so adding a bench never reshuffles the buildings
 const LAMPS = [];

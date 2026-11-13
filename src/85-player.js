@@ -73,6 +73,7 @@ function carInReach() {
   return best;
 }
 function carOffer(c) {   // -> { seat, jack, text } or null
+  const bo = busOffer(c); if (bo) return bo;   // a bus on its route: a seat for the fare, while it stands at a stop
   const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air === 'plane' ? (c.type === 'jet' ? ' jet' : ' plane') : c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
   if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen && P.team !== TEAM_COP ? ' · it brings three stars' : '') };
   if ((isCrew(dr.team) || dr.team === TEAM_COP) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
@@ -81,6 +82,7 @@ function carOffer(c) {   // -> { seat, jack, text } or null
 }
 function tryEnter(c, o) {
   if (P.enter || P.car || P.dead) return;
+  if (o.fare) { if (!payCash(o.fare)) { note('The fare is $' + o.fare, 'c'); return; } note('Fare paid · $' + o.fare + ' · get off at any stop', 'g'); }
   P.enter = { car: c, seat: o.seat, t: o.jack ? .75 : .42, jack: o.jack, wait: 0 }; P.ads = 0; P.reloadT = 0;
   if (AUTH()) { if (!o.jack) { if (c.occ[o.seat]) { P.enter = null; return; } c.occ[o.seat] = P; } } else NET.req(o.jack ? 'cj' : 'en', c.id, o.seat);
   SFX.door(c.x, c.y, c.z);
@@ -122,14 +124,14 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
-  { const bp = revivePrompt() || bankPrompt() || bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
+  { const bp = revivePrompt() || bankPrompt() || bizPrompt() || labPrompt() || jewelPrompt() || pursePrompt() || foodPrompt() || dicePrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
     else if (WEAPONS[P.wpn].melee) prompt = { text: 'Draw a gun to rob the till' };
     else prompt = { text: '<b>F</b>Rob the till', act: () => { P.rob = { i, t: 0 }; SFX.tick(); } };
     return; }
-  const c = carInReach(); if (c) { const o = carOffer(c); if (o) prompt = { text: o.text, act: () => tryEnter(c, o) }; }
+  const c = carInReach(); if (c) { const o = carOffer(c); if (o) prompt = o.none ? { text: o.text } : { text: o.text, act: () => tryEnter(c, o) }; }
   if (!prompt) prompt = casePrompt();   // a case in the hand can always be put down
 }
 // holding someone up takes a few seconds of standing there with the gun out
@@ -252,7 +254,7 @@ function updateCamera(dt) {
     const c = P.car, sp = carSpeed(c), air = !!c.spec.air; P.idleCam += dt;
     const lb = isHeld('behind'), plane = isPlane(c); if (plane && (TOUCH.on || padRecent() || P.seat) && P.idleCam > .5) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.2)); P.cpitch = lerp(P.cpitch, -.14 + (c.dive || 0) * .45, Math.min(1, dt * 1.6)); }   // a plane flown by stick: the view swings in behind it
     if (!air && P.idleCam > 1.1 && sp > 2.5 && !lb) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
-    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (plane ? 2.8 : air ? 2.4 : 1.5); pz = c.z; want = plane ? (camFar ? 30 : 17) + sp * .04 : air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
+    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (plane ? 2.8 : air ? 2.4 : c.type === 'bus' ? 2.8 : 1.5); pz = c.z; want = plane ? (camFar ? 30 : 17) + sp * .04 : air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
     camDist = lerp(camDist, want, Math.min(1, dt * 5)); const t = Math.max(1.2, Math.min(camDist, rayWorld(px, py, pz, -bx, -fy + .12, -bz, 's', camDist + .4) - .4));
     camera.position.set(px - bx * t + sx, py + (-fy + .12) * t + .5 + sy, pz - bz * t); camera.rotation.set(P.cpitch - .04 + sy * .3, yaw + sx * .3, clamp(c.yawRate * .02, -.05, .05)); fov = 72 + Math.min(16, sp * .32);
   } else if (firstPerson()) {
