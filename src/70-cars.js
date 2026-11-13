@@ -46,19 +46,29 @@ function copDress(c) {
   c.cop = true; c.lph = -1;
 }
 function spawnCar(type, x, z, yaw, o) {
-  if (!carFree.length) return null; o = o || {};
-  const S = CARS[type], geo = S.air ? heliGeo(type) : carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
+  if (!carFree.length && !(AUTH() && evictCar())) return null; o = o || {};
+  const S = CARS[type], geo = S.air === 'plane' ? planeGeo(type) : S.air ? heliGeo(type) : carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
   const g = new T.Group(), body = new T.Group(); g.rotation.order = 'YXZ'; g.add(body);
   const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, carTrimMat), gm = new T.Mesh(geo.glass, carGlassMat), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
   pm.castShadow = tm.castShadow = true; pm.receiveShadow = true; gm.renderOrder = 3; bm.renderOrder = 4; bm.visible = false; body.add(pm, tm, gm, lm, bm); scene.add(g);
   const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm,
     occ: [null, null, null, null], inp: { thr: 0, steer: 0, hb: false }, wreck: false, burn: 0, spin: 0, roll: 0, dive: 0, asleep: true, home: o.home || null, team: o.team === undefined ? -1 : o.team, horn: 0, smokeT: 0, lastHit: null, idle: 0, buf: [], slip: 0, crash: 0 };
   if (c.id > carSeq) carSeq = c.id;
-  if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
+  if (S.air === 'plane') planeDress(c); else if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
   cars.push(c); placeCar(c); return c;
 }
 function setPaint(c, hex) { if (hex === undefined || c.color === hex) return; c.color = hex; if (!c.wreck) c.pm.material = paintMat(hex); }
 function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true; carFree.push(c.slot); c.gone = true; }
+// the pool is full and something that matters wants a car (a delivery, a job's van, the police): clear away a wreck, or a car
+// standing at its parking spot well away from everyone and out of their sight; the spot fills again later. Only on the machine
+// that runs the world: everyone else's cars are copies of its own.
+function evictCar() {
+  let best = null, bd = 0;
+  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.pv || c.pa || c.chop || c.getaway || c.burn > 0) continue;
+    if (!c.wreck && !(c.home && !c.spec.air && hyp(c.x - c.home.x, c.z - c.home.z) < 4)) continue;
+    const n = nearHuman(c.x, c.z); if (n < (c.wreck ? 25 : 55)) continue; const d = n + (c.wreck ? 300 : 0); if (d > bd && !seenByHuman(c.x, c.y, c.z)) { bd = d; best = c; } }
+  if (best) removeCar(best); return !!best;
+}
 const carById = id => { for (let i = 0; i < cars.length; i++) if (cars[i].id === id) return cars[i]; return null; };
 const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _we = new T.Euler(0, 0, 0, 'YXZ'), _wv = new T.Vector3(), _ws = new T.Vector3();
 function placeCar(c) {
@@ -146,7 +156,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 }
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
-  placeCar(c); if (c.spec.air) { heliVisual(c, dt); return; }
+  placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
   if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }

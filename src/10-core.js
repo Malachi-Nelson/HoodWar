@@ -83,6 +83,9 @@ for (const k in CARS) { CARS[k].accel *= 1.22; CARS[k].vmax *= 1.28; }   // ever
 // accel and vmax are across the ground, climb is metres a second up or down, turn is how fast the nose comes round. air 'gun' carries nose guns and rockets.
 CARS.heli    = { name: 'Hornet',  air: 'gun', len: 5.2, wid: 2.3, accel: 21, vmax: 52, climb: 13, turn: 1.9, grip: 8, mass: 2.2, hp: 1800, seats: 4 };
 CARS.chopper = { name: 'Skylark', air: 'civ', len: 5.6, wid: 2.4, accel: 17, vmax: 46, climb: 11, turn: 1.6, grip: 8, mass: 2.0, hp: 1400, seats: 4 };
+// planes (air 'plane'): vmax and vstall are airspeeds, pitchRate and rollRate how quick the controls answer, turn how fast a full bank brings the nose round
+CARS.prop    = { name: 'Mallard', air: 'plane', len: 7.6, wid: 2.2, accel: 8, vmax: 50, vstall: 21, turn: 1.05, pitchRate: .8, rollRate: 2.4, grip: 8, mass: 1.2, hp: 900, seats: 2 };
+CARS.jet     = { name: 'Starling', air: 'plane', len: 11.8, wid: 2.6, accel: 12, vmax: 74, vstall: 33, turn: .92, pitchRate: .66, rollRate: 2.0, grip: 8, mass: 3, hp: 1500, seats: 4 };
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];

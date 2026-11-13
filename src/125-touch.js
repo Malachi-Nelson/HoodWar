@@ -141,6 +141,7 @@ function updateTouchUi() {
   const air = TOUCH.edit ? TOUCH.ectx === 'a' : !!P.car && !!P.car.spec.air && P.seat === 0, car = TOUCH.edit ? TOUCH.ectx === 'c' : !!P.car && !air, cls = (air ? 'air' : car ? 'car' : 'foot') + (P.car && P.car.spec.air === 'gun' && !TOUCH.edit ? ' gun' : '') + (TOUCH.edit ? ' edit' : '') + (P.driveby || TOUCH.edit ? ' call' : '') + (P.dead && !TOUCH.edit ? ' dead' : '');
   if (tLayer.className !== cls) tLayer.className = cls;
   const go = !TOUCH.edit && (!!P.car || shopOpen || (prompt && !!prompt.act)), lab = P.car && !TOUCH.edit ? 'EXIT' : 'USE';
+  const pl = isPlane(P.car) && P.seat === 0 && !TOUCH.edit; ['up', 'down'].forEach(id => { const el = TOUCH.el[id]; if (!el || tHow(id) !== 'act:' + id) return; const t = pl ? (id === 'up' ? 'THR+' : 'THR−') : tLabel(id); if (el.textContent !== t) el.textContent = t; });
   for (const id in TOUCH.el) if (tHow(id) === 'act:use') { const el = TOUCH.el[id]; el.classList.toggle('go', go); if (el.textContent !== lab) el.textContent = lab; }
 }
 // --- moving and resizing the controls

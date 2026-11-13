@@ -75,7 +75,7 @@ function coopVisuals(dt) {
   mateT -= dt; if (mateT > 0) return; mateT = .25;
   const el = $('mates'), list = []; if (NET.mode && G.state !== 'menu') for (const k in NET.remotes) { const r = NET.remotes[k]; if (mateOf(r, P)) list.push(r); }
   el.hidden = !list.length; if (!list.length) return;
-  const html = list.slice(0, 5).map(r => { const hl = r.dead ? 0 : r.hl === undefined ? 100 : r.hl, st = r.dead ? 'dead' : r.down ? 'DOWN' : r.car ? 'in a car' : Math.round(hyp(r.x - P.x, r.z - P.z)) + 'm';
+  const html = list.slice(0, 5).map(r => { const hl = r.dead ? 0 : r.hl === undefined ? 100 : r.hl, st = r.dead ? 'dead' : r.down ? 'DOWN' : r.car ? (r.car.gone ? 'in a car' : isPlane(r.car) ? 'flying' : r.car.spec.air ? 'in a helicopter' : 'in a car') : Math.round(hyp(r.x - P.x, r.z - P.z)) + 'm';
     return '<div class="' + (r.down ? 'dn' : r.dead ? 'dd' : '') + '"><b>' + r.name.replace(/[<>&]/g, '') + '</b><i><u style="width:' + hl + '%"></u></i><small>' + st + (r.bag ? ' · bag' : '') + '</small></div>'; }).join('');
   if (el.innerHTML !== html) el.innerHTML = html;
 }

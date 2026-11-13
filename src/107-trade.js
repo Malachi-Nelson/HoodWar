@@ -51,13 +51,14 @@ function casesFromHost(fc, cc) {
 }
 // --- this player: walk over a case to take it; USE puts yours down; a case in the hand shows
 function myCases(dt) {
+  if (P.putAt && hyp(P.x - P.putAt.x, P.z - P.putAt.z) > 2.4) P.putAt = null;   // one you have just put down stays down until you walk away from it
   if (P.dead || P.down || P.case || P.car || G.state !== 'playing') return;
-  for (const c of CASES) { if (hyp(c.x - P.x, c.z - P.z) > 1.3 || Math.abs(c.y - P.y) > 1.6) continue;
+  for (const c of CASES) { if (hyp(c.x - P.x, c.z - P.z) > 1.3 || Math.abs(c.y - P.y) > 1.6 || (P.putAt && hyp(c.x - P.putAt.x, c.z - P.putAt.z) < 2.2)) continue;
     if (AUTH()) GAME.takeCase(c.id, P); else { NET.req('ck', c.id); (NET.ckGone || (NET.ckGone = {}))[c.id] = G.time; liftCase(c); P.case = { k: c.k, v: c.v }; } break; }
 }
 function casePrompt() {
   if (!P.case || P.car) return null; const q = P.case, what = q.k === 'cash' ? '$' + q.v.toLocaleString('en-US') + ' cash' : q.k === 'prod' ? q.v + ' units of product' : 'the package';
-  return { text: '<b>F</b>Put the case down · ' + what, act: () => { if (AUTH()) GAME.putCase(P); else { NET.req('cq'); P.case = null; } SFX.tick(); } };
+  return { text: '<b>F</b>Put the case down · ' + what, act: () => { P.putAt = { x: P.x, z: P.z }; if (AUTH()) GAME.putCase(P); else { NET.req('cq'); P.case = null; } SFX.tick(); } };
 }
 const _cmh = [0, 1, 2, 3].map(() => { const m = caseMesh('cash'); m.visible = false; return m; });
 function caseVisuals(dt) {

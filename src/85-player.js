@@ -67,11 +67,13 @@ function punch() {
 // --- cars: which one is in reach, and what F would do with it
 function carInReach() {
   let best = null, bd = 2.9;
-  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.wreck || c.burn > 0 || hyp(c.x - P.x, c.z - P.z) > 7 || Math.abs(c.y - P.y) > 1.5) continue; doorPos(c, 0, _d0, .5); doorPos(c, 1, _d1, .5); const d = Math.min(hyp(_d0.x - P.x, _d0.z - P.z), hyp(_d1.x - P.x, _d1.z - P.z)); if (d < bd) { bd = d; best = c; } }
+  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.wreck || c.burn > 0 || hyp(c.x - P.x, c.z - P.z) > 7 || Math.abs(c.y - P.y) > 1.5) continue; doorPos(c, 0, _d0, .5); doorPos(c, 1, _d1, .5); let d = Math.min(hyp(_d0.x - P.x, _d0.z - P.z), hyp(_d1.x - P.x, _d1.z - P.z));
+    if (isPlane(c)) for (let k = 2; k < c.spec.seats; k++) { doorPos(c, k, _d0, .5); d = Math.min(d, hyp(_d0.x - P.x, _d0.z - P.z)); }   // a jet's cabin door, behind the cockpit's
+    if (d < bd) { bd = d; best = c; } }
   return best;
 }
 function carOffer(c) {   // -> { seat, jack, text } or null
-  const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
+  const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air === 'plane' ? (c.type === 'jet' ? ' jet' : ' plane') : c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
   if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen && P.team !== TEAM_COP ? ' · it brings three stars' : '') };
   if ((isCrew(dr.team) || dr.team === TEAM_COP) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
   if (carSpeed(c) < 7) return { seat: 0, jack: true, text: `<b>F</b>Jack the ${nm}` };
@@ -86,7 +88,8 @@ function tryEnter(c, o) {
 function sitIn(c, seat) {
   P.enter = null; P.car = c; P.seat = seat; P.ads = 0; P.knock = 0;
   if (seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = false; c.ai = null; c.kin = false; c.mine = true; c.asleep = false; c.team = P.team; c.horn = 0; P.siren = false; if (AUTH()) GAME.boarded(c, P); }
-  if (c.spec.air && seat === 0 && !P.flown) { P.flown = true; banner(c.spec.name, TOUCH.on ? 'The stick flies it · UP and DOWN for height · drag to turn' + (c.spec.air === 'gun' ? ' · FIRE guns · ROCKETS' : '') : 'W A S D fly · Space up · Shift down · the mouse turns it' + (c.spec.air === 'gun' ? ' · click guns · right-click rockets' : ''), 5, 'gold'); }
+  if (isPlane(c) && seat === 0 && !P.flownPlane) { P.flownPlane = true; banner(c.spec.name, TOUCH.on ? 'Throttle up (UP) and roll down the runway · stick back to climb, sideways to bank' : padRecent() ? 'RT throttle up, LT down · left stick flies it: back to climb, sideways to bank' : capOf('up') + ' throttle up, ' + capOf('down') + ' down · it flies where you look · ' + capOf('aback') + ' ' + capOf('afwd') + ' pitch, ' + capOf('aleft') + ' ' + capOf('aright') + ' bank', 6, 'gold'); }
+  else if (c.spec.air && !isPlane(c) && seat === 0 && !P.flown) { P.flown = true; banner(c.spec.name, TOUCH.on ? 'The stick flies it · UP and DOWN for height · drag to turn' + (c.spec.air === 'gun' ? ' · FIRE guns · ROCKETS' : '') : 'W A S D fly · Space up · Shift down · the mouse turns it' + (c.spec.air === 'gun' ? ' · click guns · right-click rockets' : ''), 5, 'gold'); }
   if (!WEAPONS[P.wpn].car) { P.prevWpn = P.wpn; P.wpn = P.inv.smg ? 'smg' : 'pistol'; P.reloadT = 0; } else P.prevWpn = null;
   P.idleCam = 2; if (RADIO.on !== P.radio) setRadio(P.radio); radioVolume(P.radio >= 0 ? .55 : 0); if (P.radio >= 0) radioToast();   // whatever a speaker outside was playing gives way to the car's own station
 }
@@ -214,7 +217,8 @@ function updateInCar(dt) {
   const c = P.car, d = WEAPONS[P.wpn], w = P.inv[P.wpn];
   if (c.gone) { P.car = null; return; }
   if (c.spec.air && (c.sunk || (c.wreck && c.y < 1.2 && !onLand(c.x, c.z)))) { GAME.leaveCar(true); swimAshore(); return; }
-  if (c.spec.air && P.seat === 0 && c.mine !== false) heliControls(c, dt);
+  if (isPlane(c) && P.seat === 0 && c.mine !== false) planeControls(c, dt);
+  else if (c.spec.air && P.seat === 0 && c.mine !== false) heliControls(c, dt);
   else if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = heldAmt('gas') - heldAmt('brake'); inp.steer = (isHeld('steerR') ? 1 : 0) - (isHeld('steerL') ? 1 : 0); inp.hb = isHeld('hb');
     { const sx = stickX(), sy = stickY(); if (sx) inp.steer = clamp(inp.steer + sx * 1.15, -1, 1); if (TOUCH.on && !isHeld('gas') && !isHeld('brake') && Math.abs(sy) > .3) inp.thr = clamp(-sy * 1.3, -1, 1); }   // a stick steers; on a touch screen up or down on it drives when GAS and BRAKE are not held
@@ -246,8 +250,9 @@ function updateCamera(dt) {
   if (P.dead) { P.orbit = (P.orbit || 0) + dt * .25; px = P.x; py = P.y + .8; pz = P.z; const a = P.cyaw + P.orbit; want = 5; camDist = lerp(camDist, want, Math.min(1, dt * 3)); const t = Math.min(camDist, rayWorld(px, py, pz, Math.sin(a) * .9, .42, Math.cos(a) * .9, 's', camDist + .3) - .3); camera.position.set(px + Math.sin(a) * .9 * t, py + .42 * t, pz + Math.cos(a) * .9 * t); camera.rotation.set(-.44, a, 0); }
   else if (P.car) {
     const c = P.car, sp = carSpeed(c), air = !!c.spec.air; P.idleCam += dt;
-    const lb = isHeld('behind'); if (!air && P.idleCam > 1.1 && sp > 2.5 && !lb) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
-    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
+    const lb = isHeld('behind'), plane = isPlane(c); if (plane && (TOUCH.on || padRecent() || P.seat) && P.idleCam > .5) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.2)); P.cpitch = lerp(P.cpitch, -.14 + (c.dive || 0) * .45, Math.min(1, dt * 1.6)); }   // a plane flown by stick: the view swings in behind it
+    if (!air && P.idleCam > 1.1 && sp > 2.5 && !lb) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
+    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (plane ? 2.8 : air ? 2.4 : 1.5); pz = c.z; want = plane ? (camFar ? 30 : 17) + sp * .04 : air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
     camDist = lerp(camDist, want, Math.min(1, dt * 5)); const t = Math.max(1.2, Math.min(camDist, rayWorld(px, py, pz, -bx, -fy + .12, -bz, 's', camDist + .4) - .4));
     camera.position.set(px - bx * t + sx, py + (-fy + .12) * t + .5 + sy, pz - bz * t); camera.rotation.set(P.cpitch - .04 + sy * .3, yaw + sx * .3, clamp(c.yawRate * .02, -.05, .05)); fov = 72 + Math.min(16, sp * .32);
   } else if (firstPerson()) {
@@ -267,7 +272,7 @@ function updateCamera(dt) {
 // --- how the player looks to the camera: the body in third person, a pair of hands in first
 function updatePlayerLook(dt) {
   const fp = firstPerson() && !P.dead, d = WEAPONS[P.wpn];
-  if (fp || (P.camClose && !P.car && !P.dead)) hideChar(meChar);   // a wall has pushed the camera into the player's back: do not fill the screen with it
+  if (fp || (P.camClose && !P.car && !P.dead) || isPlane(P.car)) hideChar(meChar);   // in a plane the cabin hides whoever is aboard   // a wall has pushed the camera into the player's back: do not fill the screen with it
   else { let twist = 0, seat = null, aim = P.wpn === 'fist' ? 0 : Math.max(P.ads, P.shootT > 0 ? 1 : 0);
     if (P.car) { seat = P.seat === 0 ? 'drive' : 'ride'; aim = P.shootT > 0 ? 1 : 0; twist = aim ? clamp(angTo(P.car.yaw, P.cyaw), -1.5, 1.5) : 0; }
     const s = P.car ? seatPos(P.car, P.seat, _sp) : P;

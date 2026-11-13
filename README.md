@@ -1,6 +1,6 @@
 # HoodWar — Port Calder Open World
 
-An open-world crew game that runs in the browser. One lake-port city and its airport, no rounds and no clock: take any car or helicopter, take neighbourhoods for your crew and live off what they pay, rob the bank with your friends, run a drug lab, buy up businesses on your turf, call your homies, rank up, and stay ahead of the police and the other crews. Play alone or online with friends; bots are everyone else. Your cash, guns, rank, businesses, car, helicopter, lab and turf are saved as you play.
+An open-world crew game that runs in the browser. One lake-port city and its airport, no rounds and no clock: take any car, helicopter or plane, take neighbourhoods for your crew and live off what they pay, rob the bank with your friends, run a drug lab, buy up businesses on your turf, call your homies, rank up, and stay ahead of the police and the other crews. Play alone or online with friends; bots are everyone else. Your cash, guns, rank, businesses, car, aircraft, lab and turf are saved as you play.
 
 ## The city
 
@@ -59,12 +59,13 @@ Deals go the Sub Rosa way: what changes hands is a briefcase someone has to carr
 - **Between players**: Phone › Deals › Offer product to (another player): pick a size and price. They answer from their phone; if they take it, the seller gets a case of product, the buyer a case of their own cash, and both get the meet on the map. Then it is up to the two of you: swap cases, or don't.
 - **Texts**: Phone › Deals › Text (a player): meet me here, need backup, got the goods, bring the money, deal is off, watch your back, with where you are marked on their map.
 
-## The airport and helicopters
+## The airport, helicopters and planes
 
 - **Port Calder International** sits on an island across the harbour, over the Harbor Bridge from the docks: a runway with airliners landing and taking off, a terminal with four gates, hangars, a cargo yard and helipads. Nobody's crew runs it.
 - **Helicopters.** A Skylark (four seats, no guns) waits on the airport's pads for anyone to take. The airport police keep a **Hornet** gunship on their pad, with nose guns and rockets; their guards are on it, and taking it brings three stars. W A S D fly it, Space and Shift (UP and DOWN on a touch screen) climb and descend, the mouse turns it, click fires the guns and right-click or G the rockets. Homies get in with you and shoot from the doors.
-- **Your own.** Phone › Aircraft sells a Skylark ($45,000, rank 4) or a Hornet ($95,000, rank 8), kept on file and set down on the nearest helipad whenever you call: the airport's, the strip mall car park or the docks.
-- **Getting out.** Jump out up high and a parachute opens. Ditch in the water and you swim ashore.
+- **Planes.** Two **Mallards** (a forgiving two-seat prop) and a **Starling** (a four-seat business jet) stand on the apron for anyone to take. Taxi onto the runway (or any long straight), throttle up with Space (UP on a touch screen, RT on a controller), and once it is quick enough pull back with S (the stick back) to lift the nose. In the air it flies toward where you look with the mouse: point the camera and it banks and climbs to follow. W and S pitch and A and D bank it directly, which is how the stick flies it on a touch screen or a controller. Shift (DOWN, LT) throttles back. Below its stall speed the wings stop holding it up and the nose drops: the HUD shows the throttle and warns you. To land, come in slow and shallow with the wings level and settle onto the runway, then throttle right back and hold Shift to brake. A hard or crooked touchdown, a dive into the ground or anything in the way wrecks it. The Mallard lifts off after about 30 m; the Starling wants over 120 m and tops out near 165 mph. Friends ride along in the other seats.
+- **Your own.** Phone › Aircraft sells a Skylark ($45,000, rank 4), a Hornet ($95,000, rank 8), a Mallard ($60,000, rank 5) or a Starling ($160,000, rank 9), kept on file. A helicopter is set down on the nearest helipad whenever you call (the airport's, the strip mall car park or the docks); a plane waits in one of the two boxed stands on the airport's south apron, beside the end of the runway.
+- **Getting out.** Jump out of anything up high and a parachute opens. Ditch in the water and you swim ashore.
 - **Police helicopter.** At three stars a police helicopter joins the chase: it circles where you were last seen with two marksmen in the doors and, after dark, a searchlight on you. It only knows what it can see, so get under cover to lose it, or shoot it down.
 
 ## Playing the police
@@ -84,7 +85,7 @@ On a touch screen the game shows on-screen controls: a stick for the left thumb 
 
 ## Saving
 
-Cash, guns, grenades, armour, your rank, your businesses, your car, your helicopter, your lab and its stock, your crew and your crew's turf are saved in the browser as you play. Your turf and businesses keep paying while you are away: an hour of income for every real hour, for up to eight hours.
+Cash, guns, grenades, armour, your rank, your businesses, your car, your helicopter or plane, your lab and its stock, your crew and your crew's turf are saved in the browser as you play. Your turf and businesses keep paying while you are away: an hour of income for every real hour, for up to eight hours.
 
 **Copy save code** on the menu gives you a code to paste into **Load save code** on another phone or computer. On the Claude page the save is also kept with your Claude account, so it is there wherever you open the page signed in.
 

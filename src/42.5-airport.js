@@ -8,6 +8,10 @@ const RWY = { x0: 1045, x1: 1090, z0: 10, z1: 526, cx: 1067.5 };    // the runwa
 const TAXI = { x0: 1005, x1: 1023 }, LANDX = 866;                   // the taxiway beside it; the airport road's centre line, landside
 const TERM = { x0: 880, x1: 940, z0: 160, z1: 370 };                 // the terminal
 const AIRPORT = { pads: [], city: [], gun: null, guards: [], masts: [], stands: [], name: 'Port Calder International' };
+// where planes wait on the apron, nose to the taxiway: three for anyone (taken ones come back), and two at the south end, by the runway's
+// threshold, kept for the planes people own
+const PLANE_STANDS = [{ x: 975, z: 150, type: 'prop' }, { x: 996, z: 163, type: 'jet' }, { x: 982, z: 432, type: 'prop' }, { x: 950, z: 514, own: true }, { x: 972, z: 514, own: true }];
+PLANE_STANDS.forEach(s => { s.y = CURB; s.yaw = -PI / 2; s.name = s.own ? 'the airport (south apron)' : 'Port Calder International'; });
 // a thin round member between two points: stay cables, braces, poles that lean
 function strut(ax, ay, az, bx, by, bz, r, col) {
   const len = hyp(bx - ax, by - ay, bz - az), g = new T.CylinderGeometry(r, r, len, 6), q = new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), new T.Vector3((bx - ax) / len, (by - ay) / len, (bz - az) / len));
@@ -115,6 +119,9 @@ function genAirport(bridgeEnds) {
     cyl(px, CURB, CURB + .06, pz, 9, 'concrete', 0xc9c5bc, { nocol: true, seg: 28 }); paintRing(px, pz, 7.4, .5, kind === 'gun' ? 0xd23a2a : 0xd9b13a, CURB + .06);
     paint(px - 2.6, pz - 3.6, px - 1.6, pz + 3.6, WHT, CURB + .06); paint(px + 1.6, pz - 3.6, px + 2.6, pz + 3.6, WHT, CURB + .06); paint(px - 1.6, pz - .5, px + 1.6, pz + .5, WHT, CURB + .06);
     const pad = { x: px, z: pz, yaw: -PI / 2, kind, y: CURB, name: 'Port Calder International' }; AIRPORT.pads.push(pad); if (kind === 'gun') AIRPORT.gun = pad; });   // 'free': kept clear for the helicopters people own
+  // the plane stands: a yellow lead-in line off the taxiway and a stop bar under the nose wheel; the owners' two are boxed in white
+  PLANE_STANDS.forEach(s => { paint(s.x - 6, s.z - .15, TAXI.x0, s.z + .15, YEL, CURB + .05); paint(s.x + 3.5, s.z - 1.8, s.x + 3.9, s.z + 1.8, YEL, CURB + .05);
+    if (s.own) { const x0 = s.x - 7.6, x1 = s.x + 7.2, z0 = s.z - 6.9, z1 = s.z + 6.9; [[x0, z0, x1, z0 + .3], [x0, z1 - .3, x1, z1], [x0, z0, x0 + .3, z1]].forEach(q => paint(q[0], q[1], q[2], q[3], WHT, CURB + .05)); } });
   AIRPORT.guards = [{ x: 954, z: 22, yaw: PI / 2 }, { x: 955, z: 40, yaw: PI / 2 }, { x: 979, z: 18, yaw: 0 }];
   SPAWNS[TEAM_COP] = [{ x: 942, z: 24, yaw: -PI / 2 }, { x: 942, z: 36, yaw: -PI / 2 }, { x: LINE.x - 8.3, z: LINE.sz - 3, yaw: 0 }, { x: LINE.x + 8.3, z: LINE.sz + 3, yaw: PI }];   // a police player's start: the air support hangar, or outside the El station
   // and two in town, on open ground a helicopter can be set down on: the strip mall's car park and the container yard at the docks

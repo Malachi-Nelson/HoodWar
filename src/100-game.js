@@ -42,7 +42,7 @@ function onEvent(e, mine) {
   else if (k === 'rv' || k === 'pg' || k === 'dn') coopNews(e);
   else if (k === 'ct' || k === 'cq' || k === 'cb' || k === 'cf' || k === 'cl' || k === 'wb' || k === 'wx' || k === 'wf' || k === 'to' || k === 'tr' || k === 'tn' || k === 'mg') tradeNews(e);
   else if (k === 'gs') { const a = GAME.unref(e[2]); if (a === P) banner('Gunship stolen', 'The airport police are coming', 2.6, 'gold'); else if (a) note(nameOf(a) + ' stole the airport gunship', 'g'); }
-  else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + ' is on the helipad at ' + e[3] + ' · it is on your map', 'g'); } }
+  else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + (CARS[e[4]] && CARS[e[4]].air === 'plane' ? ' is waiting at ' : ' is on the helipad at ') + e[3] + ' · it is on your map', 'g'); } }
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
@@ -185,11 +185,12 @@ function carAfterStep(c) {
 const NOINP = { thr: 0, steer: 0, hb: true };
 function updateCarsAuth(dt) {
   for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i];
-    if (c.wreck) { c.wreckT += dt; if (c.spec.air) { stepHeli(c, dt, NOAIR); if (c.sunk && c.wreckT > 9) { removeCar(c); continue; } } else if (carSpeed(c) > .1) stepCar(c, dt, NOINP); c.crash = 0; if (c.wreckT > 26) { removeCar(c); } continue; }
+    if (c.wreck) { c.wreckT += dt; if (c.spec.air) { if (c.spec.air === 'plane') stepPlane(c, dt, NOPLANE); else stepHeli(c, dt, NOAIR); if (c.sunk && c.wreckT > 9) { removeCar(c); continue; } } else if (carSpeed(c) > .1) stepCar(c, dt, NOINP); c.crash = 0; if (c.wreckT > 26) { removeCar(c); } continue; }
     if (c.burn > 0) { c.burn -= dt; if (c.burn <= 0) { blowCar(c); continue; } }
     if (c === P.car && P.seat === 0) { carAfterStep(c); continue; }
     if (c.kin) { c.crash = 0; continue; }
-    if (c.spec.air) { if (c.hai && c.occ[0] && c.occ[0].kind === 'bot') heliBrain(c, dt); if (c.gone) continue; if (c.occ[0] || !c.asleep) stepHeli(c, dt, c.occ[0] ? c.inp : NOAIR); }
+    if (c.spec.air === 'plane') { if (c.occ[0] || !c.asleep) stepPlane(c, dt, NOPLANE); }   // flown by a player, it is that player's machine that flies it
+    else if (c.spec.air) { if (c.hai && c.occ[0] && c.occ[0].kind === 'bot') heliBrain(c, dt); if (c.gone) continue; if (c.occ[0] || !c.asleep) stepHeli(c, dt, c.occ[0] ? c.inp : NOAIR); }
     else if (c.occ[0] || !c.asleep) stepCar(c, dt, c.occ[0] && c.ai ? c.inp : c.occ[0] ? c.inp : NOINP);
     carAfterStep(c);
     if (c.ai && c.occ[0] && carSpeed(c) > 4.5) GAME.roadkill(c, c.occ[0]);
@@ -321,6 +322,7 @@ function planHomes() {
   const take = (list, n) => { for (let k = 0, guard = 0; k < n && guard < 400; guard++) { const s = list[(r() * list.length) | 0]; if (used.some(u => hyp(u.x - s.x, u.z - s.z) < 9)) continue; used.push(s); k++; G.homes.push({ spot: s, type: pick(r, STREET_CARS), team: -1, car: null, t: 0 }); } };
   take(street, 10); take(lots, 5);
   for (let t = 0; t < NCREW; t++) BASECARS[t].forEach((s, k) => G.homes.push({ spot: s, type: k === 3 ? 'coupe' : CREW_CARS[k % 3], team: t, car: null, t: 0 }));
+  PLANE_STANDS.forEach((s, k) => !s.own && G.homes.push({ spot: s, type: s.type, team: -1, car: null, t: 0, color: s.type === 'jet' ? 0xf2efe6 : [0xd9a521, 0xa3221b][k % 2] }));   // light aircraft on the apron
   AIRPORT.pads.forEach((s, k) => s.kind !== 'free' && G.homes.push({ spot: s, type: s.kind === 'gun' ? 'heli' : 'chopper', team: -1, car: null, t: 0, color: s.kind === 'gun' ? 0x1d6b45 : [0xf2efe6, 0x1f4e8c][k % 2] }));   // the airport's helicopters
   return r;
 }

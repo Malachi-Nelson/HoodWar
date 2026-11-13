@@ -63,10 +63,13 @@ const SFX = {
 // engines: four voices follow the four nearest running cars
 function updateEngines(dt, mine) {
   if (!AC) return; sndBudget = Math.min(14, sndBudget + dt * 34);
-  const live = cars.filter(c => !c.wreck && !c.spec.air && (c.occ[0] || c.ai || hyp(c.vx, c.vz) > 1)).map(c => ({ c, d: c === mine ? -1 : hyp(c.x - EAR.x, c.z - EAR.z) })).sort((a, b) => a.d - b.d).slice(0, ENGV.length);
+  const live = cars.filter(c => !c.wreck && (!c.spec.air || c.spec.air === 'plane') && (c.occ[0] || c.ai || hyp(c.vx, c.vz) > 1 || (c.spec.air && c.rotor > .1))).map(c => ({ c, d: c === mine ? -1 : c.spec.air ? hyp(c.x - EAR.x, c.y - EAR.y, c.z - EAR.z) : hyp(c.x - EAR.x, c.z - EAR.z) })).sort((a, b) => a.d - b.d).slice(0, ENGV.length);
   let slip = 0;
   ENGV.forEach((v, i) => { const e = live[i], t = AC.currentTime;
-    if (!e || e.d > 90) { v.g.gain.setTargetAtTime(0, t, .08); return; }
+    if (!e || e.d > (e.c.spec.air ? 260 : 90)) { v.g.gain.setTargetAtTime(0, t, .08); return; }
+    if (e.c.spec.air) { const c = e.c, r = c.rotor || 0, jet = c.type === 'jet', f = (jet ? 72 : 34) + r * (jet ? 120 : 66);   // a plane: a prop's drone or a jet's whine, rising with the throttle, heard a long way off
+      v.o1.frequency.setTargetAtTime(f, t, .12); v.o2.frequency.setTargetAtTime(f * (jet ? .75 : .5), t, .12); v.f.frequency.setTargetAtTime((jet ? 900 : 380) + r * (jet ? 1700 : 700), t, .15);
+      v.g.gain.setTargetAtTime(c === mine ? .08 + r * .08 : .3 * r * Math.pow(Math.max(0, 1 - e.d / 260), 2), t, .12); return; }
     const c = e.c, sp = hyp(c.vx, c.vz), top = c.spec.vmax, gear = Math.min(3, Math.floor(sp / (top / 4))), r = (sp - gear * top / 4) / (top / 4), f = 46 + r * 62 + gear * 9 + (c.inp.thr > 0 ? 9 : 0) + (c.type === 'sport' ? 14 : c.type === 'coupe' || c.type === 'lowrider' ? -6 : 0);
     v.o1.frequency.setTargetAtTime(f, t, .06); v.o2.frequency.setTargetAtTime(f * .5, t, .06); v.f.frequency.setTargetAtTime(280 + sp * 22 + (c.inp.thr > 0 ? 320 : 0), t, .08);
     const vol = c === mine ? .11 + (c.inp.thr > 0 ? .06 : 0) : .2 * Math.pow(Math.max(0, 1 - e.d / 90), 2); v.g.gain.setTargetAtTime(vol, t, .08);
@@ -74,7 +77,7 @@ function updateEngines(dt, mine) {
   SKID.g.gain.setTargetAtTime(slip * .16, AC.currentTime, .05);
   // one siren: the nearest police car that has its lights on
   let sv = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || !c.horn || c.wreck || !c.occ[0]) continue; if (c === mine) { sv = Math.max(sv, .03); continue; } const d = hyp(c.x - EAR.x, c.z - EAR.z); if (d < 190) sv = Math.max(sv, .075 * Math.pow(1 - d / 190, 1.6)); }
-  if (ROTOR.g) { let hb = null, hd = 1e9; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.spec.air || c.wreck || !(c.rotor > .04)) continue; const d = c === mine ? -1 : hyp(c.x - EAR.x, c.y - EAR.y, c.z - EAR.z); if (d < hd) { hd = d; hb = c; } }
+  if (ROTOR.g) { let hb = null, hd = 1e9; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.spec.air || c.spec.air === 'plane' || c.wreck || !(c.rotor > .04)) continue; const d = c === mine ? -1 : hyp(c.x - EAR.x, c.y - EAR.y, c.z - EAR.z); if (d < hd) { hd = d; hb = c; } }
     const rv = !hb || hd > 320 ? 0 : (hb === mine ? .2 : .45 * Math.pow(1 - hd / 320, 1.5)) * hb.rotor, t = AC.currentTime; ROTOR.g.gain.setTargetAtTime(rv, t, .1); if (hb) { ROTOR.lfo.frequency.setTargetAtTime(5 + hb.rotor * 9, t, .2); ROTOR.wh.frequency.setTargetAtTime(650 + hb.rotor * 550, t, .2); } }
   SIREN.g.gain.setTargetAtTime(sv, AC.currentTime, .12); if (sv > 0) { const ph = (AC.currentTime * .6) % 1, tri = ph < .5 ? ph * 2 : 2 - ph * 2; SIREN.o.frequency.setTargetAtTime(620 + tri * 540, AC.currentTime, .03); }
 }

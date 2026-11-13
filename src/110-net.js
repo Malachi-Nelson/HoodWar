@@ -81,6 +81,7 @@ function netPeers(dt, each) {
 function slotFor(r) { if (NET.slots[r.peer] !== undefined) return r.slot = NET.slots[r.peer]; const used = Object.keys(NET.slots).map(p => NET.slots[p]); let k = r.slot > 0 && !used.includes(r.slot) ? r.slot : 1; while (used.includes(k)) k++; NET.slots[r.peer] = k; r.slot = k; return k; }
 const hashStr = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) % 100000; };
 function remoteVisual(r, dt) {
+  if (r.car && !r.car.gone && isPlane(r.car)) { r.x = r.car.x; r.y = r.car.y; r.z = r.car.z; hideChar(r.ch); if (r.tag) r.tag.visible = false; return; }   // inside a plane's cabin
   let seat = null, twist = 0, x = r.x, y = r.y, z = r.z, yaw = r.yaw;
   if (r.car && !r.car.gone) { seat = r.seat === 0 ? 'drive' : 'ride'; seatPos(r.car, r.seat, _sp); x = r.x = _sp.x; y = _sp.y; z = r.z = _sp.z; r.y = r.car.y; yaw = r.car.yaw; twist = r.aim ? clamp(angTo(yaw, r.ayaw || yaw), -1.5, 1.5) : 0; }
   poseChar(r.ch, { x, y, z, yaw, pitch: r.pitch, spd: r.spd, air: false, wpn: r.wpn, aim: r.aim, reload: r.reload, seat, twist, dead: r.dead ? r.deadT : -1, knock: r.knock, sprint: r.sprint }, dt);
@@ -124,7 +125,7 @@ function encCars() {   // -> [in use, standing empty]. A helicopter's head is fo
   let s = '', pk = '';
   for (let i = 0; i < cars.length; i++) { const c = cars[i], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, fl = (c.wreck ? 1 : 0) | (c.burn > 0 ? 2 : 0) | (c.horn ? 4 : 0) | (c.ai || c.occ[0] ? 8 : 0) | (c.slip > 5.5 ? 16 : 0);
     const head = B36(c.id, 3) + B36(c.spec.n, 1) + B36(Math.max(0, ALLPAINT.indexOf(c.color)), 1) + B36((c.x + 8) * 16, 3) + B36((c.z + 8) * 16, 3) + B36(clamp((c.y + 1) * 8, 0, 35), 1) + encYaw(c.yaw)
-      + (c.spec.air ? B36(clamp((c.y + 4) * 4, 0, 1295), 2) + B36(clamp(((c.dive || 0) + .5) * 35, 0, 35), 1) + B36(clamp(((c.roll || 0) + .5) * 35, 0, 35), 1) : ''), hp = B36(clamp(c.hp / c.spec.hp, 0, 1) * 35, 1);
+      + (c.spec.air ? B36(clamp((c.y + 4) * 4, 0, 1295), 2) + (c.spec.air === 'plane' ? B36(clamp(((c.dive || 0) + 1.6) / 3.2 * 1295, 0, 1295), 2) + B36(clamp(((c.roll || 0) + 1.6) / 3.2 * 1295, 0, 1295), 2) : B36(clamp(((c.dive || 0) + .5) * 35, 0, 35), 1) + B36(clamp(((c.roll || 0) + .5) * 35, 0, 35), 1)) : ''), hp = B36(clamp(c.hp / c.spec.hp, 0, 1) * 35, 1);
     if (!c.occ[0] && !c.occ[1] && !c.occ[2] && !c.occ[3] && !c.ai && !c.horn && Math.abs(vf) < .15 && !(c.spec.air && (!c.landed || c.rotor > .05))) { pk += head + hp + B36(fl, 1); continue; }
     let occ = ''; for (let k = 0; k < 4; k++) { const o = c.occ[k]; occ += !o ? '-' : o.kind === 'bot' ? '*' : B36(o === P ? 0 : o.slot, 1); }
     s += head + B36(clamp((vf + 60) * 10, 0, 1295), 2) + hp + B36(fl, 1) + occ; }
@@ -133,9 +134,9 @@ function encCars() {   // -> [in use, standing empty]. A helicopter's head is fo
 function decCars(s, pk) {
   const live = {};
   // one record from o; returns its length, so the next one can be found whatever this one turned out to be
-  const put = (src, o, moving) => { const tn = U36(src, o + 3, 1), sp = CARS[CID[tn]], air = !!(sp && sp.air), b = o + (air ? 18 : 14), len = b - o + (moving ? 8 : 2); if (o + len > src.length || !sp) return 0;
+  const put = (src, o, moving) => { const tn = U36(src, o + 3, 1), sp = CARS[CID[tn]], air = !!(sp && sp.air), pl = air && sp.air === 'plane', b = o + (pl ? 20 : air ? 18 : 14), len = b - o + (moving ? 8 : 2); if (o + len > src.length || !sp) return 0;
     const id = U36(src, o, 3), ci = U36(src, o + 4, 1), x = U36(src, o + 5, 3) / 16 - 8, z = U36(src, o + 8, 3) / 16 - 8, yaw = U36(src, o + 12, 2) / 1295 * TAU,
-      y = air ? U36(src, o + 14, 2) / 4 - 4 : U36(src, o + 11, 1) / 8 - 1, dive = air ? U36(src, o + 16, 1) / 35 - .5 : 0, roll = air ? U36(src, o + 17, 1) / 35 - .5 : 0,
+      y = air ? U36(src, o + 14, 2) / 4 - 4 : U36(src, o + 11, 1) / 8 - 1, dive = pl ? U36(src, o + 16, 2) / 1295 * 3.2 - 1.6 : air ? U36(src, o + 16, 1) / 35 - .5 : 0, roll = pl ? U36(src, o + 18, 2) / 1295 * 3.2 - 1.6 : air ? U36(src, o + 17, 1) / 35 - .5 : 0,
       vf = moving ? U36(src, b, 2) / 10 - 60 : 0, q = moving ? b + 2 : b, hp = U36(src, q, 1) / 35, fl = U36(src, q + 1, 1), occ = moving ? src.substr(q + 2, 4) : '----';
     live[id] = 1; let c = carById(id);
     if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);

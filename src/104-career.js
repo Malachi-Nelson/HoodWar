@@ -232,14 +232,15 @@ function nitrous(c, dt, want) {
 
 // --- each second or so: business marks, the car you were promised, the phone menu kept current
 // --- a helicopter of your own: bought on the phone, kept on file, and set down on the helipad nearest you whenever you call for it
-const AIR_SHOP = [['chopper', 45000, 4, 'Four seats, quick, no guns'], ['heli', 95000, 8, 'Nose guns and rockets']];
+const AIR_SHOP = [['chopper', 45000, 4, 'Four seats, quick, no guns'], ['heli', 95000, 8, 'Nose guns and rockets'], ['prop', 60000, 5, 'Two seats, forgiving, lands short'], ['jet', 160000, 9, 'Four seats, fast, wants the runway']];
+const airKind = t => CARS[t].air === 'plane' ? (t === 'jet' ? ' jet' : ' plane') : ' helicopter';
 const myAir = () => { for (let i = 0; i < cars.length; i++) if (cars[i].pa === P && !cars[i].gone) return cars[i]; return null; };
 function airItems() {
   const r = P.rank || 1, out = [], cd = coolLeft(PH.airT, 30), c = myAir(), wrecked = !!c && (c.wreck || c.burn > 0);
-  if (P.air) out.push(cd ? { label: 'Bring my ' + CARS[P.air.t].name, sub: 'On the way · call back in ' + cd + 's', off: true } : { label: 'Bring my ' + CARS[P.air.t].name, sub: 'Set down on the helipad nearest you' + (wrecked ? ' · insurance' : ''), cost: wrecked ? 500 : 0, act: () => { if (wrecked && !payCash(500)) return; closeShop(); PH.airT = G.time; sendAir(); } });
+  if (P.air) out.push(cd ? { label: 'Bring my ' + CARS[P.air.t].name, sub: 'On the way · call back in ' + cd + 's', off: true } : { label: 'Bring my ' + CARS[P.air.t].name, sub: (CARS[P.air.t].air === 'plane' ? 'Waiting on the apron at the airport' : 'Set down on the helipad nearest you') + (wrecked ? ' · insurance' : ''), cost: wrecked ? 500 : 0, act: () => { if (wrecked && !payCash(500)) return; closeShop(); PH.airT = G.time; sendAir(); } });
   AIR_SHOP.forEach(q => { const S = CARS[q[0]], has = P.air && P.air.t === q[0];
-    out.push(has ? { label: S.name + ' helicopter', sub: 'Yours · ' + q[3], off: true, own: true } : q[2] > r ? { label: S.name + ' helicopter', sub: 'Opens at rank ' + q[2], off: true, lock: 'Opens at rank ' + q[2] }
-      : { label: S.name + ' helicopter', sub: q[3] + ' · ' + Math.round(S.vmax * 2.237) + ' mph' + (P.air ? ' · replaces your ' + CARS[P.air.t].name : ''), cost: q[1], act: () => { if (!payCash(q[1])) return; P.air = { t: q[0], c: q[0] === 'heli' ? 0x1b1d21 : CREW_PAINT[P.team] }; addRP(CFG.rp.buy); saveGame(); closeShop(); PH.airT = G.time; sendAir(); banner(S.name, 'Bought · on its way to the nearest helipad', 2.6, 'gold'); } }); });
+    out.push(has ? { label: S.name + airKind(q[0]), sub: 'Yours · ' + q[3], off: true, own: true } : q[2] > r ? { label: S.name + airKind(q[0]), sub: 'Opens at rank ' + q[2], off: true, lock: 'Opens at rank ' + q[2] }
+      : { label: S.name + airKind(q[0]), sub: q[3] + ' · ' + Math.round(S.vmax * 2.237) + ' mph' + (P.air ? ' · replaces your ' + CARS[P.air.t].name : ''), cost: q[1], act: () => { if (!payCash(q[1])) return; P.air = { t: q[0], c: q[0] === 'heli' ? 0x1b1d21 : CREW_PAINT[P.team] }; addRP(CFG.rp.buy); saveGame(); closeShop(); PH.airT = G.time; sendAir(); banner(S.name, S.air === 'plane' ? 'Bought · waiting on the airport\'s south apron' : 'Bought · on its way to the nearest helipad', 2.6, 'gold'); } }); });
   out.push(back()); return out;
 }
 function sendAir() { const v = P.air; if (!v || !CARS[v.t]) return; if (AUTH()) GAME.airDeliver(P, v.t, v.c); else NET.req('ad', CARS[v.t].n, Math.max(0, ALLPAINT.indexOf(v.c))); }
@@ -247,7 +248,8 @@ function sendAir() { const v = P.air; if (!v || !CARS[v.t]) return; if (AUTH()) 
 GAME.airDeliver = (a, t, col) => {
   if (!a || a.gone || !CARS[t] || !CARS[t].air) return false;
   for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.pa === a && !c.occ.some(o => o)) removeCar(c); }
-  let best = null, bd = 1e9; AIRPORT.pads.concat(AIRPORT.city).forEach(p => { if (cars.some(c => hyp(c.x - p.x, c.z - p.z) < 9 && Math.abs(c.y - p.y) < 3)) return; const d = hyp(p.x - a.x, p.z - a.z); if (d < bd) { bd = d; best = p; } });
+  const pl = CARS[t].air === 'plane'; let best = null, bd = 1e9;   // a plane goes to the owners' stands first, and only if both are full to one of the others
+  (pl ? [PLANE_STANDS.filter(s => s.own), PLANE_STANDS.filter(s => !s.own)] : [AIRPORT.pads.concat(AIRPORT.city)]).forEach(L => { if (!best) L.forEach(p => { if (cars.some(c => hyp(c.x - p.x, c.z - p.z) < (pl ? 12 : 9) && Math.abs(c.y - p.y) < 3)) return; const d = hyp(p.x - a.x, p.z - a.z); if (d < bd) { bd = d; best = p; } }); });
   if (!best) return false; const c = spawnCar(t, best.x, best.z, best.yaw, { color: ALLPAINT.includes(col) ? col : undefined }); if (!c) return false;
   c.pa = a; c.y = best.y; GAME.ev('ad', GAME.ref(a), best.name || 'the airport', t, c.id); return true;
 };
