@@ -28,11 +28,11 @@ function onEvent(e, mine) {
   else if (k === 'ti') { const bz = SAVE.live && G.state !== 'menu' ? bizIncome() : 0; if (bz > 0) { P.earn += bz; gain(bz); }   // each player's own businesses, on their own machine
     note('Hourly income · ' + e[2] + (e[2] === 1 ? ' neighbourhood' : ' neighbourhoods') + ' · +$' + e[3] + (bz > 0 ? ' · businesses +$' + bz : ''), 'g'); }
   else if (k === 'hm') { if (GAME.unref(e[2]) === P) { PH.homUntil = G.time + 300; banner('Homies on the way', e[3] + ' of your crew coming round the corner', 2.4, 't' + P.team); } }
-  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && P.pv) { c.pv = P; c.tune = P.pv.en | 0; c.plate = P.pv.ar | 0; } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
+  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && P.pv) { c.pv = P; applySpec(c, P.pv); } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
   else if (k === 'hz') { const z = ZONES[e[2]]; if (e[3] === P.team) { banner('Hold broken', 'Their grip on ' + z.name + ' is gone · take the ring', 3, 't' + P.team); SFX.cap(true); } }
   else if (k === 'hw') { const z = ZONES[e[2]]; note(CREWS[e[3]].name + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
-  else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd') evNews(e, mine);
+  else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
@@ -186,7 +186,7 @@ function updateCarsAuth(dt) {
 // --- who and what is on the streets
 const humans = () => { const h = [P]; for (const k in NET.remotes) h.push(NET.remotes[k]); return h; };
 const nearHuman = (x, z) => { let d = 1e9; humans().forEach(a => { const q = hyp(a.x - x, a.z - z); if (q < d) d = q; }); return d; };
-const CREW_CARS = ['lowrider', 'suv', 'sedan'], STREET_CARS = ['sedan', 'sedan', 'hatch', 'hatch', 'coupe', 'suv', 'pickup', 'van', 'sport', 'lowrider'];
+const CREW_CARS = ['lowrider', 'suv', 'sedan'], STREET_CARS = ['sedan', 'sedan', 'hatch', 'hatch', 'coupe', 'suv', 'pickup', 'van', 'sport', 'lowrider', 'muscle', 'sport', 'super', 'muscle'];
 function parkCar(spot, type, o) { const c = spawnCar(type, spot.x, spot.z, spot.yaw, o); if (c) { c.home = spot; c.asleep = true; } return c; }
 // Traffic and people on foot are kept where there is someone to see them: they turn up a little way off from a player and are
 // taken away again once every player has left them far behind.

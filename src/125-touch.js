@@ -23,7 +23,7 @@ const TC_DEF = [
   ['map', 'MAP', 'b', 'map', 0, .44, 0, .07, .1],
   ['turf', 'TURF', 'b', 'board', 0, .55, 0, .07, .1],
   ['cam', 'CAM', 'b', 'tap:KeyV', 1, .5, 0, .07, .1],
-  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1],
+  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'key:ShiftLeft', 1, .5, 1, .68, .13],
 ];
 const TCD = {}; TC_DEF.forEach(d => { TCD[d[0]] = d; });
 const TOUCH = { on: false, fx: 0, fy: 0, ptr: {}, edit: false, sel: null, aim: false, ectx: 'f', el: {}, cfg: null, coarse: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) };

@@ -33,7 +33,7 @@ function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save')
 function saveData() {
   const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
   return { v: 4, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null,
-    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null };
+    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0 };
 }
 function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
 function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); SAVE.lastR = Math.round(P.rp || 0); writeSave(saveData()); }
@@ -70,7 +70,7 @@ function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a
 function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
 const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
 function beginPlay() {
-  const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 4); }
+  const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
   P.rp = sv ? clamp(Math.round(+sv.rp || 0), 0, 9e7) : 0; P.rank = rankOf(P.rp); P.biz = new Set(sv && Array.isArray(sv.b) ? sv.b.map(String) : []); P.pv = sv && pvOk(sv.pv) ? sv.pv : null; P.pvAsk = P.pv ? G.time + 2.5 : 0; P.garage = null;
   let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); });
@@ -122,14 +122,14 @@ window.addEventListener('keydown', e => {
   if (G.state !== 'playing') { if (e.code === 'Escape' && G.state === 'paused' && TEST) $('deploy').click(); return; }
   if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code)) e.preventDefault();
   if (e.repeat) return; keys[e.code] = true;
-  if (shopOpen && /^Digit[1-9]$/.test(e.code)) { buy(e.code.slice(5)); return; }
+  if (shopOpen && /^Digit[0-9]$/.test(e.code)) { const n = e.code.slice(5); buy(n === '0' ? '10' : n); return; }
   if (e.code === 'Tab') { drawBoard(); $('board').hidden = false; } else if (e.code === 'KeyM') { $('bigmap').hidden = false; drawBigMap(); }
   else if (e.code === 'Escape' || e.code === 'KeyP') { if (shopOpen) closeShop(); else if (!locked()) pause(); }
   else if (e.code === 'Backquote') devOpen();
   else if (P.dead) return;
   else if (e.code === 'KeyF' || e.code === 'KeyE') { if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); }
   else if (e.code === 'KeyR') startReload(); else if (e.code === 'KeyG') throwGrenade();
-  else if (/^Digit[1-6]$/.test(e.code)) { const id = WID.find(k => WEAPONS[k].slot === +e.code.slice(5) - 1); if (id) setWeapon(id); }
+  else if (/^Digit[0-9]$/.test(e.code)) { const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
   else if (e.code === 'KeyV') { if (P.car) camFar = camFar ? 0 : 1; else { P.view = P.view === 1 ? 3 : 1; $('set-view').value = String(P.view); try { localStorage.setItem('pc-view', String(P.view)); } catch (x) {} } }
   else if (e.code === 'KeyQ') { if (P.car) nextRadio(); else cycleWeapon(1); }
   else if (e.code === 'KeyB') callDriveBy();
@@ -177,7 +177,7 @@ function step(dt) {
   G.time += dt;
   if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
-  updateGrenades(dt);
+  updateGrenades(dt); updateProj(dt);
 }
 let todT = 0, slowT = 0, menuA = 0, saveT = 15;
 function visuals(dt, now) {
@@ -216,7 +216,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
-  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
+if (TEST) window.__pc = { PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

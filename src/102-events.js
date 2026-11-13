@@ -3,7 +3,7 @@
         out in the open, a crew coming for your turf, a car the chop shop wants, a stash left lightly guarded, a street race.
         The machine that runs the world starts and ends them and pays for them; everyone sees them on the map.
    ===================================================================== */
-const EV_KINDS = ['truck', 'hit', 'war', 'chop', 'stash', 'race'];
+const EV_KINDS = ['truck', 'hit', 'war', 'chop', 'stash', 'race', 'deal'];
 const EV_INFO = {
   truck: { name: 'Armored truck', icon: '$', col: '#8fe36b', hex: 0x8fe36b, how: 'Shoot it to a stop, grab the cash' },
   hit:   { name: 'Hit', icon: '✖', col: '#ff6a5a', hex: 0xff6a5a, how: 'Take out the lieutenant' },
@@ -11,6 +11,7 @@ const EV_INFO = {
   chop:  { name: 'Chop shop', icon: '⚙', col: '#9fd0e8', hex: 0x9fd0e8, how: 'Steal the car, bring it to Calder Auto Body' },
   stash: { name: 'Stash run', icon: '◆', col: '#e8b8ff', hex: 0xe8b8ff, how: 'Grab the stash, bring it to your yard' },
   race:  { name: 'Street race', icon: '⚑', col: '#f2efe6', hex: 0xf2efe6, how: 'Drive into the ring to start' },
+  deal:  { name: 'Deal going down', icon: '⇄', col: '#7dffb0', hex: 0x7dffb0, how: 'Hit the deal: take the money and the product' },
 };
 const EVTS = []; let evtSeq = 0;
 const CHOP = GARAGES.find(g => g.team === undefined) || GARAGES[0];
@@ -41,7 +42,7 @@ function updateEvents() {   // four times a second, on the machine that runs the
   const k = pickJob(); G.evT = G.time + (k && EV_START[k]() ? 50 + rand() * 40 : 8);
 }
 function pickJob() {   // which kind of job turns up next: any kind not already running, a hood war only when the crew has turf to lose
-  const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4 };
+  const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4, deal: 2.2 };
   EVTS.forEach(E => { w[E.k] = 0; });
   let tot = 0; for (const q in w) tot += w[q]; if (tot <= 0) return null; let r = rand() * tot; for (const q in w) { r -= w[q]; if (r <= 0 && w[q] > 0) return q; }
   return null;
@@ -147,6 +148,31 @@ EV_TICK.stash = E => {
   if (G.time > E.until) { if (E.bag) removePickup(E.bag); evEnd(E, false); }
 };
 
+// --- a deal going down: two crews meet to trade, three a side, a car each. Hit it and both sides turn on you and on each other;
+//     the money and the product end up on the ground for whoever is left standing.
+const aiCrews = () => { const hum = new Set(humans().map(a => a.team)); return CREWS.map((c, t) => t).filter(t => !hum.has(t)); };
+EV_START.deal = () => {
+  const a = someHuman(), p = (() => { let best = null, bs = -1e9; for (let k = 0; k < 60; k++) { const q = SPOTS[(rand() * SPOTS.length) | 0]; if (!q || q.k === 'wait' || q.hood < 0) continue; const d = hyp(q.x - a.x, q.z - a.z); if (d < 110 || d > 290 || nearHuman(q.x, q.z) < 90) continue; const sc = rand() * 40 - Math.abs(d - 180); if (sc > bs) { bs = sc; best = q; } } return best; })();
+  if (!p) return false; const ai = aiCrews(); if (ai.length < 2) return false;
+  const own = ZS[p.hood].owner, t1 = ai.includes(own) ? own : ai[(rand() * ai.length) | 0], rest = ai.filter(t => t !== t1), t2 = rest[(rand() * rest.length) | 0];
+  const E = { k: 'deal', x: p.x, z: p.z, team: t1, zone: p.hood, until: G.time + 200, side: [[], []], loot: [null, null], blown: false, cars: [] };
+  [t1, t2].forEach((t, s) => { const sx = s ? 1 : -1;
+    for (let k = 0; k < 3; k++) { const x = p.x + sx * 2.6, z = p.z + (k - 1) * 1.5, b = spawnBot(t, x, p.y, z, { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'pistol']) }); if (!b) continue;
+      Object.assign(b, { street: true, guardOf: true, until: 1e9, skill: 1.1, deal: E, yaw: s ? PI / 2 : -PI / 2, dealYaw: s ? PI / 2 : -PI / 2 }); E.side[s].push(b); }
+    const c = spawnCar(CREW_CARS[(rand() * 3) | 0], p.x + sx * 8, p.z + rs(2), s ? PI / 2 : -PI / 2, { color: CREW_PAINT[t], team: t }); if (c) { c.temp = true; E.cars.push(c); } });
+  if (!E.side[0].length || !E.side[1].length) { E.side.flat().forEach(removeBot); E.cars.forEach(removeCar); return false; }
+  E.money = Math.round(lerp(2500, 3500, rand()) / 100) * 100; E.prod = Math.round(lerp(1500, 2500, rand()) / 100) * 100; E.guards = E.side.flat();
+  evStart(E); return true;
+};
+EV_TICK.deal = E => {
+  const all = E.side.flat();
+  if (!E.blown && (all.some(b => b.dead || b.gone || b.hp < botHp(b.team) - .5) || humans().some(h => !h.dead && hyp(h.x - E.x, h.z - E.z) < 13))) { E.blown = true; all.forEach(b => { b.react = .3; }); GAME.ev('db2', E.id); }   // somebody got hurt, or somebody walked up: the deal is off and everyone draws
+  E.side.forEach((list, s) => { if (E.loot[s] || !list.every(b => b.dead || b.gone)) return; const w = list.find(b => !b.gone) || list[0];
+    E.loot[s] = addPickup('cash', w.x + rs(1), groundAt(w.x, w.z, w.y + .5, 'p'), w.z + rs(1), (s ? E.prod : E.money) / 100); E.loot[s].t = 150; GAME.ev('dl', E.id, s); });
+  if (E.loot[0] && E.loot[1] && E.loot[0].gone && E.loot[1].gone) return evEnd(E, true, 0, null);
+  if (G.time > E.until + (E.blown ? 90 : 0)) { E.loot.forEach(l => { if (l && !l.gone) removePickup(l); }); all.forEach(b => { if (!b.dead && !b.gone) { b.deal = null; b.until = G.time + 20; } }); evEnd(E, false); }
+};
+
 // --- a street race: a ring at a crossing. Drive into it and a run of checkpoints opens up on your own screen.
 EV_START.race = () => { const ij = xingNear(someHuman(), 60, 210, 40); if (!ij) return false; evStart({ k: 'race', x: RX(ij[0]), z: RZ(ij[1]), ij, until: G.time + 200 }); return true; };
 EV_TICK.race = E => { if (G.time > E.until) evEnd(E, true, 0, null); };
@@ -179,15 +205,18 @@ function evNews(e, mine) {
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
+    else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
     else note(kind === 'war' ? CREWS[team].name + ' took ' + ZONES[zi].name : kind === 'hit' ? (who ? 'Somebody else got the lieutenant' : 'The lieutenant slipped away') : kind === 'truck' ? 'The armored truck got away' : kind === 'chop' ? 'The chop shop car is gone' : I.name + ' · missed', 'c'); }
   else if (k === 'eo') note('Armored truck stopped · grab the cash', 'g');
   else if (k === 'sc') { const a = GAME.unref(e[3]); if (a === P) banner('Stash grabbed', 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + ' has the stash', 'g'); }
   else if (k === 'sd') note('The stash was dropped', 'c');
+  else if (k === 'db2') note('The deal went bad · guns out', 'c');
+  else if (k === 'dl') note(e[3] ? 'The product is on the ground · grab it' : 'The money is on the ground · grab it', 'g');
 }
 // --- what the host says about its events, and what a joined player makes of it
 const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.ij[0] * 16 + E.ij[1],
+  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : 0,
   E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.team === undefined ? -1 : E.team]);
 function evFromHost(list) {
   const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;

@@ -3,14 +3,14 @@
         businesses on your turf; the car shop; the car that is yours.
    --------------------------------------------------------------------- */
 // --- rank. Everything that moves the crew forward pays RP, and each rank asks a little more than the one before.
-const UNLOCK = { smg: 1, shotgun: 2, rifle: 4, marksman: 6, homies: 2, fixer: 3 };   // the rank each one opens at
+const UNLOCK = { smg: 1, shotgun: 2, glocks: 3, rifle: 4, switch: 5, marksman: 6, gl: 7, m60: 8, rpg: 10, homies: 2, fixer: 3 };   // the rank each one opens at
 const rpFor = r => r <= 1 ? 0 : 500 * (r - 1) + 125 * (r - 1) * (r - 2);
 const rankOf = rp => { let r = 1; while (r < 150 && rp >= rpFor(r + 1)) r++; return r; };
 const hpBonus = r => Math.min(50, Math.floor((r - 1) / 2) * 5);                     // +5 health every other rank, up to +50
 const maxHp = () => CFG.player.hp + hpBonus(P.rank || 1);
 const homieCount = r => r >= 10 ? 4 : r >= 6 ? 3 : r >= UNLOCK.homies ? 2 : 0;
 function unlocksAt(r) {
-  const u = []; ['smg', 'shotgun', 'rifle', 'marksman'].forEach(w => { if (r > 1 && UNLOCK[w] === r) u.push(WEAPONS[w].name); });
+  const u = []; ['smg', 'shotgun', 'glocks', 'rifle', 'marksman', 'gl', 'm60', 'rpg'].forEach(w => { if (r > 1 && UNLOCK[w] === r) u.push(WEAPONS[w].name); }); if (UNLOCK.switch === r) u.push('the Glock switch');
   if (homieCount(r) > homieCount(r - 1)) u.push(homieCount(r) + ' homies on call');
   if (UNLOCK.fixer === r) u.push('the fixer');
   if (hpBonus(r) > hpBonus(r - 1)) u.push('+5 health');
@@ -68,13 +68,22 @@ const coolLeft = (t, s) => Math.max(0, Math.ceil(t + s - G.time));
 const homiesOut = () => AUTH() ? bots.some(b => b.homie === P && !b.dead) : G.time < PH.homUntil;
 const myPV = () => { for (let i = 0; i < cars.length; i++) if (cars[i].pv === P && !cars[i].gone) return cars[i]; return null; };
 const pvWrecked = () => { const c = myPV(); return !!c && (c.wreck || c.burn > 0); };
-function phoneItems() {
+// the online store: cars delivered to the kerb by the mechanic (more on its pages as the city grows)
+const CAR_SHOP = [['super', 28000, 6], ['muscle', 14000, 3], ['sport', 9000, 2], ['suv', 6500, 1], ['lowrider', 5500, 1], ['coupe', 4000, 1]];
+function storeItems(pg) {
+  if (pg === 'cars') return CAR_SHOP.map(q => { const S = CARS[q[0]], has = P.pv && P.pv.t === q[0];
+    return has ? { label: S.name, sub: 'Yours · the mechanic brings it', off: true, own: true } : q[2] > (P.rank || 1) ? { label: S.name, sub: 'Opens at rank ' + q[2], off: true, lock: 'Opens at rank ' + q[2] }
+      : { label: S.name, sub: Math.round(S.vmax * 2.237) + ' mph top speed · ' + S.seats + ' seats · replaces the car on file', cost: q[1], act: () => { if (payCash(q[1])) { P.pv = { t: q[0], c: CREW_PAINT[P.team], ar: 0, en: 0, no: 0, gr: 0, bp: 0, ne: 0 }; addRP(CFG.rp.buy); saveGame(); closeShop(); PH.mechT = G.time; sendPV(); banner(S.name, 'Bought · on its way to a kerb near you', 2.6, 'gold'); SFX.buy(); } } }; }).concat([back()]);
+  return null;
+}
+function phoneItems(pg) {
+  if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
   else if (r < UNLOCK.homies) out.push({ label: 'Homies', sub: 'Your crew picks up from rank ' + UNLOCK.homies, off: true });
   else if (cd(PH.homT, 60)) out.push({ label: 'Homies', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
   else out.push({ label: 'Homies', sub: homieCount(r) + ' of your crew come round the corner and roll with you', act: callHomies });
-  if (!P.pv) out.push({ label: 'Mechanic', sub: 'No car on file · make one yours at a car shop', off: true });
+  if (!P.pv) out.push({ label: 'Mechanic', sub: 'No car on file · make one yours at a car shop, or buy one online', off: true });
   else if (cd(PH.mechT, 20)) out.push({ label: 'Mechanic', sub: 'On the way · call back in ' + cd(PH.mechT, 20) + 's', off: true });
   else out.push({ label: 'Mechanic', sub: 'Brings your ' + CARS[P.pv.t].name + ' to a kerb near you' + (pvWrecked() ? ' · insurance' : ''), cost: pvWrecked() ? 250 : 0, act: callMechanic });
   const fee = 200 * (P.heat | 0);
@@ -85,6 +94,7 @@ function phoneItems() {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
+  out.push(page('Online · cars', 'cars'));
   return out;
 }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
@@ -94,7 +104,7 @@ function dismissHomies() { closeShop(); PH.homUntil = -1; if (AUTH()) GAME.homie
 function callFixer() { const fee = 200 * (P.heat | 0); closeShop(); if (!(P.heat > 0) || !payCash(fee)) return; PH.fixT = G.time; if (AUTH()) GAME.clearHeat(P); else { NET.req('lw'); P.heat = 0; } SFX.clear(); banner('Fixed', 'A few calls later the police have lost you · $' + fee, 2.4, 'gold'); }
 function callJob() { closeShop(); PH.jobT = G.time; if (AUTH()) { if (GAME.forceJob()) SFX.tick(); else note('Nothing going right now · try again in a minute', 'g'); } else NET.req('jb'); }
 function callMechanic() { closeShop(); if (!P.pv) return; if (pvWrecked() && !payCash(250)) return; PH.mechT = G.time; sendPV(); }
-function sendPV() { if (!P.pv || !CARS[P.pv.t]) return; if (AUTH()) { if (!GAME.pv(P, P.pv)) note('The mechanic could not find a kerb near you · try a street', 'g'); } else NET.req('pv', CID.indexOf(P.pv.t), Math.max(0, ALLPAINT.indexOf(P.pv.c)), P.pv.ar | 0, P.pv.en | 0); }
+function sendPV() { const v = P.pv; if (!v || !CARS[v.t]) return; if (AUTH()) { if (!GAME.pv(P, v)) note('The mechanic could not find a kerb near you · try a street', 'g'); } else NET.req('pv', CID.indexOf(v.t), Math.max(0, ALLPAINT.indexOf(v.c)), v.ar | 0, v.en | 0, v.no | 0, v.gr | 0, v.bp ? 1 : 0, v.ne | 0); }
 
 // --- homies: a few of your crew who walk with you, get in the car with you, and shoot at whoever is shooting at you
 GAME.homies = (a, n) => {   // on the machine that runs the world
@@ -141,7 +151,9 @@ function homieAct(b, dt) {
 }
 
 // --- the car that is yours: on file with its mods, waiting at a kerb near you when you arrive, and brought by the mechanic when called
-const specOf = c => ({ t: c.type, c: c.color, ar: c.plate | 0, en: c.tune | 0 });
+const MODS = ['plate', 'tune', 'nos', 'grip', 'bp', 'neon'];   // what a car shop can do to a car, beyond paint
+const specOf = c => ({ t: c.type, c: c.color, ar: c.plate | 0, en: c.tune | 0, no: c.nos | 0, gr: c.grip | 0, bp: c.bp ? 1 : 0, ne: c.neon | 0 });
+function applySpec(c, sp) { c.plate = clamp(sp.ar | 0, 0, 3); c.tune = clamp(sp.en | 0, 0, 3); c.nos = clamp(sp.no | 0, 0, 2); c.grip = clamp(sp.gr | 0, 0, 2); c.bp = sp.bp ? 1 : 0; setNeon(c, sp.ne | 0); }
 GAME.pv = (a, sp) => {   // on the machine that runs the world: a's car, parked at the nearest quiet kerb a short walk away
   if (!a || a.gone || !sp || !CARS[sp.t]) return false;
   for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.pv === a && !c.occ.some(o => o)) removeCar(c); }
@@ -149,23 +161,38 @@ GAME.pv = (a, sp) => {   // on the machine that runs the world: a's car, parked 
   PARK.forEach(s => { if (s.truck) return; const d = hyp(s.x - a.x, s.z - a.z); if (d < 10 || d > 90) return; if (cars.some(c => hyp(c.x - s.x, c.z - s.z) < 5.5)) return; const sc = -Math.abs(d - 24) - (s.lot ? 8 : 0) - (seenByHuman(s.x, CURB, s.z) ? 6 : 0); if (sc > bs) { bs = sc; best = s; } });
   if (!best) return false;
   const c = spawnCar(sp.t, best.x, best.z, best.yaw, { color: sp.c }); if (!c) return false;
-  c.pv = a; c.plate = clamp(sp.ar | 0, 0, 2); c.tune = clamp(sp.en | 0, 0, 2); c.asleep = true;
+  c.pv = a; applySpec(c, sp); c.asleep = true;
   GAME.ev('pv', GAME.ref(a), c.id); return true;
 };
+// neon under the car: a soft wash of colour on the road beneath it
+const neonGeo = new T.PlaneGeometry(1, 1); neonGeo.rotateX(-PI / 2);
+function setNeon(c, hex) { c.neon = hex | 0; if (!c.neon) { if (c.neonM) c.neonM.visible = false; return; }
+  if (!c.neonM) { c.neonM = new T.Mesh(neonGeo, new T.MeshBasicMaterial({ color: hex, transparent: true, opacity: .55, blending: T.AdditiveBlending, depthWrite: false })); c.neonM.scale.set(c.spec.wid + 1.1, 1, c.spec.len + 1.2); c.neonM.position.y = .06; c.g.add(c.neonM); }
+  c.neonM.material.color.setHex(hex); c.neonM.visible = true; }
 
 // --- the car shop: drive into any garage your crew uses (or the one on Gas & Auto Row) and stop
-function modItems() {
+const PAINT_MENU = [['Black', 0x1b1d21], ['White', 0xf2efe6], ['Red', 0xb3261e], ['Blue', 0x1f4e8c], ['Gold', 0xe0a224], ['Purple', 0x6b3fa0], ['Teal', 0x2a7f86], ['Orange', 0xd96f1c]];
+const UPG = {   // level costs, and what each level does in words
+  plate: { name: 'Armor plating', cost: [1500, 3000, 6000], say: ['Takes about a third less from anything', 'Shrugs off about half of what hits it', 'Takes a beating: about a third of the damage'] },
+  tune:  { name: 'Engine tune',   cost: [1200, 2500, 5000], say: ['Quicker off the line and faster flat out', 'Quicker again', 'As fast as the car will go'] },
+  nos:   { name: 'Nitrous',       cost: [2000, 4000],       say: ['Hold Shift (or NOS) for a burst; it refills as you drive', 'A longer burst'] },
+  grip:  { name: 'Handling',      cost: [900, 1800],        say: ['Tyres and suspension: holds the road harder', 'Race tyres: corners like it is on rails'] },
+};
+function modItems(pg) {
   const c = P.car; if (!c) return [];
-  const out = [], pl = c.plate | 0, tn = c.tune | 0, mine = c.pv === P;
+  if (pg === 'paint') return [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]].concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
+    : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
+  const out = [], mine = c.pv === P;
   out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
-  [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]], ['Black', 0x1b1d21], ['White', 0xf2efe6]].forEach(q => out.push(c.cop ? { label: 'Respray · ' + q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: 'Respray · ' + q[0], sub: 'Already this colour', off: true }
-    : { label: 'Respray · ' + q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : 'A new coat', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }));
-  out.push(pl >= 2 ? { label: 'Armor plating', sub: 'Fully plated', off: true, own: true } : { label: 'Armor plating · level ' + (pl + 1), sub: pl ? 'Shrugs off about half of what hits it' : 'Takes about a third less from anything', cost: pl ? 3000 : 1500, act: () => { if (payCash(pl ? 3000 : 1500)) { c.plate = pl + 1; modSync(c); SFX.buy(); banner('Armor plating', 'Level ' + c.plate, 1.6, 'gold'); afterMod(c); } } });
-  out.push(tn >= 2 ? { label: 'Engine tune', sub: 'Fully tuned', off: true, own: true } : { label: 'Engine tune · level ' + (tn + 1), sub: 'Quicker off the line and faster flat out', cost: tn ? 2500 : 1200, act: () => { if (payCash(tn ? 2500 : 1200)) { c.tune = tn + 1; modSync(c); SFX.buy(); banner('Engine tune', 'Level ' + c.tune, 1.6, 'gold'); afterMod(c); } } });
-  out.push(mine ? { label: 'Your car', sub: 'On file · the mechanic brings it anywhere, mods and all', off: true, own: true } : c.cop ? { label: 'Make it yours', sub: 'Not a police car', off: true } : { label: 'Make it yours', sub: 'Put it on file: it waits for you, and the mechanic brings it', cost: 500, act: () => { if (payCash(500)) { c.pv = P; if (!AUTH()) NET.req('pm', c.id); SFX.buy(); banner('Your car', 'The ' + c.spec.name + ' is on file', 2, 'gold'); afterMod(c); } } });
+  out.push(page('Respray', 'paint'));
+  for (const k of ['plate', 'tune', 'nos', 'grip']) { const u = UPG[k], lv = c[k] | 0;
+    out.push(lv >= u.cost.length ? { label: u.name, sub: 'Maxed out', off: true, own: true } : { label: u.name + ' · level ' + (lv + 1), sub: u.say[lv], cost: u.cost[lv], act: () => { if (payCash(u.cost[lv])) { c[k] = lv + 1; modSync(c); SFX.buy(); banner(u.name, 'Level ' + c[k], 1.6, 'gold'); afterMod(c); } } }); }
+  out.push(c.bp ? { label: 'Bulletproof glass', sub: 'Fitted: bullets stop at the windows', off: true, own: true } : { label: 'Bulletproof glass', sub: 'Nobody can shoot whoever is inside; the car takes it', cost: 3500, act: () => { if (payCash(3500)) { c.bp = 1; modSync(c); SFX.buy(); banner('Bulletproof glass', 'Fitted', 1.6, 'gold'); afterMod(c); } } });
+  out.push(c.neon ? { label: 'Neon', sub: 'Glowing underneath · tap to take it off', act: () => { setNeon(c, 0); afterMod(c); } } : { label: 'Neon', sub: 'A glow under the car in your crew colour', cost: 800, act: () => { if (payCash(800)) { setNeon(c, CREWS[P.team].glow); SFX.buy(); afterMod(c); } } });
+  out.push(mine ? { label: 'Your car', sub: 'On file · the mechanic brings it anywhere, upgrades and all', off: true, own: true } : c.cop ? { label: 'Make it yours', sub: 'Not a police car', off: true } : { label: 'Make it yours', sub: 'Put it on file: it waits for you, and the mechanic brings it', cost: 500, act: () => { if (payCash(500)) { c.pv = P; if (!AUTH()) NET.req('pm', c.id); SFX.buy(); banner('Your car', 'The ' + c.spec.name + ' is on file', 2, 'gold'); afterMod(c); } } });
   return out;
 }
-function modSync(c) { if (!AUTH()) NET.req('md', c.id, c.plate | 0, c.tune | 0); }
+function modSync(c) { if (!AUTH()) NET.req('md', c.id, c.plate | 0, c.tune | 0, c.bp ? 1 : 0); }
 function modPaint(hex) {
   const c = P.car; if (!c || c.cop) { SFX.deny(); return; }
   if (P.heat > 0 && !P.evade) { banner('Lose the police first', 'they can see you', 1.8); SFX.deny(); return; }
@@ -179,6 +206,12 @@ function garageCheck(c) {   // called while driving: stop in a garage and its me
   let g = null; for (let i = 0; i < GARAGES.length; i++) { const q = GARAGES[i]; if ((q.team !== undefined && q.team !== P.team) || hyp(q.x - c.x, q.z - c.z) > 3.4) continue; g = q; break; }
   if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · F or Esc to drive on' }); } }
   else if (P.garage && (!g || carSpeed(c) > 4)) { P.garage = null; if (shopOpen && shopOpen.kind === 'mod') closeShop(); }
+}
+// nitrous: held down, a few seconds of push that comes back while you drive
+function nitrous(c, dt, want) {
+  if (!(c.nos > 0)) { c.boostT = 0; return; } if (c.nosQ === undefined) c.nosQ = 1;
+  if (want && c.nosQ > .02 && c.inp.thr > 0 && !c.wreck) { c.boostT = .1; c.nosQ = Math.max(0, c.nosQ - dt / (1.4 + c.nos * 1.3)); if (Math.random() < .6) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); FX.muzzle(c.x - fx * c.spec.len * .52, c.y + .45, c.z - fz * c.spec.len * .52, .7); } }
+  else { c.boostT = 0; c.nosQ = Math.min(1, c.nosQ + dt / 10); }
 }
 
 // --- each second or so: business marks, the car you were promised, the phone menu kept current

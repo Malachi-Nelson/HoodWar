@@ -149,16 +149,16 @@ NET.host = dt => {
       else if (k === 'cd' && c) damageCar(c, clamp(+q[3] || 0, 0, 600), null);
       else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && ALLPAINT[q[3] | 0] !== undefined && ALLPAINT[q[3] | 0] !== COP_PAINT) { setPaint(rc, ALLPAINT[q[3] | 0]); if (r.heat > 0 && r.evade) GAME.clearHeat(r); } }
-      else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 2); rc.tune = clamp(q[4] | 0, 0, 2); } }
+      else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 3); rc.tune = clamp(q[4] | 0, 0, 3); rc.bp = q[5] ? 1 : 0; } }
       else if (k === 'pm') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop) rc.pv = r; }
-      else if (k === 'pv') GAME.pv(r, { t: CID[q[2] | 0], c: ALLPAINT[q[3] | 0], ar: q[4] | 0, en: q[5] | 0 });
+      else if (k === 'pv') GAME.pv(r, { t: CID[q[2] | 0], c: ALLPAINT[q[3] | 0], ar: q[4] | 0, en: q[5] | 0, no: q[6] | 0, gr: q[7] | 0, bp: q[8] | 0, ne: q[9] | 0 });
       else if (k === 'hm') GAME.homies(r, clamp(q[2] | 0, 0, 4));
       else if (k === 'hd') GAME.homiesHome(r);
       else if (k === 'lw') GAME.clearHeat(r);
       else if (k === 'jb') GAME.forceJob();
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
       else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else removePickup(p); } }
-      else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4]; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), 10, 0, GAME.ref(r)); explode(x, y + .3, z, r, 1, 'nade'); } }
+      else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4], pw = clamp((+q[5] || 10) / 10, .5, 2), kind = BOOM[q[6]] ? q[6] : 'nade'; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(r)); explode(x, y + .3, z, r, pw, kind); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
     if (s.kd && s.kd[0] > r.kdSeen) { r.kdSeen = s.kd[0]; for (let st = 0; st < 4; st++) if (r.car && r.car.occ[st] === r) { r.car.occ[st] = null; if (!st) r.car.kin = false; } r.car = null; GAME.onKill(GAME.unref(s.kd[1]), r, widOf(s.kd[2]), !!s.kd[3]); }
@@ -264,7 +264,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-4'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-5'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();

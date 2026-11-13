@@ -9,13 +9,15 @@ vmHands.forEach(h => { h.add(new T.Mesh(bxg(.085, .085, .4, 0, 0, .24), vmSleeve
 function setVm(id) {
   if (vmId === id) return; vmId = id; if (vmGun) vmRoot.remove(vmGun); vmGun = null;
   const long = id !== 'pistol' && id !== 'smg' && id !== 'fist';
-  if (GUN_GEO[id]) { vmGun = new T.Mesh(GUN_GEO[id], gunMat); vmGun.rotation.y = PI; vmRoot.add(vmGun); }
+  if (GUN_GEO[id]) { vmGun = new T.Mesh(GUN_GEO[id], gunMat); vmGun.rotation.y = PI; vmRoot.add(vmGun); if (id === 'glocks') { const g2 = new T.Mesh(GUN_GEO[id], gunMat); g2.position.set(.34, 0, 0); vmGun.add(g2); } }
   // each arm runs from the hand back, down and outward, so it leaves the picture at the bottom corner
   vmHands[0].position.set(.012, -.055, .03); vmHands[0].rotation.set(.62, .3, 0); vmHands[1].visible = true;
   if (id === 'fist') { vmHands[0].position.set(.04, -.02, -.12); vmHands[1].position.set(-.34, -.02, -.12); vmHands[1].rotation.set(.62, -.3, 0); }
+  else if (id === 'glocks') { vmHands[1].position.set(-.33, -.055, .03); vmHands[1].rotation.set(.62, -.3, 0); }
   else if (long) { vmHands[1].position.set(-.01, -.03, -.36); vmHands[1].rotation.set(.5, -.85, 0); } else { vmHands[1].position.set(-.045, -.075, .03); vmHands[1].rotation.set(.62, -.55, 0); }
 }
-const SIGHT = { pistol: .084, smg: .098, shotgun: .09, rifle: .118, marksman: .128, fist: .05 };
+const SIGHT = { pistol: .084, smg: .098, shotgun: .09, rifle: .118, marksman: .128, fist: .05, glocks: .084, m60: .12, gl: .12, rpg: .14 };
+const autoNow = () => { const d = WEAPONS[P.wpn], w = P.inv[P.wpn]; return !!d.auto || (!!d.dual && !!w && !!w.sw); };   // a switch on the Glocks makes them automatic
 function resetLoadout() { P.inv = { fist: { mag: 0, res: 0 }, pistol: { mag: WEAPONS.pistol.mag, res: 60 } }; P.wpn = 'pistol'; P.nades = 1; P.armor = 0; }
 function giveWeapon(id, ammo) { const d = WEAPONS[id]; if (!d || d.melee) return; if (!P.inv[id]) P.inv[id] = { mag: d.mag, res: ammo === undefined ? d.res : ammo }; else P.inv[id].res = Math.min(Math.round(d.res * 1.5), P.inv[id].res + (ammo === undefined ? d.mag * 2 : ammo)); }
 function setWeapon(id) { if (!P.inv[id] || P.wpn === id || P.dead) return; if (P.car && !WEAPONS[id].car) return; P.wpn = id; P.reloadT = 0; P.autoReload = 0; P.switchT = .3; P.ads = 0; SFX.swap(); }
@@ -43,16 +45,17 @@ function tryFire() {
   if (d.melee) { if (!P.car) punch(); return; }
   if (P.car && !d.car) return;
   if (w.mag <= 0) { if (w.res > 0) startReload(); else { SFX.click(); P.fireT = .25; } return; }
-  if (!DBG.ammo) w.mag--; P.fireT = 60 / d.rpm; P.shootT = 1.3; meChar.kick = 1;
+  if (!DBG.ammo) w.mag--; P.fireT = 60 / (d.dual && w.sw ? d.sw : d.rpm); P.shootT = 1.3; meChar.kick = 1; if (d.dual) meChar.flip = !meChar.flip;
   aimDir();
   const moving = P.spd > 1.5 ? 1.45 : 1, spread = lerp(d.hip, d.spread, P.ads) * moving * (P.onGround || P.car ? 1 : 1.8) * (P.car ? 1.5 : 1) + P.kick * .06;
   let mx, my, mz;
   if (firstPerson()) { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw), k = 1 - P.ads; mx = AIM.ox + rx * .16 * k + AIM.dx * .7; my = AIM.oy - .1 * k - .03 + AIM.dy * .7; mz = AIM.oz + rz * .16 * k + AIM.dz * .7; }
   else if (P.car) { mx = AIM.ox + AIM.dx * .5; my = AIM.oy; mz = AIM.oz + AIM.dz * .5; } else { mx = meChar.muz.x; my = meChar.muz.y; mz = meChar.muz.z; }
-  shoot(P, AIM.ox, AIM.oy, AIM.oz, AIM.dx, AIM.dy, AIM.dz, d, spread, mx, my, mz);
+  if (d.proj) { fireProj(d.proj, mx + AIM.dx * .3, my + AIM.dy * .3, mz + AIM.dz * .3, AIM.dx + rs(spread), AIM.dy + rs(spread), AIM.dz + rs(spread), P, false); P.shots = (P.shots | 0) + 1; P.shotT = G.time; FX.muzzle(mx, my, mz, 1.6); }
+  else shoot(P, AIM.ox, AIM.oy, AIM.oz, AIM.dx, AIM.dy, AIM.dz, d, spread, mx, my, mz);
   P.kick = Math.min(.32, P.kick + d.kick); P.cpitch = Math.min(1.35, P.cpitch + d.kick * (P.ads > .5 ? .16 : .24)); P.cyaw += rs(d.kick * .16); shake(d.kick * .5);
   if (d.cycle) SFX.cycle();
-  { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw); FX.casing(mx - AIM.dx * .3, my, mz - AIM.dz * .3, rx * 2.2 + rs(.6), 1.8 + rand(), rz * 2.2 + rs(.6)); }
+  if (!d.proj) { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw); FX.casing(mx - AIM.dx * .3, my, mz - AIM.dz * .3, rx * 2.2 + rs(.6), 1.8 + rand(), rz * 2.2 + rs(.6)); }
   if (w.mag === 0 && w.res > 0) P.autoReload = .3;
 }
 function punch() {
@@ -128,30 +131,43 @@ function updateRob(dt) {
   R.t += dt; P.shootT = Math.max(P.shootT, .3); if (R.t < 3.5) return;
   P.rob = null; if (AUTH()) GAME.rob(P, R.i); else NET.req('rb', R.i);
 }
-// one panel for every menu: the gun shop, the car shop and the phone. A menu other than the gun shop brings its own items:
-// { label, sub, cost, off (cannot be had right now), own (already yours), act }
-function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, foot: 'Press a number or click to buy. F or Esc closes.' }); }
+// one panel for every menu: the gun shop, the car shop and the phone. Each brings its own items:
+// { label, sub, cost, off (cannot be had right now), own (already yours), act }. An item can open a page of its own (shopOpen.page).
+function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · F or Esc closes' }); }
 function openMenu(m) { shopOpen = m; $('shop-title').textContent = m.title; $('shop').className = 'pane menu-' + m.kind; $('shop-foot').textContent = m.foot || ''; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
-const gunLocked = it => !!WEAPONS[it.what] && (UNLOCK[it.what] || 1) > (P.rank || 1);
+const page = (label, id) => ({ label: label + ' ›', act: () => { shopOpen.page = id; renderShop(); } }), back = () => ({ label: '‹ Back', act: () => { shopOpen.page = null; renderShop(); } });
 function renderShop() {
   if (!shopOpen) return; const ol = $('shop-list'); ol.textContent = '';
-  const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
-  if (shopOpen.kind !== 'gun') { shopOpen.list = shopOpen.items(); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); }); return; }
-  SHOP.forEach(it => { const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4), lock = gunLocked(it);
-    row(it.key, it.label, '', own ? 'Owned' : full ? 'Full' : lock ? 'Rank ' + UNLOCK[it.what] : '$' + it.cost, own || full ? 'own' : lock || P.cash < it.cost ? 'no' : ''); });
+  const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key === '10' ? '0' : key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
+  shopOpen.list = shopOpen.items(shopOpen.page || null).slice(0, 10); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); });
 }
 function buy(key) {
   if (!shopOpen) return;
-  if (shopOpen.kind !== 'gun') { const it = (shopOpen.list || []).find(q => q.key === key); if (!it || it.off || !it.act || (it.cost > 0 && P.cash < it.cost)) { SFX.deny(); return; } it.act(); if (shopOpen && shopOpen.kind !== 'gun') renderShop(); return; }
-  const it = SHOP.find(q => q.key === key); if (!it) return;
-  const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
-  if (gunLocked(it)) { SFX.deny(); banner(it.label, 'Opens at rank ' + UNLOCK[it.what], 1.6); return; }
-  if (own || full || P.cash < it.cost) { SFX.deny(); return; }
-  P.spent += it.cost; P.cash -= it.cost; SFX.buy(); gain(-it.cost);
-  if (it.what === 'ammo') { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } }
-  else if (it.what === 'armor') P.armor = 100; else if (it.what === 'nade') P.nades++; else { giveWeapon(it.what); setWeapon(it.what); }
-  renderShop();
+  const it = (shopOpen.list || []).find(q => q.key === key); if (!it || it.off || !it.act || (it.cost > 0 && P.cash < it.cost)) { SFX.deny(); if (it && it.lock) banner(it.label, it.lock, 1.6); return; }
+  it.act(); if (shopOpen) renderShop();
+}
+// --- the gun shop: the basics on the first page, the guns on pages by kind; guns open with rank
+const GUN_BLURB = { smg: 'Small, fast and good from a car', glocks: 'A pistol in each hand, 50-round drums', shotgun: 'Nine pellets, close up', rifle: 'The all-rounder', marksman: 'Scoped, long range', m60: '100-round belt, heavy hitting', gl: 'Six rounds that go off where they land', rpg: 'One rocket at a time: cars, crowds, helicopters' };
+function ammoCost() { let n = 150; for (const id in P.inv) n += id === 'rpg' ? 450 : id === 'gl' ? 300 : id === 'm60' ? 150 : 0; return n; }
+function gunItem(id) {
+  const d = WEAPONS[id], need = UNLOCK[id] || 1;
+  if (P.inv[id]) return { label: d.name, sub: 'Owned · ' + GUN_BLURB[id], off: true, own: true };
+  if (need > (P.rank || 1)) return { label: d.name, sub: 'Opens at rank ' + need, off: true, lock: 'Opens at rank ' + need };
+  return { label: d.name, sub: GUN_BLURB[id], cost: d.cost, act: () => { if (payCash(d.cost)) { giveWeapon(id); setWeapon(id); SFX.buy(); addRP(CFG.rp.mod); } } };
+}
+function gunItems(pg) {
+  if (pg === 'hand') { const g = P.inv.glocks, need = UNLOCK.switch;
+    return [gunItem('smg'), gunItem('glocks'), g && g.sw ? { label: 'Glock switch', sub: 'Fitted: the Glocks fire full auto', off: true, own: true } : !g ? { label: 'Glock switch', sub: 'Full auto for the Dual Glocks · buy the Glocks first', off: true } : need > (P.rank || 1) ? { label: 'Glock switch', sub: 'Opens at rank ' + need, off: true, lock: 'Opens at rank ' + need }
+      : { label: 'Glock switch', sub: 'Makes the Dual Glocks fully automatic', cost: 1500, act: () => { if (payCash(1500)) { g.sw = true; SFX.buy(); banner('Glock switch', 'The Glocks fire full auto now', 2, 'gold'); saveGame(); } } }, back()]; }
+  if (pg === 'long') return [gunItem('shotgun'), gunItem('rifle'), gunItem('marksman'), back()];
+  if (pg === 'heavy') return [gunItem('m60'), gunItem('gl'), gunItem('rpg'), back()];
+  return [
+    { label: 'Ammo for every gun', sub: 'Full magazines and spares, rockets included', cost: ammoCost(), act: () => { if (payCash(ammoCost())) { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } SFX.buy(); } } },
+    P.armor >= 100 ? { label: 'Body armor', sub: 'Full', off: true, own: true } : { label: 'Body armor', sub: 'Soaks up most of what hits you', cost: 500, act: () => { if (payCash(500)) { P.armor = 100; SFX.buy(); } } },
+    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · G throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
+    P.hp >= maxHp() ? { label: 'Medkit', sub: 'Not hurt', off: true } : { label: 'Medkit', sub: 'Back to full health', cost: 250, act: () => { if (payCash(250)) { P.hp = maxHp(); SFX.buy(); } } },
+    page('Handguns & SMGs', 'hand'), page('Shotguns & rifles', 'long'), page('Heavy weapons', 'heavy')];
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
@@ -179,7 +195,7 @@ function updateOnFoot(dt) {
   // weapon
   if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && !sprint && (d.auto || mouse.fresh)) tryFire();
+  if (mouse.down && !sprint && (autoNow() || mouse.fresh)) tryFire();
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
   if (P.rob) updateRob(dt); findPrompt(); collectPickups();
@@ -192,7 +208,7 @@ function updateInCar(dt) {
   if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
     if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
-    stepCar(c, dt, inp);
+    nitrous(c, dt, !!(keys.ShiftLeft || keys.ShiftRight)); stepCar(c, dt, inp);
     if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
     GAME.roadkill(c, P);
     garageCheck(c);   // stop in a garage and the car shop opens: repairs, resprays that lose the police, armor, engine, and keeping the car
@@ -200,7 +216,7 @@ function updateInCar(dt) {
   seatPos(c, P.seat, _sp); P.x = _sp.x; P.z = _sp.z; P.y = c.y; P.vx = c.vx; P.vz = c.vz; P.vy = 0; P.onGround = true; P.yaw = c.yaw; P.spd = 0; P.pitch = P.cpitch; P.sprint = false;
   P.shootT -= dt; if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && (d.auto || mouse.fresh)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
+  if (mouse.down && (autoNow() || mouse.fresh)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
   if (P.radioT > 0) { P.radioT -= dt; if (P.radioT <= 0) $('h-radio').classList.remove('on'); }
 }
 function updatePlayer(dt) {

@@ -20,7 +20,7 @@ const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !=
 const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
 const wanted = a => a.kind !== 'bot' && a.heat > 0;
 // who a bot will open fire on: any other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
-const hostile = (a, b) => a !== b && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
+const hostile = (a, b) => a !== b && !(a.deal && a.deal === b.deal && !a.deal.blown) && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
 const nameOf = a => !a ? 'The city' : a.name || 'Someone';
 const dmgAt = (d, dist) => d.dmg * (dist <= d.range[0] ? 1 : dist >= d.range[1] ? .5 : lerp(1, .5, (dist - d.range[0]) / (d.range[1] - d.range[0])));
 // where a seated or standing body is for the purposes of being shot
@@ -43,7 +43,7 @@ function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
     const tW = rayWorld(ox, oy, oz, ax, ay, az, 's', 300), tC = rayCars(ox, oy, oz, ax, ay, az, tW, sh.car || null), carHit = RC.car;
     let best = tC, who = null, head = false;
     const h2 = hyp(ax, az);
-    eachActor(a => { if (a === sh || a.dead || a.gone || sameSide(a, sh)) return;
+    eachActor(a => { if (a === sh || a.dead || a.gone || sameSide(a, sh) || (a.car && a.car.bp)) return;   // bulletproof glass: the car takes it
       const ex = a.x - ox, ez = a.z - oz; if (h2 > .05) { const al = (ex * ax + ez * az) / h2; if (al < -1 || al * h2 > best + 1) return; if (ex * ex + ez * ez - al * al > 1.5) return; } else if (ex * ex + ez * ez > 1.5) return;
       const t = actorHit(a, ox, oy, oz, ax, ay, az); if (t < best) { best = t; who = a; head = AH.head; } });
     const ex = ox + ax * best, ey = oy + ay * best, ez = oz + az * best;
@@ -63,7 +63,7 @@ function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
 function fxShot(a, wid) {
   const d = WEAPONS[wid] || WEAPONS.pistol, m = a.ch ? a.ch.muz : null, ox = m ? m.x : a.x, oy = m ? m.y : a.y + 1.4, oz = m ? m.z : a.z, cp = Math.cos(a.pitch || 0);
   let dx = -Math.sin(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04), dy = Math.sin(a.pitch || 0) + rs(.03), dz = -Math.cos(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04); const l = hyp(dx, dy, dz); dx /= l; dy /= l; dz /= l;
-  const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t);
+  if (d.proj) fireProj(d.proj, ox, oy, oz, dx, dy, dz, a, true); else { const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t); }
   FX.muzzle(ox, oy, oz, 1); SFX.shot(d, ox, oy, oz, false); if (a.ch) a.ch.kick = 1; LIFE.bang(ox, oz);
 }
 function hitActor(t, dmg, head, sh, wid) {
@@ -102,7 +102,7 @@ function hurtPlayer(dmg, src, wid, head) {
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
   if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
-  if (c.plate) dmg *= c.plate > 1 ? .5 : .67;   // car-shop armor plating
+  if (c.plate) dmg *= [1, .67, .5, .35][c.plate] || .35;   // car-shop armor plating
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -140,7 +140,33 @@ function updateGrenades(dt) {
     g.x = e.x; g.z = e.z; g.y += g.vy * dt;
     const gr = groundAt(g.x, g.z, g.y, 'p', .1); if (g.y <= gr + .07) { g.y = gr + .07; g.vy = -g.vy * .32; g.vx *= .6; g.vz *= .6; }
     g.m.position.set(g.x, g.y, g.z);
-    if (g.t <= 0) { scene.remove(g.m); grenades.splice(i, 1); if (AUTH()) { GAME.ev('x', Math.round(g.x), Math.round(g.y), Math.round(g.z), 10, 0, GAME.ref(P)); explode(g.x, g.y + .3, g.z, P, 1, 'nade'); } else { NET.req('gx', Math.round(g.x * 10) / 10, Math.round(g.y * 10) / 10, Math.round(g.z * 10) / 10); FX.boom(g.x, g.y, g.z, 1); SFX.boom(g.x, g.y, g.z); NET.myBoom = G.time; const d = hyp(P.x - g.x, P.y + 1 - g.y, P.z - g.z); if (d < 7.5) hurtPlayer(120 * (1 - d / 8.6), P, 'nade'); } }
+    if (g.t <= 0) { scene.remove(g.m); grenades.splice(i, 1); blastAt(P, g.x, g.y, g.z, 'nade'); }
+  }
+}
+// how big each kind of blast is (1 is the old grenade); a launcher's round or a rocket goes off where it lands
+const BOOM = { nade: 1.35, gl: 1.15, rpg: 1.6 };
+function blastAt(owner, x, y, z, kind) {   // owner's own round: the world's machine decides what it did; anyone else just shows it
+  const pw = BOOM[kind] || 1;
+  if (AUTH()) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(owner)); explode(x, y + .3, z, owner, pw, kind); }
+  else if (owner === P) { NET.req('gx', Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(z * 10) / 10, Math.round(pw * 10), kind); FX.boom(x, y, z, pw); SFX.boom(x, y, z); NET.myBoom = G.time; const d = hyp(P.x - x, P.y + 1 - y, P.z - z), R = 7.5 * pw; if (d < R) hurtPlayer(170 * pw * .7 * (1 - d / (R * 1.15)), P, kind); }
+}
+// --- rockets and launcher grenades: flown on the machine of whoever fired them; on any other machine a ghost copy shows the shot
+const PROJ = [], rocketGeo = new T.CylinderGeometry(.075, .075, .6, 8), rocketMat = new T.MeshLambertMaterial({ color: 0x55624a }); rocketGeo.rotateX(PI / 2);
+function fireProj(kind, x, y, z, dx, dy, dz, owner, ghost) {
+  const sp = kind === 'rpg' ? 55 : 32, m = new T.Mesh(kind === 'rpg' ? rocketGeo : nadeGeo, kind === 'rpg' ? rocketMat : nadeMat); if (kind !== 'rpg') m.scale.setScalar(1.4); m.position.set(x, y, z); scene.add(m);
+  PROJ.push({ kind, m, x, y, z, vx: dx * sp, vy: dy * sp + (kind === 'gl' ? 3 : 0), vz: dz * sp, t: kind === 'rpg' ? 4.5 : 3.2, owner, ghost: !!ghost, trailT: 0 });
+  if (kind === 'rpg') SFX.boom(x, y, z);
+}
+function updateProj(dt) {
+  for (let i = PROJ.length - 1; i >= 0; i--) { const p = PROJ[i];
+    if (p.kind !== 'rpg') p.vy -= 12 * dt;   // a launcher round arcs: aim a touch high at range
+    const sp = hyp(p.vx, p.vy, p.vz) || 1, step = sp * dt, dx = p.vx / sp, dy = p.vy / sp, dz = p.vz / sp, own = p.owner && p.owner.car;
+    let t = rayCars(p.x, p.y, p.z, dx, dy, dz, rayWorld(p.x, p.y, p.z, dx, dy, dz, 's', step + .01), own || null);
+    if (!p.ghost) eachActor(a => { if (a === p.owner || a.dead || a.gone || (p.owner && sameSide(a, p.owner))) return; if (hyp(a.x - p.x, a.z - p.z) > step + 2) return; const h = actorHit(a, p.x, p.y, p.z, dx, dy, dz); if (h < t) t = h; });
+    const k = Math.min(t, step), nx = p.x + dx * k, ny = p.y + dy * k, nz = p.z + dz * k, gy = groundAt(nx, nz, ny + .4, 'p', .1); p.t -= dt;
+    if (t < step || ny <= gy + .05 || p.t <= 0) { scene.remove(p.m); PROJ.splice(i, 1); if (!p.ghost) blastAt(p.owner, nx, Math.max(ny, gy + .1), nz, p.kind); continue; }
+    p.x = nx; p.y = ny; p.z = nz; p.m.position.set(nx, ny, nz); p.m.lookAt(nx + dx, ny + dy, nz + dz);
+    if ((p.trailT -= dt) <= 0) { p.trailT = p.kind === 'rpg' ? .025 : .06; FX.dust(nx - dx * .4, ny - dy * .4, nz - dz * .4, 1); }
   }
 }
 // --- things lying in the street: chains off the fallen, dropped guns

@@ -80,13 +80,13 @@ function carProps(c, px, pz, R, sp) {
 function stepCar(c, dt, inp) {
   const S = c.spec, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw);
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz; const sp = Math.abs(vf), dead = c.wreck || c.hp <= 0 || c.burn > 0;
-  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1, tn = 1 + (c.tune | 0) * .12;   // tn: a car-shop engine tune
+  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1, nos = c.boostT > 0 ? 1 : 0, tn = (1 + (c.tune | 0) * .12) * (1 + nos * .25), ka = 1 + nos * .75;   // tn: a car-shop engine tune; nos: nitrous on
   c.steer = lerp(c.steer, inp.steer, Math.min(1, dt * (Math.abs(inp.steer) > Math.abs(c.steer) ? 5.5 : 9)));
-  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * tn * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp * tn), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
+  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * tn * ka * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp * tn), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
   else if (thr < 0) { if (vf > .6) vf += 27 * thr * dt; else vf += S.accel * .6 * thr * Math.max(0, 1 + vf / 13) * dt; }
   vf -= vf * (.16 + .0011 * sp) * dt; if (!thr && sp < 1.2) vf -= vf * Math.min(1, dt * 2.5);
   if (inp.hb) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 8 * dt);
-  const slide = Math.abs(vl), grip = inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 : S.grip; c.slip = slide;
+  const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk; c.slip = slide;   // gk: car-shop handling
   vl -= vl * Math.min(1, grip * dt);
   c.vx = fx * vf + rx * vl; c.vz = fz * vf + rz * vl;
   const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1);

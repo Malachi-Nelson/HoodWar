@@ -61,7 +61,7 @@ function botShoot(b, dt) {
   if (--b.burst <= 0) { b.burst = d.auto ? 3 + (rand() * 5 | 0) : 1 + (rand() * 2 | 0); b.pauseT = .45 + rand() * .9; }
   const tsp = t.car ? carSpeed(t.car) : (t.spd || 0), err = (.04 + dist * .00055) * (1 + tsp * .1) * (b.spd > 1 ? 1.35 : 1) * (b.car ? 1.7 : 1) / b.skill + d.spread;
   dx /= dist; dy /= dist; dz /= dist; const m = b.ch && b.ch.shown && !b.car ? b.ch.muz : null;
-  shoot(b, ox + dx * .4, oy, oz + dz * .4, dx, dy, dz, d, err, m ? m.x : ox + dx * .7, m ? m.y : oy, m ? m.z : oz + dz * .7); if (b.ch) b.ch.kick = 1;
+  if (d.proj) { b.shots = (b.shots | 0) + 1; b.shotT = G.time; fireProj(d.proj, ox + dx * .8, oy, oz + dz * .8, dx + rs(err), dy + rs(err), dz + rs(err), b, false); } else shoot(b, ox + dx * .4, oy, oz + dz * .4, dx, dy, dz, d, err, m ? m.x : ox + dx * .7, m ? m.y : oy, m ? m.z : oz + dz * .7); if (b.ch) b.ch.kick = 1;
 }
 // --- cars: getting in, getting out, being thrown out
 function botEnter(b, c, k) { b.car = c; b.seat = k; c.occ[k] = b; b.wantCar = null; b.path = null; b.vx = b.vz = 0; b.spd = 0; c.asleep = false; SFX.door(c.x, c.y, c.z); }
@@ -289,7 +289,7 @@ function streetBrain(b) {
 }
 function streetAct(b, dt) {
   b.aim = Math.max(0, b.aim - dt * 2); b.pitch = lerp(b.pitch, 0, Math.min(1, dt * 5));
-  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = 0; return; }
+  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = b.deal && !b.deal.blown ? ACT.talk : 0; if (b.dealYaw !== undefined && b.deal && !b.deal.blown) b.yaw = lerpAng(b.yaw, b.dealYaw, Math.min(1, dt * 4)); return; }
   if (b.at === 2) { civStand(b, dt, p.slots[b.slot].yaw); if (G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 10; b.act = p.k === 'hang' || p.k === 'browse' ? STREET_ACTS[(rand() * STREET_ACTS.length) | 0] : ACT_AT[p.k][0]; } return; }
   b.act = 0;
   if (b.at === 0) { if (botFollow(b, 2.4, dt)) { b.path = null; b.at = 1; } }

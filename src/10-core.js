@@ -29,7 +29,7 @@ const CFG = {
   hourly: { A: 100, B: 100, C: 160, D: 140, E: 100, F: 100, G: 140, H: 100, I: 120, J: 100 },   // what each neighbourhood pays its crew every hour of the day: the home turfs less, the middle of town more
   offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
   ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
-  rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150 } },   // what each thing is worth towards the next rank
+  rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150, deal: 250 } },   // what each thing is worth towards the next rank
 };
 // Six crews, each in its own colour, with a yard on the edge of town and one neighbourhood to start with; the middle of the city is anybody's.
 // `tops` is what its people wear; `paint` is the colour of its cars; `glow` lights its rings and beams. `ink` writes its name on the dark HUD,
@@ -54,18 +54,13 @@ const WEAPONS = {
   shotgun:  { name: 'Pump Shotgun',   slot: 3, dmg: 13, head: 1.4, mag: 6,  res: 36,  rpm: 68,  auto: false, reload: 2.8,  spread: .07,  hip: .085, pellets: 9, kick: .14,  zoom: 60, range: [9, 30],   cycle: 'pump', snd: [.34, 1050], cost: 700,  ammo: 90 },
   rifle:    { name: 'Assault Rifle',  slot: 4, dmg: 25, head: 2.0, mag: 30, res: 150, rpm: 620, auto: true,  reload: 2.3,  spread: .012, hip: .045, pellets: 1, kick: .04,  zoom: 46, range: [50, 120], snd: [.15, 1700], cost: 1300, ammo: 120 },
   marksman: { name: 'Marksman Rifle', slot: 5, dmg: 68, head: 2.2, mag: 8,  res: 40,  rpm: 150, auto: false, reload: 2.8,  spread: .0015, hip: .07, pellets: 1, kick: .1,   zoom: 20, range: [130, 300], scope: true, snd: [.3, 1300], cost: 1900, ammo: 150 },
+  glocks:   { name: 'Dual Glocks',      slot: 6, dmg: 21, head: 2.0, mag: 100, res: 300, rpm: 520, auto: false, reload: 2.4, spread: .022, hip: .045, pellets: 1, kick: .028, zoom: 58, range: [24, 60], car: true, snd: [.1, 2600], cost: 2400, dual: true, sw: 1150 },   // a pistol in each hand on drum magazines; sw: how fast they go with a switch fitted
+  m60:      { name: 'M60',              slot: 7, dmg: 31, head: 2.0, mag: 100, res: 300, rpm: 560, auto: true,  reload: 4.2, spread: .02,  hip: .075, pellets: 1, kick: .05,  zoom: 50, range: [60, 140], snd: [.2, 1400], cost: 4800 },
+  gl:       { name: 'Grenade Launcher', slot: 8, dmg: 0,  head: 1,   mag: 6,   res: 24,  rpm: 80,  auto: false, reload: 3.2, spread: .008, hip: .02,  pellets: 1, kick: .12,  zoom: 54, range: [40, 80],  proj: 'gl',  snd: [.22, 380], cost: 6000 },
+  rpg:      { name: 'Bazooka',          slot: 9, dmg: 0,  head: 1,   mag: 1,   res: 8,   rpm: 45,  auto: false, reload: 2.6, spread: .003, hip: .02,  pellets: 1, kick: .2,   zoom: 46, range: [60, 150], proj: 'rpg', snd: [.32, 260], cost: 9000 },
 };
 const WID = Object.keys(WEAPONS);                      // weapon ids by number, for the wire
 Object.keys(WEAPONS).forEach((k, i) => { WEAPONS[k].id = k; WEAPONS[k].n = i; });
-const SHOP = [
-  { key: '1', what: 'ammo',     label: 'Ammo for every gun', cost: 150 },
-  { key: '2', what: 'armor',    label: 'Body armor',         cost: 500 },
-  { key: '3', what: 'smg',      label: 'Micro SMG',          cost: WEAPONS.smg.cost },
-  { key: '4', what: 'shotgun',  label: 'Pump Shotgun',       cost: WEAPONS.shotgun.cost },
-  { key: '5', what: 'rifle',    label: 'Assault Rifle',      cost: WEAPONS.rifle.cost },
-  { key: '6', what: 'marksman', label: 'Marksman Rifle',     cost: WEAPONS.marksman.cost },
-  { key: '7', what: 'nade',     label: 'Grenade',            cost: 200 },
-];
 // Invented models. Sizes in metres; accel m/s^2, vmax m/s, grip is how fast sideways speed dies (1/s).
 const CARS = {
   sedan:    { name: 'Lakeview',  len: 4.7, wid: 1.86, accel: 9.5,  vmax: 39, grip: 9,   mass: 1.0, hp: 1000, seats: 4, body: { ride: .3, belt: .9,  roof: 1.42, hood: 1.25, trunk: 1.0, rake: .6,  crake: .5 } },
@@ -77,6 +72,9 @@ const CARS = {
   hatch:    { name: 'Pip',       len: 3.9, wid: 1.74, accel: 10,   vmax: 36, grip: 9.5, mass: .8,  hp: 800,  seats: 4, body: { ride: .28, belt: .9,  roof: 1.46, hood: .95,  trunk: 0,   rake: .55, crake: .35 } },
   lowrider: { name: 'Marquesa',  len: 5.5, wid: 1.98, accel: 8.5,  vmax: 36, grip: 7.8, mass: 1.2, hp: 1100, seats: 4, body: { ride: .2, belt: .82, roof: 1.3,  hood: 1.8,  trunk: 1.55, rake: .6, crake: .7, fins: true } },
 };
+CARS.muscle = { name: 'Bruiser', len: 4.9, wid: 1.95, accel: 14, vmax: 52, grip: 8,    mass: 1.15, hp: 1150, seats: 2, body: { ride: .28, belt: .9,  roof: 1.3,  hood: 1.9,  trunk: 1.05, rake: .8, crake: .85 } };
+CARS.super  = { name: 'Vortex',  len: 4.5, wid: 2.02, accel: 17, vmax: 60, grip: 12.5, mass: .95,  hp: 900,  seats: 2, body: { ride: .18, belt: .7,  roof: 1.06, hood: 1.5,  trunk: .55, rake: 1.1, crake: 1.25 } };
+for (const k in CARS) { CARS[k].accel *= 1.22; CARS[k].vmax *= 1.28; }   // everything on the road quicker than it was
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];

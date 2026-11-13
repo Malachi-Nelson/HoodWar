@@ -117,6 +117,8 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #h-car{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk)}
 #car-hp{width:150px;margin-left:auto;margin-top:5px}
 #car-fill{background:var(--gold)}
+#car-nos{width:150px;margin-left:auto;margin-top:4px;height:6px}#nos-fill{background:#5fe9ff}
+body.touch #car-nos{margin:3px auto 0;width:110px}
 #h-radio{left:50%;top:86px;transform:translateX(-50%);font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .5s;white-space:nowrap}
 #h-radio.on{opacity:1}
 #h-radio b{color:var(--gold);font-weight:700}
@@ -306,7 +308,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="feed"></div>
     <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar" id="cap-track"><i id="cap-fill"></i></div></div>
     <div id="h-prompt" class="sh"></div>
-    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div></div>
+    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div><div class="bar" id="car-nos" hidden><i id="nos-fill"></i></div></div>
     <div id="h-dev"></div>
     <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
     <div id="board" class="pane" hidden></div>
@@ -353,7 +355,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
         <div><dt>Mouse</dt><dd>Look · fire · right-click aim</dd></div>
         <div><dt>F</dt><dd>Get in or out · carjack · shop · rob a till</dd></div>
         <div><dt>Shift · Space</dt><dd>Sprint · jump / handbrake</dd></div>
-        <div><dt>1–6 · wheel</dt><dd>Weapons</dd></div>
+        <div><dt>1–0 · wheel</dt><dd>Weapons (7 Glocks · 8 M60 · 9 launcher · 0 bazooka)</dd></div>
         <div><dt>R · G</dt><dd>Reload · grenade</dd></div>
         <div><dt>V · C</dt><dd>Camera · look behind</dd></div>
         <div><dt>Q · H</dt><dd>Radio · horn, or siren in a police car</dd></div>

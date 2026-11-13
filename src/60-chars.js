@@ -22,15 +22,23 @@ const GUN_GEO = {}, GUN_MUZ = {};
   mk('shotgun', b => { b.box(-.014, .014, .05, .082, -.1, .76, st); b.box(-.013, .013, .016, .046, .12, .7, dk); b.box(-.025, .025, .006, .058, .3, .48, wd); b.box(-.022, .022, 0, .092, -.14, .12, st); b.box(-.02, .02, -.065, .07, -.46, -.14, wd); b.box(-.015, .015, -.1, 0, -.13, -.085, wd); }, .76);
   mk('rifle', b => { b.box(-.022, .022, 0, .086, -.14, .16, st); b.box(-.025, .025, .008, .076, .16, .44, pl); b.box(-.01, .01, .034, .056, .44, .68, dk); b.box(-.014, .014, -.2, 0, .02, .09, dk); b.box(-.015, .015, -.11, 0, -.125, -.078, dk); b.box(-.02, .02, -.035, .07, -.42, -.14, pl); b.box(-.005, .005, .086, .118, .4, .42, dk); b.box(-.012, .012, .086, .11, -.1, -.06, dk); b.box(-.016, .016, .028, .062, .66, .72, dk); }, .72);
   mk('marksman', b => { b.box(-.022, .022, 0, .084, -.16, .18, st); b.box(-.022, .022, .01, .07, .18, .52, wd); b.box(-.009, .009, .034, .054, .52, .92, dk); b.box(-.014, .014, -.13, 0, .02, .08, dk); b.box(-.015, .015, -.11, 0, -.14, -.095, wd); b.box(-.02, .02, -.045, .075, -.46, -.16, wd); b.box(-.006, .006, .084, .105, -.05, -.02, dk); b.box(-.006, .006, .084, .105, .1, .13, dk);
-    const c = new T.CylinderGeometry(.024, .024, .3, 10); c.rotateX(PI / 2); c.translate(0, .128, .04); b.geo(c, null, dk); c.dispose(); const e = new T.CylinderGeometry(.03, .024, .06, 10); e.rotateX(PI / 2); e.translate(0, .128, .21); b.geo(e, null, dk); e.dispose(); }, .92); }
+    const c = new T.CylinderGeometry(.024, .024, .3, 10); c.rotateX(PI / 2); c.translate(0, .128, .04); b.geo(c, null, dk); c.dispose(); const e = new T.CylinderGeometry(.03, .024, .06, 10); e.rotateX(PI / 2); e.translate(0, .128, .21); b.geo(e, null, dk); e.dispose(); }, .92);
+  const drum = (b, y) => { const c = new T.CylinderGeometry(.052, .052, .05, 12); c.rotateZ(PI / 2); c.translate(0, y, .02); b.geo(c, null, dk); c.dispose(); };
+  mk('glocks', b => { b.box(-.016, .016, .035, .078, -.05, .15, dk); b.box(-.014, .014, -.06, .04, -.05, -.008, dk); b.box(-.005, .005, .078, .088, .13, .14, st); drum(b, -.1); }, .15);
+  mk('m60', b => { b.box(-.026, .026, 0, .09, -.2, .3, st); b.box(-.012, .012, .04, .064, .3, .86, dk); b.box(-.03, .03, -.02, .055, .32, .5, pl); b.box(-.02, .02, -.04, .07, -.6, -.2, wd); b.box(-.014, .014, -.12, 0, -.13, -.085, dk); b.box(-.05, -.02, -.1, .02, -.02, .14, pl); b.box(-.004, .004, -.3, .04, .62, .66, dk); b.box(-.02, .02, .09, .13, -.04, .02, dk); }, .86);
+  mk('gl', b => { const c = new T.CylinderGeometry(.075, .075, .2, 6); c.rotateX(PI / 2); c.translate(0, .04, .1); b.geo(c, null, st); c.dispose(); b.box(-.022, .022, .01, .07, .2, .5, dk); b.box(-.018, .018, -.11, 0, -.09, -.04, dk); b.box(-.02, .02, -.03, .06, -.36, -.08, pl); b.box(-.016, .016, -.06, .02, .24, .3, dk); }, .5);
+  mk('rpg', b => { const c = new T.CylinderGeometry(.06, .06, 1.15, 10); c.rotateX(PI / 2); c.translate(0, .07, .12); b.geo(c, null, hexCol(0x3a4a34)); c.dispose(); const e = new T.CylinderGeometry(.08, .06, .14, 10); e.rotateX(PI / 2); e.translate(0, .07, .72); b.geo(e, null, dk); e.dispose(); b.box(-.015, .015, -.12, 0, -.03, .02, dk); b.box(-.015, .015, -.1, 0, .2, .25, dk); b.box(-.03, .03, .13, .16, -.02, .06, dk); }, .76); }
 const GUN_IDS = Object.keys(GUN_GEO), GUNMESH = {};
 GUN_IDS.forEach(id => { GUNMESH[id] = charPart('gun_' + id, GUN_GEO[id], 1, gunMat); });
+const GUN2 = charPart('gun_glocks2', GUN_GEO.glocks, 1, gunMat);   // the second of the pair, in the other hand
 // where the gun sits in the shoulder frame, and how the arms hold it. Arm 0 is the firing arm (model -x).
 const HOLD = {
   pistol: { g: [-.03, -.13, .56, 0], s0: [-1.33, .38], e0: -.18, s1: [-1.25, -.52], e1: -.28 },
   long:   { g: [-.13, -.2, .36, .06], s0: [-.72, .12], e0: -1.12, s1: [-1.18, -.5], e1: -.42 },
+  dual:   { g: [-.27, -.12, .54, 0], g2: [.27, -.12, .54, 0], s0: [-1.45, -.02], e0: -.06, s1: [-1.45, .02], e1: -.06 },
+  tube:   { g: [-.16, .02, .2, .04], s0: [-.85, .1], e0: -1.3, s1: [-1.25, -.45], e1: -.5 },
 };
-const holdOf = id => id === 'pistol' || id === 'smg' ? HOLD.pistol : HOLD.long;
+const holdOf = id => id === 'pistol' || id === 'smg' ? HOLD.pistol : id === 'glocks' ? HOLD.dual : id === 'rpg' ? HOLD.tube : HOLD.long;
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68e63, 0x9a6642, 0x70452b, 0x4f3020], HAIRC = [0x1a1512, 0x2e2118, 0x5a3d25, 0x8a6a3d, 0xb9b4a8, 0x111111];
 const CIV_TOP = [0xd8d6cc, 0x6b7a6a, 0x8a7a5c, 0x5a5f66, 0xc9b27a, 0x7a5a6a, 0x3f4a44, 0xb9a48f, 0xe8d8a0, 0x9a8f86, 0x4a5a4a], PANTS = [0x2f3640, 0x4a4238, 0x1c1e22, 0x6a6258, 0x3a4a5c, 0x26282c];
 // what someone wears follows from who they are: crews in their colour, police in blue, people at work in what the job gives them, bystanders in whatever
@@ -48,9 +56,9 @@ function makeLook(seed, team, role) {
 const chars = [], charFree = []; for (let i = CHAR_MAX - 1; i >= 0; i--) charFree.push(i);
 function makeRig() {
   const N = () => new T.Object3D(), root = N(), hips = N(), torso = N(), head = N(), up = N(), gun = N(), sh = [N(), N()], el = [N(), N()], hip = [N(), N()], kn = [N(), N()];
-  root.rotation.order = 'YXZ'; hips.position.set(0, .97, 0); root.add(hips); torso.position.set(0, .07, 0); hips.add(torso); head.position.set(0, .56, 0); torso.add(head); up.position.set(0, .46, 0); torso.add(up); up.add(gun);
+  root.rotation.order = 'YXZ'; hips.position.set(0, .97, 0); root.add(hips); torso.position.set(0, .07, 0); hips.add(torso); head.position.set(0, .56, 0); torso.add(head); up.position.set(0, .46, 0); torso.add(up); up.add(gun); const gun2 = new T.Object3D(); up.add(gun2);
   [0, 1].forEach(i => { const sd = i ? 1 : -1; sh[i].position.set(sd * .27, 0, 0); sh[i].rotation.order = 'YXZ'; up.add(sh[i]); el[i].position.set(0, -.3, 0); sh[i].add(el[i]); hip[i].position.set(sd * .1, -.04, 0); hips.add(hip[i]); kn[i].position.set(0, -.44, 0); hip[i].add(kn[i]); });
-  return { root, hips, torso, head, up, gun, sh, el, hip, kn };
+  return { root, hips, torso, head, up, gun, gun2, sh, el, hip, kn };
 }
 function setLook(c, L) {
   const i = c.idx, col = (m, k, h) => { m.setColorAt(k, _wc.setHex(h)); m.instanceColor.needsUpdate = true; };
@@ -117,14 +125,14 @@ function poseChar(c, s, dt) {
       ax = lerp(ax, tx, w); ay = lerp(ay, ty, w); ex = lerp(ex, te, w); }
     if (!k && pn > 0) { ax = lerp(ax, -1.5, pn); ex = lerp(ex, -.1, pn); }
     r.sh[k].rotation.set(lerp(ax, hs[0], h), lerp(ay, hs[1], h), az * (1 - h)); r.el[k].rotation.x = lerp(ex, he - (k ? rl * .7 : 0), h); }
-  r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3];
+  r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3]; if (H.g2) { r.gun2.position.set(H.g2[0], H.g2[1], H.g2[2] - c.kick * .04); r.gun2.rotation.y = H.g2[3]; }
   // write the joints out to the instanced parts
   const i = c.idx; c.shown = true; r.root.updateMatrixWorld(true);
   CP.pelvis.setMatrixAt(i, r.hips.matrixWorld); CP.chest.setMatrixAt(i, r.torso.matrixWorld); CP.head.setMatrixAt(i, r.head.matrixWorld); CP[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) CP.mask.setMatrixAt(i, r.head.matrixWorld);
   for (let k = 0; k < 2; k++) { const j = i * 2 + k; CP.uarm.setMatrixAt(j, r.sh[k].matrixWorld); CP.farm.setMatrixAt(j, r.el[k].matrixWorld); CP.hand.setMatrixAt(j, r.el[k].matrixWorld); CP.thigh.setMatrixAt(j, r.hip[k].matrixWorld); CP.shin.setMatrixAt(j, r.kn[k].matrixWorld); CP.shoe.setMatrixAt(j, r.kn[k].matrixWorld); }
   const g = armed && h > .5 ? s.wpn : null;
-  if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); c.gun = g; }
-  if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); } else c.muz.set(s.x, s.y + 1.35, s.z);
+  if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
+  if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
 function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; }
 

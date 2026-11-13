@@ -117,6 +117,8 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #h-car{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk)}
 #car-hp{width:150px;margin-left:auto;margin-top:5px}
 #car-fill{background:var(--gold)}
+#car-nos{width:150px;margin-left:auto;margin-top:4px;height:6px}#nos-fill{background:#5fe9ff}
+body.touch #car-nos{margin:3px auto 0;width:110px}
 #h-radio{left:50%;top:86px;transform:translateX(-50%);font-size:18px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .5s;white-space:nowrap}
 #h-radio.on{opacity:1}
 #h-radio b{color:var(--gold);font-weight:700}
@@ -306,7 +308,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="feed"></div>
     <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar" id="cap-track"><i id="cap-fill"></i></div></div>
     <div id="h-prompt" class="sh"></div>
-    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div></div>
+    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div><div class="bar" id="car-nos" hidden><i id="nos-fill"></i></div></div>
     <div id="h-dev"></div>
     <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
     <div id="board" class="pane" hidden></div>
@@ -353,7 +355,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
         <div><dt>Mouse</dt><dd>Look · fire · right-click aim</dd></div>
         <div><dt>F</dt><dd>Get in or out · carjack · shop · rob a till</dd></div>
         <div><dt>Shift · Space</dt><dd>Sprint · jump / handbrake</dd></div>
-        <div><dt>1–6 · wheel</dt><dd>Weapons</dd></div>
+        <div><dt>1–0 · wheel</dt><dd>Weapons (7 Glocks · 8 M60 · 9 launcher · 0 bazooka)</dd></div>
         <div><dt>R · G</dt><dd>Reload · grenade</dd></div>
         <div><dt>V · C</dt><dd>Camera · look behind</dd></div>
         <div><dt>Q · H</dt><dd>Radio · horn, or siren in a police car</dd></div>
@@ -378,12 +380,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 13:08 UTC';
+  const BUILD = 'build 13 Nov 15:48 UTC';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const STALE = 7000;   // a player the relay has not heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v4/' + code + '/';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v5/' + code + '/';
   const table = {}, seen = {}, subs = [];
   let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
@@ -485,7 +487,7 @@ const CFG = {
   hourly: { A: 100, B: 100, C: 160, D: 140, E: 100, F: 100, G: 140, H: 100, I: 120, J: 100 },   // what each neighbourhood pays its crew every hour of the day: the home turfs less, the middle of town more
   offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
   ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
-  rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150 } },   // what each thing is worth towards the next rank
+  rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150, deal: 250 } },   // what each thing is worth towards the next rank
 };
 // Six crews, each in its own colour, with a yard on the edge of town and one neighbourhood to start with; the middle of the city is anybody's.
 // `tops` is what its people wear; `paint` is the colour of its cars; `glow` lights its rings and beams. `ink` writes its name on the dark HUD,
@@ -510,18 +512,13 @@ const WEAPONS = {
   shotgun:  { name: 'Pump Shotgun',   slot: 3, dmg: 13, head: 1.4, mag: 6,  res: 36,  rpm: 68,  auto: false, reload: 2.8,  spread: .07,  hip: .085, pellets: 9, kick: .14,  zoom: 60, range: [9, 30],   cycle: 'pump', snd: [.34, 1050], cost: 700,  ammo: 90 },
   rifle:    { name: 'Assault Rifle',  slot: 4, dmg: 25, head: 2.0, mag: 30, res: 150, rpm: 620, auto: true,  reload: 2.3,  spread: .012, hip: .045, pellets: 1, kick: .04,  zoom: 46, range: [50, 120], snd: [.15, 1700], cost: 1300, ammo: 120 },
   marksman: { name: 'Marksman Rifle', slot: 5, dmg: 68, head: 2.2, mag: 8,  res: 40,  rpm: 150, auto: false, reload: 2.8,  spread: .0015, hip: .07, pellets: 1, kick: .1,   zoom: 20, range: [130, 300], scope: true, snd: [.3, 1300], cost: 1900, ammo: 150 },
+  glocks:   { name: 'Dual Glocks',      slot: 6, dmg: 21, head: 2.0, mag: 100, res: 300, rpm: 520, auto: false, reload: 2.4, spread: .022, hip: .045, pellets: 1, kick: .028, zoom: 58, range: [24, 60], car: true, snd: [.1, 2600], cost: 2400, dual: true, sw: 1150 },   // a pistol in each hand on drum magazines; sw: how fast they go with a switch fitted
+  m60:      { name: 'M60',              slot: 7, dmg: 31, head: 2.0, mag: 100, res: 300, rpm: 560, auto: true,  reload: 4.2, spread: .02,  hip: .075, pellets: 1, kick: .05,  zoom: 50, range: [60, 140], snd: [.2, 1400], cost: 4800 },
+  gl:       { name: 'Grenade Launcher', slot: 8, dmg: 0,  head: 1,   mag: 6,   res: 24,  rpm: 80,  auto: false, reload: 3.2, spread: .008, hip: .02,  pellets: 1, kick: .12,  zoom: 54, range: [40, 80],  proj: 'gl',  snd: [.22, 380], cost: 6000 },
+  rpg:      { name: 'Bazooka',          slot: 9, dmg: 0,  head: 1,   mag: 1,   res: 8,   rpm: 45,  auto: false, reload: 2.6, spread: .003, hip: .02,  pellets: 1, kick: .2,   zoom: 46, range: [60, 150], proj: 'rpg', snd: [.32, 260], cost: 9000 },
 };
 const WID = Object.keys(WEAPONS);                      // weapon ids by number, for the wire
 Object.keys(WEAPONS).forEach((k, i) => { WEAPONS[k].id = k; WEAPONS[k].n = i; });
-const SHOP = [
-  { key: '1', what: 'ammo',     label: 'Ammo for every gun', cost: 150 },
-  { key: '2', what: 'armor',    label: 'Body armor',         cost: 500 },
-  { key: '3', what: 'smg',      label: 'Micro SMG',          cost: WEAPONS.smg.cost },
-  { key: '4', what: 'shotgun',  label: 'Pump Shotgun',       cost: WEAPONS.shotgun.cost },
-  { key: '5', what: 'rifle',    label: 'Assault Rifle',      cost: WEAPONS.rifle.cost },
-  { key: '6', what: 'marksman', label: 'Marksman Rifle',     cost: WEAPONS.marksman.cost },
-  { key: '7', what: 'nade',     label: 'Grenade',            cost: 200 },
-];
 // Invented models. Sizes in metres; accel m/s^2, vmax m/s, grip is how fast sideways speed dies (1/s).
 const CARS = {
   sedan:    { name: 'Lakeview',  len: 4.7, wid: 1.86, accel: 9.5,  vmax: 39, grip: 9,   mass: 1.0, hp: 1000, seats: 4, body: { ride: .3, belt: .9,  roof: 1.42, hood: 1.25, trunk: 1.0, rake: .6,  crake: .5 } },
@@ -533,6 +530,9 @@ const CARS = {
   hatch:    { name: 'Pip',       len: 3.9, wid: 1.74, accel: 10,   vmax: 36, grip: 9.5, mass: .8,  hp: 800,  seats: 4, body: { ride: .28, belt: .9,  roof: 1.46, hood: .95,  trunk: 0,   rake: .55, crake: .35 } },
   lowrider: { name: 'Marquesa',  len: 5.5, wid: 1.98, accel: 8.5,  vmax: 36, grip: 7.8, mass: 1.2, hp: 1100, seats: 4, body: { ride: .2, belt: .82, roof: 1.3,  hood: 1.8,  trunk: 1.55, rake: .6, crake: .7, fins: true } },
 };
+CARS.muscle = { name: 'Bruiser', len: 4.9, wid: 1.95, accel: 14, vmax: 52, grip: 8,    mass: 1.15, hp: 1150, seats: 2, body: { ride: .28, belt: .9,  roof: 1.3,  hood: 1.9,  trunk: 1.05, rake: .8, crake: .85 } };
+CARS.super  = { name: 'Vortex',  len: 4.5, wid: 2.02, accel: 17, vmax: 60, grip: 12.5, mass: .95,  hp: 900,  seats: 2, body: { ride: .18, belt: .7,  roof: 1.06, hood: 1.5,  trunk: .55, rake: 1.1, crake: 1.25 } };
+for (const k in CARS) { CARS[k].accel *= 1.22; CARS[k].vmax *= 1.28; }   // everything on the road quicker than it was
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];
@@ -1844,15 +1844,23 @@ const GUN_GEO = {}, GUN_MUZ = {};
   mk('shotgun', b => { b.box(-.014, .014, .05, .082, -.1, .76, st); b.box(-.013, .013, .016, .046, .12, .7, dk); b.box(-.025, .025, .006, .058, .3, .48, wd); b.box(-.022, .022, 0, .092, -.14, .12, st); b.box(-.02, .02, -.065, .07, -.46, -.14, wd); b.box(-.015, .015, -.1, 0, -.13, -.085, wd); }, .76);
   mk('rifle', b => { b.box(-.022, .022, 0, .086, -.14, .16, st); b.box(-.025, .025, .008, .076, .16, .44, pl); b.box(-.01, .01, .034, .056, .44, .68, dk); b.box(-.014, .014, -.2, 0, .02, .09, dk); b.box(-.015, .015, -.11, 0, -.125, -.078, dk); b.box(-.02, .02, -.035, .07, -.42, -.14, pl); b.box(-.005, .005, .086, .118, .4, .42, dk); b.box(-.012, .012, .086, .11, -.1, -.06, dk); b.box(-.016, .016, .028, .062, .66, .72, dk); }, .72);
   mk('marksman', b => { b.box(-.022, .022, 0, .084, -.16, .18, st); b.box(-.022, .022, .01, .07, .18, .52, wd); b.box(-.009, .009, .034, .054, .52, .92, dk); b.box(-.014, .014, -.13, 0, .02, .08, dk); b.box(-.015, .015, -.11, 0, -.14, -.095, wd); b.box(-.02, .02, -.045, .075, -.46, -.16, wd); b.box(-.006, .006, .084, .105, -.05, -.02, dk); b.box(-.006, .006, .084, .105, .1, .13, dk);
-    const c = new T.CylinderGeometry(.024, .024, .3, 10); c.rotateX(PI / 2); c.translate(0, .128, .04); b.geo(c, null, dk); c.dispose(); const e = new T.CylinderGeometry(.03, .024, .06, 10); e.rotateX(PI / 2); e.translate(0, .128, .21); b.geo(e, null, dk); e.dispose(); }, .92); }
+    const c = new T.CylinderGeometry(.024, .024, .3, 10); c.rotateX(PI / 2); c.translate(0, .128, .04); b.geo(c, null, dk); c.dispose(); const e = new T.CylinderGeometry(.03, .024, .06, 10); e.rotateX(PI / 2); e.translate(0, .128, .21); b.geo(e, null, dk); e.dispose(); }, .92);
+  const drum = (b, y) => { const c = new T.CylinderGeometry(.052, .052, .05, 12); c.rotateZ(PI / 2); c.translate(0, y, .02); b.geo(c, null, dk); c.dispose(); };
+  mk('glocks', b => { b.box(-.016, .016, .035, .078, -.05, .15, dk); b.box(-.014, .014, -.06, .04, -.05, -.008, dk); b.box(-.005, .005, .078, .088, .13, .14, st); drum(b, -.1); }, .15);
+  mk('m60', b => { b.box(-.026, .026, 0, .09, -.2, .3, st); b.box(-.012, .012, .04, .064, .3, .86, dk); b.box(-.03, .03, -.02, .055, .32, .5, pl); b.box(-.02, .02, -.04, .07, -.6, -.2, wd); b.box(-.014, .014, -.12, 0, -.13, -.085, dk); b.box(-.05, -.02, -.1, .02, -.02, .14, pl); b.box(-.004, .004, -.3, .04, .62, .66, dk); b.box(-.02, .02, .09, .13, -.04, .02, dk); }, .86);
+  mk('gl', b => { const c = new T.CylinderGeometry(.075, .075, .2, 6); c.rotateX(PI / 2); c.translate(0, .04, .1); b.geo(c, null, st); c.dispose(); b.box(-.022, .022, .01, .07, .2, .5, dk); b.box(-.018, .018, -.11, 0, -.09, -.04, dk); b.box(-.02, .02, -.03, .06, -.36, -.08, pl); b.box(-.016, .016, -.06, .02, .24, .3, dk); }, .5);
+  mk('rpg', b => { const c = new T.CylinderGeometry(.06, .06, 1.15, 10); c.rotateX(PI / 2); c.translate(0, .07, .12); b.geo(c, null, hexCol(0x3a4a34)); c.dispose(); const e = new T.CylinderGeometry(.08, .06, .14, 10); e.rotateX(PI / 2); e.translate(0, .07, .72); b.geo(e, null, dk); e.dispose(); b.box(-.015, .015, -.12, 0, -.03, .02, dk); b.box(-.015, .015, -.1, 0, .2, .25, dk); b.box(-.03, .03, .13, .16, -.02, .06, dk); }, .76); }
 const GUN_IDS = Object.keys(GUN_GEO), GUNMESH = {};
 GUN_IDS.forEach(id => { GUNMESH[id] = charPart('gun_' + id, GUN_GEO[id], 1, gunMat); });
+const GUN2 = charPart('gun_glocks2', GUN_GEO.glocks, 1, gunMat);   // the second of the pair, in the other hand
 // where the gun sits in the shoulder frame, and how the arms hold it. Arm 0 is the firing arm (model -x).
 const HOLD = {
   pistol: { g: [-.03, -.13, .56, 0], s0: [-1.33, .38], e0: -.18, s1: [-1.25, -.52], e1: -.28 },
   long:   { g: [-.13, -.2, .36, .06], s0: [-.72, .12], e0: -1.12, s1: [-1.18, -.5], e1: -.42 },
+  dual:   { g: [-.27, -.12, .54, 0], g2: [.27, -.12, .54, 0], s0: [-1.45, -.02], e0: -.06, s1: [-1.45, .02], e1: -.06 },
+  tube:   { g: [-.16, .02, .2, .04], s0: [-.85, .1], e0: -1.3, s1: [-1.25, -.45], e1: -.5 },
 };
-const holdOf = id => id === 'pistol' || id === 'smg' ? HOLD.pistol : HOLD.long;
+const holdOf = id => id === 'pistol' || id === 'smg' ? HOLD.pistol : id === 'glocks' ? HOLD.dual : id === 'rpg' ? HOLD.tube : HOLD.long;
 const SKIN = [0xf1c9a5, 0xe0ac7e, 0xc68e63, 0x9a6642, 0x70452b, 0x4f3020], HAIRC = [0x1a1512, 0x2e2118, 0x5a3d25, 0x8a6a3d, 0xb9b4a8, 0x111111];
 const CIV_TOP = [0xd8d6cc, 0x6b7a6a, 0x8a7a5c, 0x5a5f66, 0xc9b27a, 0x7a5a6a, 0x3f4a44, 0xb9a48f, 0xe8d8a0, 0x9a8f86, 0x4a5a4a], PANTS = [0x2f3640, 0x4a4238, 0x1c1e22, 0x6a6258, 0x3a4a5c, 0x26282c];
 // what someone wears follows from who they are: crews in their colour, police in blue, people at work in what the job gives them, bystanders in whatever
@@ -1870,9 +1878,9 @@ function makeLook(seed, team, role) {
 const chars = [], charFree = []; for (let i = CHAR_MAX - 1; i >= 0; i--) charFree.push(i);
 function makeRig() {
   const N = () => new T.Object3D(), root = N(), hips = N(), torso = N(), head = N(), up = N(), gun = N(), sh = [N(), N()], el = [N(), N()], hip = [N(), N()], kn = [N(), N()];
-  root.rotation.order = 'YXZ'; hips.position.set(0, .97, 0); root.add(hips); torso.position.set(0, .07, 0); hips.add(torso); head.position.set(0, .56, 0); torso.add(head); up.position.set(0, .46, 0); torso.add(up); up.add(gun);
+  root.rotation.order = 'YXZ'; hips.position.set(0, .97, 0); root.add(hips); torso.position.set(0, .07, 0); hips.add(torso); head.position.set(0, .56, 0); torso.add(head); up.position.set(0, .46, 0); torso.add(up); up.add(gun); const gun2 = new T.Object3D(); up.add(gun2);
   [0, 1].forEach(i => { const sd = i ? 1 : -1; sh[i].position.set(sd * .27, 0, 0); sh[i].rotation.order = 'YXZ'; up.add(sh[i]); el[i].position.set(0, -.3, 0); sh[i].add(el[i]); hip[i].position.set(sd * .1, -.04, 0); hips.add(hip[i]); kn[i].position.set(0, -.44, 0); hip[i].add(kn[i]); });
-  return { root, hips, torso, head, up, gun, sh, el, hip, kn };
+  return { root, hips, torso, head, up, gun, gun2, sh, el, hip, kn };
 }
 function setLook(c, L) {
   const i = c.idx, col = (m, k, h) => { m.setColorAt(k, _wc.setHex(h)); m.instanceColor.needsUpdate = true; };
@@ -1939,14 +1947,14 @@ function poseChar(c, s, dt) {
       ax = lerp(ax, tx, w); ay = lerp(ay, ty, w); ex = lerp(ex, te, w); }
     if (!k && pn > 0) { ax = lerp(ax, -1.5, pn); ex = lerp(ex, -.1, pn); }
     r.sh[k].rotation.set(lerp(ax, hs[0], h), lerp(ay, hs[1], h), az * (1 - h)); r.el[k].rotation.x = lerp(ex, he - (k ? rl * .7 : 0), h); }
-  r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3];
+  r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3]; if (H.g2) { r.gun2.position.set(H.g2[0], H.g2[1], H.g2[2] - c.kick * .04); r.gun2.rotation.y = H.g2[3]; }
   // write the joints out to the instanced parts
   const i = c.idx; c.shown = true; r.root.updateMatrixWorld(true);
   CP.pelvis.setMatrixAt(i, r.hips.matrixWorld); CP.chest.setMatrixAt(i, r.torso.matrixWorld); CP.head.setMatrixAt(i, r.head.matrixWorld); CP[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) CP.mask.setMatrixAt(i, r.head.matrixWorld);
   for (let k = 0; k < 2; k++) { const j = i * 2 + k; CP.uarm.setMatrixAt(j, r.sh[k].matrixWorld); CP.farm.setMatrixAt(j, r.el[k].matrixWorld); CP.hand.setMatrixAt(j, r.el[k].matrixWorld); CP.thigh.setMatrixAt(j, r.hip[k].matrixWorld); CP.shin.setMatrixAt(j, r.kn[k].matrixWorld); CP.shoe.setMatrixAt(j, r.kn[k].matrixWorld); }
   const g = armed && h > .5 ? s.wpn : null;
-  if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); c.gun = g; }
-  if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); } else c.muz.set(s.x, s.y + 1.35, s.z);
+  if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
+  if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
 function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; }
 
@@ -2095,13 +2103,13 @@ function carProps(c, px, pz, R, sp) {
 function stepCar(c, dt, inp) {
   const S = c.spec, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw);
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz; const sp = Math.abs(vf), dead = c.wreck || c.hp <= 0 || c.burn > 0;
-  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1, tn = 1 + (c.tune | 0) * .12;   // tn: a car-shop engine tune
+  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1, nos = c.boostT > 0 ? 1 : 0, tn = (1 + (c.tune | 0) * .12) * (1 + nos * .25), ka = 1 + nos * .75;   // tn: a car-shop engine tune; nos: nitrous on
   c.steer = lerp(c.steer, inp.steer, Math.min(1, dt * (Math.abs(inp.steer) > Math.abs(c.steer) ? 5.5 : 9)));
-  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * tn * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp * tn), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
+  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * tn * ka * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp * tn), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
   else if (thr < 0) { if (vf > .6) vf += 27 * thr * dt; else vf += S.accel * .6 * thr * Math.max(0, 1 + vf / 13) * dt; }
   vf -= vf * (.16 + .0011 * sp) * dt; if (!thr && sp < 1.2) vf -= vf * Math.min(1, dt * 2.5);
   if (inp.hb) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 8 * dt);
-  const slide = Math.abs(vl), grip = inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 : S.grip; c.slip = slide;
+  const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk; c.slip = slide;   // gk: car-shop handling
   vl -= vl * Math.min(1, grip * dt);
   c.vx = fx * vf + rx * vl; c.vz = fz * vf + rz * vl;
   const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1);
@@ -2193,7 +2201,7 @@ const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !=
 const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
 const wanted = a => a.kind !== 'bot' && a.heat > 0;
 // who a bot will open fire on: any other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
-const hostile = (a, b) => a !== b && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
+const hostile = (a, b) => a !== b && !(a.deal && a.deal === b.deal && !a.deal.blown) && (rival(a, b) || (a.team === TEAM_COP && wanted(b)) || (b.team === TEAM_COP && wanted(a)) || (a.grudge === b && G.time < a.grudgeT));
 const nameOf = a => !a ? 'The city' : a.name || 'Someone';
 const dmgAt = (d, dist) => d.dmg * (dist <= d.range[0] ? 1 : dist >= d.range[1] ? .5 : lerp(1, .5, (dist - d.range[0]) / (d.range[1] - d.range[0])));
 // where a seated or standing body is for the purposes of being shot
@@ -2216,7 +2224,7 @@ function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
     const tW = rayWorld(ox, oy, oz, ax, ay, az, 's', 300), tC = rayCars(ox, oy, oz, ax, ay, az, tW, sh.car || null), carHit = RC.car;
     let best = tC, who = null, head = false;
     const h2 = hyp(ax, az);
-    eachActor(a => { if (a === sh || a.dead || a.gone || sameSide(a, sh)) return;
+    eachActor(a => { if (a === sh || a.dead || a.gone || sameSide(a, sh) || (a.car && a.car.bp)) return;   // bulletproof glass: the car takes it
       const ex = a.x - ox, ez = a.z - oz; if (h2 > .05) { const al = (ex * ax + ez * az) / h2; if (al < -1 || al * h2 > best + 1) return; if (ex * ex + ez * ez - al * al > 1.5) return; } else if (ex * ex + ez * ez > 1.5) return;
       const t = actorHit(a, ox, oy, oz, ax, ay, az); if (t < best) { best = t; who = a; head = AH.head; } });
     const ex = ox + ax * best, ey = oy + ay * best, ez = oz + az * best;
@@ -2236,7 +2244,7 @@ function shoot(sh, ox, oy, oz, dx, dy, dz, d, spread, mx, my, mz) {
 function fxShot(a, wid) {
   const d = WEAPONS[wid] || WEAPONS.pistol, m = a.ch ? a.ch.muz : null, ox = m ? m.x : a.x, oy = m ? m.y : a.y + 1.4, oz = m ? m.z : a.z, cp = Math.cos(a.pitch || 0);
   let dx = -Math.sin(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04), dy = Math.sin(a.pitch || 0) + rs(.03), dz = -Math.cos(a.ayaw === undefined ? a.yaw : a.ayaw) * cp + rs(.04); const l = hyp(dx, dy, dz); dx /= l; dy /= l; dz /= l;
-  const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t);
+  if (d.proj) fireProj(d.proj, ox, oy, oz, dx, dy, dz, a, true); else { const t = Math.min(rayWorld(ox, oy, oz, dx, dy, dz, 's', 160), 160); if (t > 2) tracer(ox, oy, oz, ox + dx * t, oy + dy * t, oz + dz * t); }
   FX.muzzle(ox, oy, oz, 1); SFX.shot(d, ox, oy, oz, false); if (a.ch) a.ch.kick = 1; LIFE.bang(ox, oz);
 }
 function hitActor(t, dmg, head, sh, wid) {
@@ -2275,7 +2283,7 @@ function hurtPlayer(dmg, src, wid, head) {
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
   if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
-  if (c.plate) dmg *= c.plate > 1 ? .5 : .67;   // car-shop armor plating
+  if (c.plate) dmg *= [1, .67, .5, .35][c.plate] || .35;   // car-shop armor plating
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -2313,7 +2321,33 @@ function updateGrenades(dt) {
     g.x = e.x; g.z = e.z; g.y += g.vy * dt;
     const gr = groundAt(g.x, g.z, g.y, 'p', .1); if (g.y <= gr + .07) { g.y = gr + .07; g.vy = -g.vy * .32; g.vx *= .6; g.vz *= .6; }
     g.m.position.set(g.x, g.y, g.z);
-    if (g.t <= 0) { scene.remove(g.m); grenades.splice(i, 1); if (AUTH()) { GAME.ev('x', Math.round(g.x), Math.round(g.y), Math.round(g.z), 10, 0, GAME.ref(P)); explode(g.x, g.y + .3, g.z, P, 1, 'nade'); } else { NET.req('gx', Math.round(g.x * 10) / 10, Math.round(g.y * 10) / 10, Math.round(g.z * 10) / 10); FX.boom(g.x, g.y, g.z, 1); SFX.boom(g.x, g.y, g.z); NET.myBoom = G.time; const d = hyp(P.x - g.x, P.y + 1 - g.y, P.z - g.z); if (d < 7.5) hurtPlayer(120 * (1 - d / 8.6), P, 'nade'); } }
+    if (g.t <= 0) { scene.remove(g.m); grenades.splice(i, 1); blastAt(P, g.x, g.y, g.z, 'nade'); }
+  }
+}
+// how big each kind of blast is (1 is the old grenade); a launcher's round or a rocket goes off where it lands
+const BOOM = { nade: 1.35, gl: 1.15, rpg: 1.6 };
+function blastAt(owner, x, y, z, kind) {   // owner's own round: the world's machine decides what it did; anyone else just shows it
+  const pw = BOOM[kind] || 1;
+  if (AUTH()) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(owner)); explode(x, y + .3, z, owner, pw, kind); }
+  else if (owner === P) { NET.req('gx', Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(z * 10) / 10, Math.round(pw * 10), kind); FX.boom(x, y, z, pw); SFX.boom(x, y, z); NET.myBoom = G.time; const d = hyp(P.x - x, P.y + 1 - y, P.z - z), R = 7.5 * pw; if (d < R) hurtPlayer(170 * pw * .7 * (1 - d / (R * 1.15)), P, kind); }
+}
+// --- rockets and launcher grenades: flown on the machine of whoever fired them; on any other machine a ghost copy shows the shot
+const PROJ = [], rocketGeo = new T.CylinderGeometry(.075, .075, .6, 8), rocketMat = new T.MeshLambertMaterial({ color: 0x55624a }); rocketGeo.rotateX(PI / 2);
+function fireProj(kind, x, y, z, dx, dy, dz, owner, ghost) {
+  const sp = kind === 'rpg' ? 55 : 32, m = new T.Mesh(kind === 'rpg' ? rocketGeo : nadeGeo, kind === 'rpg' ? rocketMat : nadeMat); if (kind !== 'rpg') m.scale.setScalar(1.4); m.position.set(x, y, z); scene.add(m);
+  PROJ.push({ kind, m, x, y, z, vx: dx * sp, vy: dy * sp + (kind === 'gl' ? 3 : 0), vz: dz * sp, t: kind === 'rpg' ? 4.5 : 3.2, owner, ghost: !!ghost, trailT: 0 });
+  if (kind === 'rpg') SFX.boom(x, y, z);
+}
+function updateProj(dt) {
+  for (let i = PROJ.length - 1; i >= 0; i--) { const p = PROJ[i];
+    if (p.kind !== 'rpg') p.vy -= 12 * dt;   // a launcher round arcs: aim a touch high at range
+    const sp = hyp(p.vx, p.vy, p.vz) || 1, step = sp * dt, dx = p.vx / sp, dy = p.vy / sp, dz = p.vz / sp, own = p.owner && p.owner.car;
+    let t = rayCars(p.x, p.y, p.z, dx, dy, dz, rayWorld(p.x, p.y, p.z, dx, dy, dz, 's', step + .01), own || null);
+    if (!p.ghost) eachActor(a => { if (a === p.owner || a.dead || a.gone || (p.owner && sameSide(a, p.owner))) return; if (hyp(a.x - p.x, a.z - p.z) > step + 2) return; const h = actorHit(a, p.x, p.y, p.z, dx, dy, dz); if (h < t) t = h; });
+    const k = Math.min(t, step), nx = p.x + dx * k, ny = p.y + dy * k, nz = p.z + dz * k, gy = groundAt(nx, nz, ny + .4, 'p', .1); p.t -= dt;
+    if (t < step || ny <= gy + .05 || p.t <= 0) { scene.remove(p.m); PROJ.splice(i, 1); if (!p.ghost) blastAt(p.owner, nx, Math.max(ny, gy + .1), nz, p.kind); continue; }
+    p.x = nx; p.y = ny; p.z = nz; p.m.position.set(nx, ny, nz); p.m.lookAt(nx + dx, ny + dy, nz + dz);
+    if ((p.trailT -= dt) <= 0) { p.trailT = p.kind === 'rpg' ? .025 : .06; FX.dust(nx - dx * .4, ny - dy * .4, nz - dz * .4, 1); }
   }
 }
 // --- things lying in the street: chains off the fallen, dropped guns
@@ -2343,13 +2377,15 @@ vmHands.forEach(h => { h.add(new T.Mesh(bxg(.085, .085, .4, 0, 0, .24), vmSleeve
 function setVm(id) {
   if (vmId === id) return; vmId = id; if (vmGun) vmRoot.remove(vmGun); vmGun = null;
   const long = id !== 'pistol' && id !== 'smg' && id !== 'fist';
-  if (GUN_GEO[id]) { vmGun = new T.Mesh(GUN_GEO[id], gunMat); vmGun.rotation.y = PI; vmRoot.add(vmGun); }
+  if (GUN_GEO[id]) { vmGun = new T.Mesh(GUN_GEO[id], gunMat); vmGun.rotation.y = PI; vmRoot.add(vmGun); if (id === 'glocks') { const g2 = new T.Mesh(GUN_GEO[id], gunMat); g2.position.set(.34, 0, 0); vmGun.add(g2); } }
   // each arm runs from the hand back, down and outward, so it leaves the picture at the bottom corner
   vmHands[0].position.set(.012, -.055, .03); vmHands[0].rotation.set(.62, .3, 0); vmHands[1].visible = true;
   if (id === 'fist') { vmHands[0].position.set(.04, -.02, -.12); vmHands[1].position.set(-.34, -.02, -.12); vmHands[1].rotation.set(.62, -.3, 0); }
+  else if (id === 'glocks') { vmHands[1].position.set(-.33, -.055, .03); vmHands[1].rotation.set(.62, -.3, 0); }
   else if (long) { vmHands[1].position.set(-.01, -.03, -.36); vmHands[1].rotation.set(.5, -.85, 0); } else { vmHands[1].position.set(-.045, -.075, .03); vmHands[1].rotation.set(.62, -.55, 0); }
 }
-const SIGHT = { pistol: .084, smg: .098, shotgun: .09, rifle: .118, marksman: .128, fist: .05 };
+const SIGHT = { pistol: .084, smg: .098, shotgun: .09, rifle: .118, marksman: .128, fist: .05, glocks: .084, m60: .12, gl: .12, rpg: .14 };
+const autoNow = () => { const d = WEAPONS[P.wpn], w = P.inv[P.wpn]; return !!d.auto || (!!d.dual && !!w && !!w.sw); };   // a switch on the Glocks makes them automatic
 function resetLoadout() { P.inv = { fist: { mag: 0, res: 0 }, pistol: { mag: WEAPONS.pistol.mag, res: 60 } }; P.wpn = 'pistol'; P.nades = 1; P.armor = 0; }
 function giveWeapon(id, ammo) { const d = WEAPONS[id]; if (!d || d.melee) return; if (!P.inv[id]) P.inv[id] = { mag: d.mag, res: ammo === undefined ? d.res : ammo }; else P.inv[id].res = Math.min(Math.round(d.res * 1.5), P.inv[id].res + (ammo === undefined ? d.mag * 2 : ammo)); }
 function setWeapon(id) { if (!P.inv[id] || P.wpn === id || P.dead) return; if (P.car && !WEAPONS[id].car) return; P.wpn = id; P.reloadT = 0; P.autoReload = 0; P.switchT = .3; P.ads = 0; SFX.swap(); }
@@ -2377,16 +2413,17 @@ function tryFire() {
   if (d.melee) { if (!P.car) punch(); return; }
   if (P.car && !d.car) return;
   if (w.mag <= 0) { if (w.res > 0) startReload(); else { SFX.click(); P.fireT = .25; } return; }
-  if (!DBG.ammo) w.mag--; P.fireT = 60 / d.rpm; P.shootT = 1.3; meChar.kick = 1;
+  if (!DBG.ammo) w.mag--; P.fireT = 60 / (d.dual && w.sw ? d.sw : d.rpm); P.shootT = 1.3; meChar.kick = 1; if (d.dual) meChar.flip = !meChar.flip;
   aimDir();
   const moving = P.spd > 1.5 ? 1.45 : 1, spread = lerp(d.hip, d.spread, P.ads) * moving * (P.onGround || P.car ? 1 : 1.8) * (P.car ? 1.5 : 1) + P.kick * .06;
   let mx, my, mz;
   if (firstPerson()) { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw), k = 1 - P.ads; mx = AIM.ox + rx * .16 * k + AIM.dx * .7; my = AIM.oy - .1 * k - .03 + AIM.dy * .7; mz = AIM.oz + rz * .16 * k + AIM.dz * .7; }
   else if (P.car) { mx = AIM.ox + AIM.dx * .5; my = AIM.oy; mz = AIM.oz + AIM.dz * .5; } else { mx = meChar.muz.x; my = meChar.muz.y; mz = meChar.muz.z; }
-  shoot(P, AIM.ox, AIM.oy, AIM.oz, AIM.dx, AIM.dy, AIM.dz, d, spread, mx, my, mz);
+  if (d.proj) { fireProj(d.proj, mx + AIM.dx * .3, my + AIM.dy * .3, mz + AIM.dz * .3, AIM.dx + rs(spread), AIM.dy + rs(spread), AIM.dz + rs(spread), P, false); P.shots = (P.shots | 0) + 1; P.shotT = G.time; FX.muzzle(mx, my, mz, 1.6); }
+  else shoot(P, AIM.ox, AIM.oy, AIM.oz, AIM.dx, AIM.dy, AIM.dz, d, spread, mx, my, mz);
   P.kick = Math.min(.32, P.kick + d.kick); P.cpitch = Math.min(1.35, P.cpitch + d.kick * (P.ads > .5 ? .16 : .24)); P.cyaw += rs(d.kick * .16); shake(d.kick * .5);
   if (d.cycle) SFX.cycle();
-  { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw); FX.casing(mx - AIM.dx * .3, my, mz - AIM.dz * .3, rx * 2.2 + rs(.6), 1.8 + rand(), rz * 2.2 + rs(.6)); }
+  if (!d.proj) { const rx = Math.cos(P.cyaw), rz = -Math.sin(P.cyaw); FX.casing(mx - AIM.dx * .3, my, mz - AIM.dz * .3, rx * 2.2 + rs(.6), 1.8 + rand(), rz * 2.2 + rs(.6)); }
   if (w.mag === 0 && w.res > 0) P.autoReload = .3;
 }
 function punch() {
@@ -2462,30 +2499,43 @@ function updateRob(dt) {
   R.t += dt; P.shootT = Math.max(P.shootT, .3); if (R.t < 3.5) return;
   P.rob = null; if (AUTH()) GAME.rob(P, R.i); else NET.req('rb', R.i);
 }
-// one panel for every menu: the gun shop, the car shop and the phone. A menu other than the gun shop brings its own items:
-// { label, sub, cost, off (cannot be had right now), own (already yours), act }
-function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, foot: 'Press a number or click to buy. F or Esc closes.' }); }
+// one panel for every menu: the gun shop, the car shop and the phone. Each brings its own items:
+// { label, sub, cost, off (cannot be had right now), own (already yours), act }. An item can open a page of its own (shopOpen.page).
+function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · F or Esc closes' }); }
 function openMenu(m) { shopOpen = m; $('shop-title').textContent = m.title; $('shop').className = 'pane menu-' + m.kind; $('shop-foot').textContent = m.foot || ''; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
-const gunLocked = it => !!WEAPONS[it.what] && (UNLOCK[it.what] || 1) > (P.rank || 1);
+const page = (label, id) => ({ label: label + ' ›', act: () => { shopOpen.page = id; renderShop(); } }), back = () => ({ label: '‹ Back', act: () => { shopOpen.page = null; renderShop(); } });
 function renderShop() {
   if (!shopOpen) return; const ol = $('shop-list'); ol.textContent = '';
-  const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
-  if (shopOpen.kind !== 'gun') { shopOpen.list = shopOpen.items(); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); }); return; }
-  SHOP.forEach(it => { const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4), lock = gunLocked(it);
-    row(it.key, it.label, '', own ? 'Owned' : full ? 'Full' : lock ? 'Rank ' + UNLOCK[it.what] : '$' + it.cost, own || full ? 'own' : lock || P.cash < it.cost ? 'no' : ''); });
+  const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key === '10' ? '0' : key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
+  shopOpen.list = shopOpen.items(shopOpen.page || null).slice(0, 10); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); });
 }
 function buy(key) {
   if (!shopOpen) return;
-  if (shopOpen.kind !== 'gun') { const it = (shopOpen.list || []).find(q => q.key === key); if (!it || it.off || !it.act || (it.cost > 0 && P.cash < it.cost)) { SFX.deny(); return; } it.act(); if (shopOpen && shopOpen.kind !== 'gun') renderShop(); return; }
-  const it = SHOP.find(q => q.key === key); if (!it) return;
-  const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
-  if (gunLocked(it)) { SFX.deny(); banner(it.label, 'Opens at rank ' + UNLOCK[it.what], 1.6); return; }
-  if (own || full || P.cash < it.cost) { SFX.deny(); return; }
-  P.spent += it.cost; P.cash -= it.cost; SFX.buy(); gain(-it.cost);
-  if (it.what === 'ammo') { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } }
-  else if (it.what === 'armor') P.armor = 100; else if (it.what === 'nade') P.nades++; else { giveWeapon(it.what); setWeapon(it.what); }
-  renderShop();
+  const it = (shopOpen.list || []).find(q => q.key === key); if (!it || it.off || !it.act || (it.cost > 0 && P.cash < it.cost)) { SFX.deny(); if (it && it.lock) banner(it.label, it.lock, 1.6); return; }
+  it.act(); if (shopOpen) renderShop();
+}
+// --- the gun shop: the basics on the first page, the guns on pages by kind; guns open with rank
+const GUN_BLURB = { smg: 'Small, fast and good from a car', glocks: 'A pistol in each hand, 50-round drums', shotgun: 'Nine pellets, close up', rifle: 'The all-rounder', marksman: 'Scoped, long range', m60: '100-round belt, heavy hitting', gl: 'Six rounds that go off where they land', rpg: 'One rocket at a time: cars, crowds, helicopters' };
+function ammoCost() { let n = 150; for (const id in P.inv) n += id === 'rpg' ? 450 : id === 'gl' ? 300 : id === 'm60' ? 150 : 0; return n; }
+function gunItem(id) {
+  const d = WEAPONS[id], need = UNLOCK[id] || 1;
+  if (P.inv[id]) return { label: d.name, sub: 'Owned · ' + GUN_BLURB[id], off: true, own: true };
+  if (need > (P.rank || 1)) return { label: d.name, sub: 'Opens at rank ' + need, off: true, lock: 'Opens at rank ' + need };
+  return { label: d.name, sub: GUN_BLURB[id], cost: d.cost, act: () => { if (payCash(d.cost)) { giveWeapon(id); setWeapon(id); SFX.buy(); addRP(CFG.rp.mod); } } };
+}
+function gunItems(pg) {
+  if (pg === 'hand') { const g = P.inv.glocks, need = UNLOCK.switch;
+    return [gunItem('smg'), gunItem('glocks'), g && g.sw ? { label: 'Glock switch', sub: 'Fitted: the Glocks fire full auto', off: true, own: true } : !g ? { label: 'Glock switch', sub: 'Full auto for the Dual Glocks · buy the Glocks first', off: true } : need > (P.rank || 1) ? { label: 'Glock switch', sub: 'Opens at rank ' + need, off: true, lock: 'Opens at rank ' + need }
+      : { label: 'Glock switch', sub: 'Makes the Dual Glocks fully automatic', cost: 1500, act: () => { if (payCash(1500)) { g.sw = true; SFX.buy(); banner('Glock switch', 'The Glocks fire full auto now', 2, 'gold'); saveGame(); } } }, back()]; }
+  if (pg === 'long') return [gunItem('shotgun'), gunItem('rifle'), gunItem('marksman'), back()];
+  if (pg === 'heavy') return [gunItem('m60'), gunItem('gl'), gunItem('rpg'), back()];
+  return [
+    { label: 'Ammo for every gun', sub: 'Full magazines and spares, rockets included', cost: ammoCost(), act: () => { if (payCash(ammoCost())) { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } SFX.buy(); } } },
+    P.armor >= 100 ? { label: 'Body armor', sub: 'Full', off: true, own: true } : { label: 'Body armor', sub: 'Soaks up most of what hits you', cost: 500, act: () => { if (payCash(500)) { P.armor = 100; SFX.buy(); } } },
+    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · G throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
+    P.hp >= maxHp() ? { label: 'Medkit', sub: 'Not hurt', off: true } : { label: 'Medkit', sub: 'Back to full health', cost: 250, act: () => { if (payCash(250)) { P.hp = maxHp(); SFX.buy(); } } },
+    page('Handguns & SMGs', 'hand'), page('Shotguns & rifles', 'long'), page('Heavy weapons', 'heavy')];
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
@@ -2513,7 +2563,7 @@ function updateOnFoot(dt) {
   // weapon
   if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && !sprint && (d.auto || mouse.fresh)) tryFire();
+  if (mouse.down && !sprint && (autoNow() || mouse.fresh)) tryFire();
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
   if (P.rob) updateRob(dt); findPrompt(); collectPickups();
@@ -2526,7 +2576,7 @@ function updateInCar(dt) {
   if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
     if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
-    stepCar(c, dt, inp);
+    nitrous(c, dt, !!(keys.ShiftLeft || keys.ShiftRight)); stepCar(c, dt, inp);
     if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
     GAME.roadkill(c, P);
     garageCheck(c);   // stop in a garage and the car shop opens: repairs, resprays that lose the police, armor, engine, and keeping the car
@@ -2534,7 +2584,7 @@ function updateInCar(dt) {
   seatPos(c, P.seat, _sp); P.x = _sp.x; P.z = _sp.z; P.y = c.y; P.vx = c.vx; P.vz = c.vz; P.vy = 0; P.onGround = true; P.yaw = c.yaw; P.spd = 0; P.pitch = P.cpitch; P.sprint = false;
   P.shootT -= dt; if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && (d.auto || mouse.fresh)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
+  if (mouse.down && (autoNow() || mouse.fresh)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
   if (P.radioT > 0) { P.radioT -= dt; if (P.radioT <= 0) $('h-radio').classList.remove('on'); }
 }
 function updatePlayer(dt) {
@@ -2648,7 +2698,7 @@ function botShoot(b, dt) {
   if (--b.burst <= 0) { b.burst = d.auto ? 3 + (rand() * 5 | 0) : 1 + (rand() * 2 | 0); b.pauseT = .45 + rand() * .9; }
   const tsp = t.car ? carSpeed(t.car) : (t.spd || 0), err = (.04 + dist * .00055) * (1 + tsp * .1) * (b.spd > 1 ? 1.35 : 1) * (b.car ? 1.7 : 1) / b.skill + d.spread;
   dx /= dist; dy /= dist; dz /= dist; const m = b.ch && b.ch.shown && !b.car ? b.ch.muz : null;
-  shoot(b, ox + dx * .4, oy, oz + dz * .4, dx, dy, dz, d, err, m ? m.x : ox + dx * .7, m ? m.y : oy, m ? m.z : oz + dz * .7); if (b.ch) b.ch.kick = 1;
+  if (d.proj) { b.shots = (b.shots | 0) + 1; b.shotT = G.time; fireProj(d.proj, ox + dx * .8, oy, oz + dz * .8, dx + rs(err), dy + rs(err), dz + rs(err), b, false); } else shoot(b, ox + dx * .4, oy, oz + dz * .4, dx, dy, dz, d, err, m ? m.x : ox + dx * .7, m ? m.y : oy, m ? m.z : oz + dz * .7); if (b.ch) b.ch.kick = 1;
 }
 // --- cars: getting in, getting out, being thrown out
 function botEnter(b, c, k) { b.car = c; b.seat = k; c.occ[k] = b; b.wantCar = null; b.path = null; b.vx = b.vz = 0; b.spd = 0; c.asleep = false; SFX.door(c.x, c.y, c.z); }
@@ -2876,7 +2926,7 @@ function streetBrain(b) {
 }
 function streetAct(b, dt) {
   b.aim = Math.max(0, b.aim - dt * 2); b.pitch = lerp(b.pitch, 0, Math.min(1, dt * 5));
-  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = 0; return; }
+  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = b.deal && !b.deal.blown ? ACT.talk : 0; if (b.dealYaw !== undefined && b.deal && !b.deal.blown) b.yaw = lerpAng(b.yaw, b.dealYaw, Math.min(1, dt * 4)); return; }
   if (b.at === 2) { civStand(b, dt, p.slots[b.slot].yaw); if (G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 10; b.act = p.k === 'hang' || p.k === 'browse' ? STREET_ACTS[(rand() * STREET_ACTS.length) | 0] : ACT_AT[p.k][0]; } return; }
   b.act = 0;
   if (b.at === 0) { if (botFollow(b, 2.4, dt)) { b.path = null; b.at = 1; } }
@@ -3290,11 +3340,11 @@ function onEvent(e, mine) {
   else if (k === 'ti') { const bz = SAVE.live && G.state !== 'menu' ? bizIncome() : 0; if (bz > 0) { P.earn += bz; gain(bz); }   // each player's own businesses, on their own machine
     note('Hourly income · ' + e[2] + (e[2] === 1 ? ' neighbourhood' : ' neighbourhoods') + ' · +$' + e[3] + (bz > 0 ? ' · businesses +$' + bz : ''), 'g'); }
   else if (k === 'hm') { if (GAME.unref(e[2]) === P) { PH.homUntil = G.time + 300; banner('Homies on the way', e[3] + ' of your crew coming round the corner', 2.4, 't' + P.team); } }
-  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && P.pv) { c.pv = P; c.tune = P.pv.en | 0; c.plate = P.pv.ar | 0; } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
+  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && P.pv) { c.pv = P; applySpec(c, P.pv); } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
   else if (k === 'hz') { const z = ZONES[e[2]]; if (e[3] === P.team) { banner('Hold broken', 'Their grip on ' + z.name + ' is gone · take the ring', 3, 't' + P.team); SFX.cap(true); } }
   else if (k === 'hw') { const z = ZONES[e[2]]; note(CREWS[e[3]].name + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
-  else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd') evNews(e, mine);
+  else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
@@ -3448,7 +3498,7 @@ function updateCarsAuth(dt) {
 // --- who and what is on the streets
 const humans = () => { const h = [P]; for (const k in NET.remotes) h.push(NET.remotes[k]); return h; };
 const nearHuman = (x, z) => { let d = 1e9; humans().forEach(a => { const q = hyp(a.x - x, a.z - z); if (q < d) d = q; }); return d; };
-const CREW_CARS = ['lowrider', 'suv', 'sedan'], STREET_CARS = ['sedan', 'sedan', 'hatch', 'hatch', 'coupe', 'suv', 'pickup', 'van', 'sport', 'lowrider'];
+const CREW_CARS = ['lowrider', 'suv', 'sedan'], STREET_CARS = ['sedan', 'sedan', 'hatch', 'hatch', 'coupe', 'suv', 'pickup', 'van', 'sport', 'lowrider', 'muscle', 'sport', 'super', 'muscle'];
 function parkCar(spot, type, o) { const c = spawnCar(type, spot.x, spot.z, spot.yaw, o); if (c) { c.home = spot; c.asleep = true; } return c; }
 // Traffic and people on foot are kept where there is someone to see them: they turn up a little way off from a player and are
 // taken away again once every player has left them far behind.
@@ -3622,7 +3672,7 @@ function updateTrain(dt) { const span = CITY.d + 420, z = ((G.time * 15) % span)
         out in the open, a crew coming for your turf, a car the chop shop wants, a stash left lightly guarded, a street race.
         The machine that runs the world starts and ends them and pays for them; everyone sees them on the map.
    ===================================================================== */
-const EV_KINDS = ['truck', 'hit', 'war', 'chop', 'stash', 'race'];
+const EV_KINDS = ['truck', 'hit', 'war', 'chop', 'stash', 'race', 'deal'];
 const EV_INFO = {
   truck: { name: 'Armored truck', icon: '$', col: '#8fe36b', hex: 0x8fe36b, how: 'Shoot it to a stop, grab the cash' },
   hit:   { name: 'Hit', icon: '✖', col: '#ff6a5a', hex: 0xff6a5a, how: 'Take out the lieutenant' },
@@ -3630,6 +3680,7 @@ const EV_INFO = {
   chop:  { name: 'Chop shop', icon: '⚙', col: '#9fd0e8', hex: 0x9fd0e8, how: 'Steal the car, bring it to Calder Auto Body' },
   stash: { name: 'Stash run', icon: '◆', col: '#e8b8ff', hex: 0xe8b8ff, how: 'Grab the stash, bring it to your yard' },
   race:  { name: 'Street race', icon: '⚑', col: '#f2efe6', hex: 0xf2efe6, how: 'Drive into the ring to start' },
+  deal:  { name: 'Deal going down', icon: '⇄', col: '#7dffb0', hex: 0x7dffb0, how: 'Hit the deal: take the money and the product' },
 };
 const EVTS = []; let evtSeq = 0;
 const CHOP = GARAGES.find(g => g.team === undefined) || GARAGES[0];
@@ -3660,7 +3711,7 @@ function updateEvents() {   // four times a second, on the machine that runs the
   const k = pickJob(); G.evT = G.time + (k && EV_START[k]() ? 50 + rand() * 40 : 8);
 }
 function pickJob() {   // which kind of job turns up next: any kind not already running, a hood war only when the crew has turf to lose
-  const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4 };
+  const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4, deal: 2.2 };
   EVTS.forEach(E => { w[E.k] = 0; });
   let tot = 0; for (const q in w) tot += w[q]; if (tot <= 0) return null; let r = rand() * tot; for (const q in w) { r -= w[q]; if (r <= 0 && w[q] > 0) return q; }
   return null;
@@ -3766,6 +3817,31 @@ EV_TICK.stash = E => {
   if (G.time > E.until) { if (E.bag) removePickup(E.bag); evEnd(E, false); }
 };
 
+// --- a deal going down: two crews meet to trade, three a side, a car each. Hit it and both sides turn on you and on each other;
+//     the money and the product end up on the ground for whoever is left standing.
+const aiCrews = () => { const hum = new Set(humans().map(a => a.team)); return CREWS.map((c, t) => t).filter(t => !hum.has(t)); };
+EV_START.deal = () => {
+  const a = someHuman(), p = (() => { let best = null, bs = -1e9; for (let k = 0; k < 60; k++) { const q = SPOTS[(rand() * SPOTS.length) | 0]; if (!q || q.k === 'wait' || q.hood < 0) continue; const d = hyp(q.x - a.x, q.z - a.z); if (d < 110 || d > 290 || nearHuman(q.x, q.z) < 90) continue; const sc = rand() * 40 - Math.abs(d - 180); if (sc > bs) { bs = sc; best = q; } } return best; })();
+  if (!p) return false; const ai = aiCrews(); if (ai.length < 2) return false;
+  const own = ZS[p.hood].owner, t1 = ai.includes(own) ? own : ai[(rand() * ai.length) | 0], rest = ai.filter(t => t !== t1), t2 = rest[(rand() * rest.length) | 0];
+  const E = { k: 'deal', x: p.x, z: p.z, team: t1, zone: p.hood, until: G.time + 200, side: [[], []], loot: [null, null], blown: false, cars: [] };
+  [t1, t2].forEach((t, s) => { const sx = s ? 1 : -1;
+    for (let k = 0; k < 3; k++) { const x = p.x + sx * 2.6, z = p.z + (k - 1) * 1.5, b = spawnBot(t, x, p.y, z, { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'pistol']) }); if (!b) continue;
+      Object.assign(b, { street: true, guardOf: true, until: 1e9, skill: 1.1, deal: E, yaw: s ? PI / 2 : -PI / 2, dealYaw: s ? PI / 2 : -PI / 2 }); E.side[s].push(b); }
+    const c = spawnCar(CREW_CARS[(rand() * 3) | 0], p.x + sx * 8, p.z + rs(2), s ? PI / 2 : -PI / 2, { color: CREW_PAINT[t], team: t }); if (c) { c.temp = true; E.cars.push(c); } });
+  if (!E.side[0].length || !E.side[1].length) { E.side.flat().forEach(removeBot); E.cars.forEach(removeCar); return false; }
+  E.money = Math.round(lerp(2500, 3500, rand()) / 100) * 100; E.prod = Math.round(lerp(1500, 2500, rand()) / 100) * 100; E.guards = E.side.flat();
+  evStart(E); return true;
+};
+EV_TICK.deal = E => {
+  const all = E.side.flat();
+  if (!E.blown && (all.some(b => b.dead || b.gone || b.hp < botHp(b.team) - .5) || humans().some(h => !h.dead && hyp(h.x - E.x, h.z - E.z) < 13))) { E.blown = true; all.forEach(b => { b.react = .3; }); GAME.ev('db2', E.id); }   // somebody got hurt, or somebody walked up: the deal is off and everyone draws
+  E.side.forEach((list, s) => { if (E.loot[s] || !list.every(b => b.dead || b.gone)) return; const w = list.find(b => !b.gone) || list[0];
+    E.loot[s] = addPickup('cash', w.x + rs(1), groundAt(w.x, w.z, w.y + .5, 'p'), w.z + rs(1), (s ? E.prod : E.money) / 100); E.loot[s].t = 150; GAME.ev('dl', E.id, s); });
+  if (E.loot[0] && E.loot[1] && E.loot[0].gone && E.loot[1].gone) return evEnd(E, true, 0, null);
+  if (G.time > E.until + (E.blown ? 90 : 0)) { E.loot.forEach(l => { if (l && !l.gone) removePickup(l); }); all.forEach(b => { if (!b.dead && !b.gone) { b.deal = null; b.until = G.time + 20; } }); evEnd(E, false); }
+};
+
 // --- a street race: a ring at a crossing. Drive into it and a run of checkpoints opens up on your own screen.
 EV_START.race = () => { const ij = xingNear(someHuman(), 60, 210, 40); if (!ij) return false; evStart({ k: 'race', x: RX(ij[0]), z: RZ(ij[1]), ij, until: G.time + 200 }); return true; };
 EV_TICK.race = E => { if (G.time > E.until) evEnd(E, true, 0, null); };
@@ -3798,15 +3874,18 @@ function evNews(e, mine) {
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
+    else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
     else note(kind === 'war' ? CREWS[team].name + ' took ' + ZONES[zi].name : kind === 'hit' ? (who ? 'Somebody else got the lieutenant' : 'The lieutenant slipped away') : kind === 'truck' ? 'The armored truck got away' : kind === 'chop' ? 'The chop shop car is gone' : I.name + ' · missed', 'c'); }
   else if (k === 'eo') note('Armored truck stopped · grab the cash', 'g');
   else if (k === 'sc') { const a = GAME.unref(e[3]); if (a === P) banner('Stash grabbed', 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + ' has the stash', 'g'); }
   else if (k === 'sd') note('The stash was dropped', 'c');
+  else if (k === 'db2') note('The deal went bad · guns out', 'c');
+  else if (k === 'dl') note(e[3] ? 'The product is on the ground · grab it' : 'The money is on the ground · grab it', 'g');
 }
 // --- what the host says about its events, and what a joined player makes of it
 const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.ij[0] * 16 + E.ij[1],
+  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : 0,
   E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.team === undefined ? -1 : E.team]);
 function evFromHost(list) {
   const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
@@ -3841,14 +3920,14 @@ function updateEventMarks(dt) {
         businesses on your turf; the car shop; the car that is yours.
    --------------------------------------------------------------------- */
 // --- rank. Everything that moves the crew forward pays RP, and each rank asks a little more than the one before.
-const UNLOCK = { smg: 1, shotgun: 2, rifle: 4, marksman: 6, homies: 2, fixer: 3 };   // the rank each one opens at
+const UNLOCK = { smg: 1, shotgun: 2, glocks: 3, rifle: 4, switch: 5, marksman: 6, gl: 7, m60: 8, rpg: 10, homies: 2, fixer: 3 };   // the rank each one opens at
 const rpFor = r => r <= 1 ? 0 : 500 * (r - 1) + 125 * (r - 1) * (r - 2);
 const rankOf = rp => { let r = 1; while (r < 150 && rp >= rpFor(r + 1)) r++; return r; };
 const hpBonus = r => Math.min(50, Math.floor((r - 1) / 2) * 5);                     // +5 health every other rank, up to +50
 const maxHp = () => CFG.player.hp + hpBonus(P.rank || 1);
 const homieCount = r => r >= 10 ? 4 : r >= 6 ? 3 : r >= UNLOCK.homies ? 2 : 0;
 function unlocksAt(r) {
-  const u = []; ['smg', 'shotgun', 'rifle', 'marksman'].forEach(w => { if (r > 1 && UNLOCK[w] === r) u.push(WEAPONS[w].name); });
+  const u = []; ['smg', 'shotgun', 'glocks', 'rifle', 'marksman', 'gl', 'm60', 'rpg'].forEach(w => { if (r > 1 && UNLOCK[w] === r) u.push(WEAPONS[w].name); }); if (UNLOCK.switch === r) u.push('the Glock switch');
   if (homieCount(r) > homieCount(r - 1)) u.push(homieCount(r) + ' homies on call');
   if (UNLOCK.fixer === r) u.push('the fixer');
   if (hpBonus(r) > hpBonus(r - 1)) u.push('+5 health');
@@ -3906,13 +3985,22 @@ const coolLeft = (t, s) => Math.max(0, Math.ceil(t + s - G.time));
 const homiesOut = () => AUTH() ? bots.some(b => b.homie === P && !b.dead) : G.time < PH.homUntil;
 const myPV = () => { for (let i = 0; i < cars.length; i++) if (cars[i].pv === P && !cars[i].gone) return cars[i]; return null; };
 const pvWrecked = () => { const c = myPV(); return !!c && (c.wreck || c.burn > 0); };
-function phoneItems() {
+// the online store: cars delivered to the kerb by the mechanic (more on its pages as the city grows)
+const CAR_SHOP = [['super', 28000, 6], ['muscle', 14000, 3], ['sport', 9000, 2], ['suv', 6500, 1], ['lowrider', 5500, 1], ['coupe', 4000, 1]];
+function storeItems(pg) {
+  if (pg === 'cars') return CAR_SHOP.map(q => { const S = CARS[q[0]], has = P.pv && P.pv.t === q[0];
+    return has ? { label: S.name, sub: 'Yours · the mechanic brings it', off: true, own: true } : q[2] > (P.rank || 1) ? { label: S.name, sub: 'Opens at rank ' + q[2], off: true, lock: 'Opens at rank ' + q[2] }
+      : { label: S.name, sub: Math.round(S.vmax * 2.237) + ' mph top speed · ' + S.seats + ' seats · replaces the car on file', cost: q[1], act: () => { if (payCash(q[1])) { P.pv = { t: q[0], c: CREW_PAINT[P.team], ar: 0, en: 0, no: 0, gr: 0, bp: 0, ne: 0 }; addRP(CFG.rp.buy); saveGame(); closeShop(); PH.mechT = G.time; sendPV(); banner(S.name, 'Bought · on its way to a kerb near you', 2.6, 'gold'); SFX.buy(); } } }; }).concat([back()]);
+  return null;
+}
+function phoneItems(pg) {
+  if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
   else if (r < UNLOCK.homies) out.push({ label: 'Homies', sub: 'Your crew picks up from rank ' + UNLOCK.homies, off: true });
   else if (cd(PH.homT, 60)) out.push({ label: 'Homies', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
   else out.push({ label: 'Homies', sub: homieCount(r) + ' of your crew come round the corner and roll with you', act: callHomies });
-  if (!P.pv) out.push({ label: 'Mechanic', sub: 'No car on file · make one yours at a car shop', off: true });
+  if (!P.pv) out.push({ label: 'Mechanic', sub: 'No car on file · make one yours at a car shop, or buy one online', off: true });
   else if (cd(PH.mechT, 20)) out.push({ label: 'Mechanic', sub: 'On the way · call back in ' + cd(PH.mechT, 20) + 's', off: true });
   else out.push({ label: 'Mechanic', sub: 'Brings your ' + CARS[P.pv.t].name + ' to a kerb near you' + (pvWrecked() ? ' · insurance' : ''), cost: pvWrecked() ? 250 : 0, act: callMechanic });
   const fee = 200 * (P.heat | 0);
@@ -3923,6 +4011,7 @@ function phoneItems() {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
+  out.push(page('Online · cars', 'cars'));
   return out;
 }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
@@ -3932,7 +4021,7 @@ function dismissHomies() { closeShop(); PH.homUntil = -1; if (AUTH()) GAME.homie
 function callFixer() { const fee = 200 * (P.heat | 0); closeShop(); if (!(P.heat > 0) || !payCash(fee)) return; PH.fixT = G.time; if (AUTH()) GAME.clearHeat(P); else { NET.req('lw'); P.heat = 0; } SFX.clear(); banner('Fixed', 'A few calls later the police have lost you · $' + fee, 2.4, 'gold'); }
 function callJob() { closeShop(); PH.jobT = G.time; if (AUTH()) { if (GAME.forceJob()) SFX.tick(); else note('Nothing going right now · try again in a minute', 'g'); } else NET.req('jb'); }
 function callMechanic() { closeShop(); if (!P.pv) return; if (pvWrecked() && !payCash(250)) return; PH.mechT = G.time; sendPV(); }
-function sendPV() { if (!P.pv || !CARS[P.pv.t]) return; if (AUTH()) { if (!GAME.pv(P, P.pv)) note('The mechanic could not find a kerb near you · try a street', 'g'); } else NET.req('pv', CID.indexOf(P.pv.t), Math.max(0, ALLPAINT.indexOf(P.pv.c)), P.pv.ar | 0, P.pv.en | 0); }
+function sendPV() { const v = P.pv; if (!v || !CARS[v.t]) return; if (AUTH()) { if (!GAME.pv(P, v)) note('The mechanic could not find a kerb near you · try a street', 'g'); } else NET.req('pv', CID.indexOf(v.t), Math.max(0, ALLPAINT.indexOf(v.c)), v.ar | 0, v.en | 0, v.no | 0, v.gr | 0, v.bp ? 1 : 0, v.ne | 0); }
 
 // --- homies: a few of your crew who walk with you, get in the car with you, and shoot at whoever is shooting at you
 GAME.homies = (a, n) => {   // on the machine that runs the world
@@ -3979,7 +4068,9 @@ function homieAct(b, dt) {
 }
 
 // --- the car that is yours: on file with its mods, waiting at a kerb near you when you arrive, and brought by the mechanic when called
-const specOf = c => ({ t: c.type, c: c.color, ar: c.plate | 0, en: c.tune | 0 });
+const MODS = ['plate', 'tune', 'nos', 'grip', 'bp', 'neon'];   // what a car shop can do to a car, beyond paint
+const specOf = c => ({ t: c.type, c: c.color, ar: c.plate | 0, en: c.tune | 0, no: c.nos | 0, gr: c.grip | 0, bp: c.bp ? 1 : 0, ne: c.neon | 0 });
+function applySpec(c, sp) { c.plate = clamp(sp.ar | 0, 0, 3); c.tune = clamp(sp.en | 0, 0, 3); c.nos = clamp(sp.no | 0, 0, 2); c.grip = clamp(sp.gr | 0, 0, 2); c.bp = sp.bp ? 1 : 0; setNeon(c, sp.ne | 0); }
 GAME.pv = (a, sp) => {   // on the machine that runs the world: a's car, parked at the nearest quiet kerb a short walk away
   if (!a || a.gone || !sp || !CARS[sp.t]) return false;
   for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.pv === a && !c.occ.some(o => o)) removeCar(c); }
@@ -3987,23 +4078,38 @@ GAME.pv = (a, sp) => {   // on the machine that runs the world: a's car, parked 
   PARK.forEach(s => { if (s.truck) return; const d = hyp(s.x - a.x, s.z - a.z); if (d < 10 || d > 90) return; if (cars.some(c => hyp(c.x - s.x, c.z - s.z) < 5.5)) return; const sc = -Math.abs(d - 24) - (s.lot ? 8 : 0) - (seenByHuman(s.x, CURB, s.z) ? 6 : 0); if (sc > bs) { bs = sc; best = s; } });
   if (!best) return false;
   const c = spawnCar(sp.t, best.x, best.z, best.yaw, { color: sp.c }); if (!c) return false;
-  c.pv = a; c.plate = clamp(sp.ar | 0, 0, 2); c.tune = clamp(sp.en | 0, 0, 2); c.asleep = true;
+  c.pv = a; applySpec(c, sp); c.asleep = true;
   GAME.ev('pv', GAME.ref(a), c.id); return true;
 };
+// neon under the car: a soft wash of colour on the road beneath it
+const neonGeo = new T.PlaneGeometry(1, 1); neonGeo.rotateX(-PI / 2);
+function setNeon(c, hex) { c.neon = hex | 0; if (!c.neon) { if (c.neonM) c.neonM.visible = false; return; }
+  if (!c.neonM) { c.neonM = new T.Mesh(neonGeo, new T.MeshBasicMaterial({ color: hex, transparent: true, opacity: .55, blending: T.AdditiveBlending, depthWrite: false })); c.neonM.scale.set(c.spec.wid + 1.1, 1, c.spec.len + 1.2); c.neonM.position.y = .06; c.g.add(c.neonM); }
+  c.neonM.material.color.setHex(hex); c.neonM.visible = true; }
 
 // --- the car shop: drive into any garage your crew uses (or the one on Gas & Auto Row) and stop
-function modItems() {
+const PAINT_MENU = [['Black', 0x1b1d21], ['White', 0xf2efe6], ['Red', 0xb3261e], ['Blue', 0x1f4e8c], ['Gold', 0xe0a224], ['Purple', 0x6b3fa0], ['Teal', 0x2a7f86], ['Orange', 0xd96f1c]];
+const UPG = {   // level costs, and what each level does in words
+  plate: { name: 'Armor plating', cost: [1500, 3000, 6000], say: ['Takes about a third less from anything', 'Shrugs off about half of what hits it', 'Takes a beating: about a third of the damage'] },
+  tune:  { name: 'Engine tune',   cost: [1200, 2500, 5000], say: ['Quicker off the line and faster flat out', 'Quicker again', 'As fast as the car will go'] },
+  nos:   { name: 'Nitrous',       cost: [2000, 4000],       say: ['Hold Shift (or NOS) for a burst; it refills as you drive', 'A longer burst'] },
+  grip:  { name: 'Handling',      cost: [900, 1800],        say: ['Tyres and suspension: holds the road harder', 'Race tyres: corners like it is on rails'] },
+};
+function modItems(pg) {
   const c = P.car; if (!c) return [];
-  const out = [], pl = c.plate | 0, tn = c.tune | 0, mine = c.pv === P;
+  if (pg === 'paint') return [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]].concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
+    : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
+  const out = [], mine = c.pv === P;
   out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
-  [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]], ['Black', 0x1b1d21], ['White', 0xf2efe6]].forEach(q => out.push(c.cop ? { label: 'Respray · ' + q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: 'Respray · ' + q[0], sub: 'Already this colour', off: true }
-    : { label: 'Respray · ' + q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : 'A new coat', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }));
-  out.push(pl >= 2 ? { label: 'Armor plating', sub: 'Fully plated', off: true, own: true } : { label: 'Armor plating · level ' + (pl + 1), sub: pl ? 'Shrugs off about half of what hits it' : 'Takes about a third less from anything', cost: pl ? 3000 : 1500, act: () => { if (payCash(pl ? 3000 : 1500)) { c.plate = pl + 1; modSync(c); SFX.buy(); banner('Armor plating', 'Level ' + c.plate, 1.6, 'gold'); afterMod(c); } } });
-  out.push(tn >= 2 ? { label: 'Engine tune', sub: 'Fully tuned', off: true, own: true } : { label: 'Engine tune · level ' + (tn + 1), sub: 'Quicker off the line and faster flat out', cost: tn ? 2500 : 1200, act: () => { if (payCash(tn ? 2500 : 1200)) { c.tune = tn + 1; modSync(c); SFX.buy(); banner('Engine tune', 'Level ' + c.tune, 1.6, 'gold'); afterMod(c); } } });
-  out.push(mine ? { label: 'Your car', sub: 'On file · the mechanic brings it anywhere, mods and all', off: true, own: true } : c.cop ? { label: 'Make it yours', sub: 'Not a police car', off: true } : { label: 'Make it yours', sub: 'Put it on file: it waits for you, and the mechanic brings it', cost: 500, act: () => { if (payCash(500)) { c.pv = P; if (!AUTH()) NET.req('pm', c.id); SFX.buy(); banner('Your car', 'The ' + c.spec.name + ' is on file', 2, 'gold'); afterMod(c); } } });
+  out.push(page('Respray', 'paint'));
+  for (const k of ['plate', 'tune', 'nos', 'grip']) { const u = UPG[k], lv = c[k] | 0;
+    out.push(lv >= u.cost.length ? { label: u.name, sub: 'Maxed out', off: true, own: true } : { label: u.name + ' · level ' + (lv + 1), sub: u.say[lv], cost: u.cost[lv], act: () => { if (payCash(u.cost[lv])) { c[k] = lv + 1; modSync(c); SFX.buy(); banner(u.name, 'Level ' + c[k], 1.6, 'gold'); afterMod(c); } } }); }
+  out.push(c.bp ? { label: 'Bulletproof glass', sub: 'Fitted: bullets stop at the windows', off: true, own: true } : { label: 'Bulletproof glass', sub: 'Nobody can shoot whoever is inside; the car takes it', cost: 3500, act: () => { if (payCash(3500)) { c.bp = 1; modSync(c); SFX.buy(); banner('Bulletproof glass', 'Fitted', 1.6, 'gold'); afterMod(c); } } });
+  out.push(c.neon ? { label: 'Neon', sub: 'Glowing underneath · tap to take it off', act: () => { setNeon(c, 0); afterMod(c); } } : { label: 'Neon', sub: 'A glow under the car in your crew colour', cost: 800, act: () => { if (payCash(800)) { setNeon(c, CREWS[P.team].glow); SFX.buy(); afterMod(c); } } });
+  out.push(mine ? { label: 'Your car', sub: 'On file · the mechanic brings it anywhere, upgrades and all', off: true, own: true } : c.cop ? { label: 'Make it yours', sub: 'Not a police car', off: true } : { label: 'Make it yours', sub: 'Put it on file: it waits for you, and the mechanic brings it', cost: 500, act: () => { if (payCash(500)) { c.pv = P; if (!AUTH()) NET.req('pm', c.id); SFX.buy(); banner('Your car', 'The ' + c.spec.name + ' is on file', 2, 'gold'); afterMod(c); } } });
   return out;
 }
-function modSync(c) { if (!AUTH()) NET.req('md', c.id, c.plate | 0, c.tune | 0); }
+function modSync(c) { if (!AUTH()) NET.req('md', c.id, c.plate | 0, c.tune | 0, c.bp ? 1 : 0); }
 function modPaint(hex) {
   const c = P.car; if (!c || c.cop) { SFX.deny(); return; }
   if (P.heat > 0 && !P.evade) { banner('Lose the police first', 'they can see you', 1.8); SFX.deny(); return; }
@@ -4017,6 +4123,12 @@ function garageCheck(c) {   // called while driving: stop in a garage and its me
   let g = null; for (let i = 0; i < GARAGES.length; i++) { const q = GARAGES[i]; if ((q.team !== undefined && q.team !== P.team) || hyp(q.x - c.x, q.z - c.z) > 3.4) continue; g = q; break; }
   if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · F or Esc to drive on' }); } }
   else if (P.garage && (!g || carSpeed(c) > 4)) { P.garage = null; if (shopOpen && shopOpen.kind === 'mod') closeShop(); }
+}
+// nitrous: held down, a few seconds of push that comes back while you drive
+function nitrous(c, dt, want) {
+  if (!(c.nos > 0)) { c.boostT = 0; return; } if (c.nosQ === undefined) c.nosQ = 1;
+  if (want && c.nosQ > .02 && c.inp.thr > 0 && !c.wreck) { c.boostT = .1; c.nosQ = Math.max(0, c.nosQ - dt / (1.4 + c.nos * 1.3)); if (Math.random() < .6) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); FX.muzzle(c.x - fx * c.spec.len * .52, c.y + .45, c.z - fz * c.spec.len * .52, .7); } }
+  else { c.boostT = 0; c.nosQ = Math.min(1, c.nosQ + dt / 10); }
 }
 
 // --- each second or so: business marks, the car you were promised, the phone menu kept current
@@ -4178,16 +4290,16 @@ NET.host = dt => {
       else if (k === 'cd' && c) damageCar(c, clamp(+q[3] || 0, 0, 600), null);
       else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && ALLPAINT[q[3] | 0] !== undefined && ALLPAINT[q[3] | 0] !== COP_PAINT) { setPaint(rc, ALLPAINT[q[3] | 0]); if (r.heat > 0 && r.evade) GAME.clearHeat(r); } }
-      else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 2); rc.tune = clamp(q[4] | 0, 0, 2); } }
+      else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 3); rc.tune = clamp(q[4] | 0, 0, 3); rc.bp = q[5] ? 1 : 0; } }
       else if (k === 'pm') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop) rc.pv = r; }
-      else if (k === 'pv') GAME.pv(r, { t: CID[q[2] | 0], c: ALLPAINT[q[3] | 0], ar: q[4] | 0, en: q[5] | 0 });
+      else if (k === 'pv') GAME.pv(r, { t: CID[q[2] | 0], c: ALLPAINT[q[3] | 0], ar: q[4] | 0, en: q[5] | 0, no: q[6] | 0, gr: q[7] | 0, bp: q[8] | 0, ne: q[9] | 0 });
       else if (k === 'hm') GAME.homies(r, clamp(q[2] | 0, 0, 4));
       else if (k === 'hd') GAME.homiesHome(r);
       else if (k === 'lw') GAME.clearHeat(r);
       else if (k === 'jb') GAME.forceJob();
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
       else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else removePickup(p); } }
-      else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4]; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), 10, 0, GAME.ref(r)); explode(x, y + .3, z, r, 1, 'nade'); } }
+      else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4], pw = clamp((+q[5] || 10) / 10, .5, 2), kind = BOOM[q[6]] ? q[6] : 'nade'; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(r)); explode(x, y + .3, z, r, pw, kind); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
     if (s.kd && s.kd[0] > r.kdSeen) { r.kdSeen = s.kd[0]; for (let st = 0; st < 4; st++) if (r.car && r.car.occ[st] === r) { r.car.occ[st] = null; if (!st) r.car.kin = false; } r.car = null; GAME.onKill(GAME.unref(s.kd[1]), r, widOf(s.kd[2]), !!s.kd[3]); }
@@ -4293,7 +4405,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-4'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-5'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();
@@ -4431,7 +4543,8 @@ function updateHud(dt) {
       setHud('cap-label', (work && s.by === P.team ? (s.owner >= 0 ? 'Breaking their hold · ' : 'Taking · ') : work && mine ? 'Losing · ' : s.hot ? 'Contested · ' : mine ? 'Holding · ' : s.owner >= 0 ? CREWS[s.owner].name + ' turf · ' : 'Nobody holds · ') + ZONES[hereZone].name);
       const c = work ? Math.round(s.prog * 100) : 0, key = c + (s.by + 1) * 1000 + (s.owner + 1) * 10000; if (hudCache.capv !== key) { hudCache.capv = key; f.style.width = c + '%'; f.style.background = work ? lite(s.by) : 'transparent'; tr.style.background = s.owner >= 0 ? 'rgba(' + CREWS[s.owner].rgb + ',.45)' : 'rgba(10,12,16,.75)'; } } }
   setHud('h-prompt', prompt && !shopOpen ? prompt.text : P.enter ? '' : '', true);
-  { const c = P.car, show = !!c; if (hudCache.spd !== show) { hudCache.spd = show; $('h-speed').hidden = !show; } if (c) { setHud('spd-n', String(Math.round(carSpeed(c) * 2.237))); setHud('h-car', (c.cop ? 'Police ' : '') + c.spec.name + (P.seat ? ' · passenger' : '') + (c.cop && !P.seat ? ' · H siren' : '')); const h = Math.round(clamp(c.hp / c.spec.hp, 0, 1) * 40); if (hudCache.chp !== h) { hudCache.chp = h; $('car-fill').style.transform = `scaleX(${h / 40})`; $('car-fill').style.background = h < 12 ? 'var(--blood)' : 'var(--gold)'; } } }
+  { const c = P.car, show = !!c; if (hudCache.spd !== show) { hudCache.spd = show; $('h-speed').hidden = !show; } if (c) { setHud('spd-n', String(Math.round(carSpeed(c) * 2.237))); setHud('h-car', (c.cop ? 'Police ' : '') + c.spec.name + (P.seat ? ' · passenger' : '') + (c.cop && !P.seat ? ' · H siren' : '')); const h = Math.round(clamp(c.hp / c.spec.hp, 0, 1) * 40); if (hudCache.chp !== h) { hudCache.chp = h; $('car-fill').style.transform = `scaleX(${h / 40})`; $('car-fill').style.background = h < 12 ? 'var(--blood)' : 'var(--gold)'; }
+    const nq = c.nos > 0 && P.seat === 0 ? Math.round((c.nosQ === undefined ? 1 : c.nosQ) * 30) : -1; if (hudCache.nos !== nq) { hudCache.nos = nq; $('car-nos').hidden = nq < 0; if (nq >= 0) $('nos-fill').style.transform = `scaleX(${nq / 30})`; } } }
   { const fp = firstPerson(), sc = (1 + P.kick * 3 + Math.min(1, P.spd / 5) * .35).toFixed(2), op = P.dead || scoped() || d.melee && !fp ? '0' : (P.car ? .6 : fp ? .85 * (1 - P.ads) : .85).toFixed(1); if (hudCache.cs !== sc) { hudCache.cs = sc; $('cross').style.transform = `scale(${sc})`; } if (hudCache.co !== op) { hudCache.co = op; $('cross').style.opacity = op; } }
   hitT -= dt; { const o = hitT > 0 ? '1' : '0'; if (hudCache.hit !== o) { hudCache.hit = o; $('hitm').style.opacity = o; } }
   { const v = (clamp(1 - P.hp / maxHp(), 0, 1) * (G.time - P.lastHit < 4 || P.hp < 40 ? 1 : .35)).toFixed(2); if (hudCache.vg !== v) { hudCache.vg = v; $('vign').style.opacity = v; } }
@@ -4477,7 +4590,7 @@ const TC_DEF = [
   ['map', 'MAP', 'b', 'map', 0, .44, 0, .07, .1],
   ['turf', 'TURF', 'b', 'board', 0, .55, 0, .07, .1],
   ['cam', 'CAM', 'b', 'tap:KeyV', 1, .5, 0, .07, .1],
-  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1],
+  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'key:ShiftLeft', 1, .5, 1, .68, .13],
 ];
 const TCD = {}; TC_DEF.forEach(d => { TCD[d[0]] = d; });
 const TOUCH = { on: false, fx: 0, fy: 0, ptr: {}, edit: false, sel: null, aim: false, ectx: 'f', el: {}, cfg: null, coarse: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) };
@@ -4654,7 +4767,7 @@ function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save')
 function saveData() {
   const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
   return { v: 4, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null,
-    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null };
+    rp: Math.round(P.rp || 0), b: [...P.biz], pv: P.pv || null, sw: P.inv.glocks && P.inv.glocks.sw ? 1 : 0 };
 }
 function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
 function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); SAVE.lastR = Math.round(P.rp || 0); writeSave(saveData()); }
@@ -4691,7 +4804,7 @@ function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a
 function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
 const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
 function beginPlay() {
-  const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 4); }
+  const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
   P.rp = sv ? clamp(Math.round(+sv.rp || 0), 0, 9e7) : 0; P.rank = rankOf(P.rp); P.biz = new Set(sv && Array.isArray(sv.b) ? sv.b.map(String) : []); P.pv = sv && pvOk(sv.pv) ? sv.pv : null; P.pvAsk = P.pv ? G.time + 2.5 : 0; P.garage = null;
   let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); });
@@ -4743,14 +4856,14 @@ window.addEventListener('keydown', e => {
   if (G.state !== 'playing') { if (e.code === 'Escape' && G.state === 'paused' && TEST) $('deploy').click(); return; }
   if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code)) e.preventDefault();
   if (e.repeat) return; keys[e.code] = true;
-  if (shopOpen && /^Digit[1-9]$/.test(e.code)) { buy(e.code.slice(5)); return; }
+  if (shopOpen && /^Digit[0-9]$/.test(e.code)) { const n = e.code.slice(5); buy(n === '0' ? '10' : n); return; }
   if (e.code === 'Tab') { drawBoard(); $('board').hidden = false; } else if (e.code === 'KeyM') { $('bigmap').hidden = false; drawBigMap(); }
   else if (e.code === 'Escape' || e.code === 'KeyP') { if (shopOpen) closeShop(); else if (!locked()) pause(); }
   else if (e.code === 'Backquote') devOpen();
   else if (P.dead) return;
   else if (e.code === 'KeyF' || e.code === 'KeyE') { if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); }
   else if (e.code === 'KeyR') startReload(); else if (e.code === 'KeyG') throwGrenade();
-  else if (/^Digit[1-6]$/.test(e.code)) { const id = WID.find(k => WEAPONS[k].slot === +e.code.slice(5) - 1); if (id) setWeapon(id); }
+  else if (/^Digit[0-9]$/.test(e.code)) { const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
   else if (e.code === 'KeyV') { if (P.car) camFar = camFar ? 0 : 1; else { P.view = P.view === 1 ? 3 : 1; $('set-view').value = String(P.view); try { localStorage.setItem('pc-view', String(P.view)); } catch (x) {} } }
   else if (e.code === 'KeyQ') { if (P.car) nextRadio(); else cycleWeapon(1); }
   else if (e.code === 'KeyB') callDriveBy();
@@ -4798,7 +4911,7 @@ function step(dt) {
   G.time += dt;
   if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
-  updateGrenades(dt);
+  updateGrenades(dt); updateProj(dt);
 }
 let todT = 0, slowT = 0, menuA = 0, saveT = 15;
 function visuals(dt, now) {
@@ -4837,8 +4950,8 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
-  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
+if (TEST) window.__pc = { PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);
 
