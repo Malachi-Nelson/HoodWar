@@ -61,7 +61,7 @@ function tryFire() {
 function punch() {
   P.punchT = .34; P.fireT = 60 / WEAPONS.fist.rpm; P.shootT = .8;
   const fx = -Math.sin(P.cyaw), fz = -Math.cos(P.cyaw); let best = null, bd = WEAPONS.fist.reach;
-  eachActor(a => { if (a === P || a.dead || a.car || (isCrew(a.team) && a.team === P.team)) return; const dx = a.x - P.x, dz = a.z - P.z, d = hyp(dx, dz); if (d >= bd || Math.abs(a.y - P.y) > 1.4 || (dx * fx + dz * fz) / (d || 1) < .4) return; bd = d; best = a; });
+  eachActor(a => { if (a === P || a.dead || a.car || ((isCrew(a.team) || a.team === TEAM_COP) && a.team === P.team)) return; const dx = a.x - P.x, dz = a.z - P.z, d = hyp(dx, dz); if (d >= bd || Math.abs(a.y - P.y) > 1.4 || (dx * fx + dz * fz) / (d || 1) < .4) return; bd = d; best = a; });
   SFX.punch(!!best); if (best) { FX.blood(best.x, best.y + 1.4, best.z, 3); hitActor(best, WEAPONS.fist.dmg, false, P, 'fist'); shake(.15); }
 }
 // --- cars: which one is in reach, and what F would do with it
@@ -72,8 +72,8 @@ function carInReach() {
 }
 function carOffer(c) {   // -> { seat, jack, text } or null
   const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
-  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen ? ' · it brings three stars' : '') };
-  if (isCrew(dr.team) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
+  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen && P.team !== TEAM_COP ? ' · it brings three stars' : '') };
+  if ((isCrew(dr.team) || dr.team === TEAM_COP) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
   if (carSpeed(c) < 7) return { seat: 0, jack: true, text: `<b>F</b>Jack the ${nm}` };
   return null;
 }

@@ -7,13 +7,13 @@ function requestLock() { if (TEST || TOUCH.on) return; try { const p = canvas.re
 let SENS = .0022; try { const s = +localStorage.getItem('pc-sens'); if (s > .0004 && s < .01) SENS = s; } catch (e) {}
 function showOverlay(mode) {
   const o = $('overlay'); o.hidden = false; $('hud').hidden = mode !== 'paused'; $('o-stats').hidden = true; $('leave').hidden = mode !== 'paused';
-  const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = false; if (inGame) $('co-roster').hidden = true;
+  const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = $('set-sides').disabled = false; if (inGame) $('co-roster').hidden = true;
   if (mode === 'paused') { $('o-eyebrow').textContent = 'Paused'; $('o-text').textContent = NET.mode ? 'The city keeps moving while this menu is open.' : 'The city waits.'; $('deploy').textContent = 'Resume'; $('deploy').hidden = false;
     let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span><span>Hourly <b>$${hourlyNow().toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span>`; $('row-save').hidden = true; return; }
   $('row-save').hidden = false; saveLine();
   $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; crewLock(false);
   if (mode === 'lost') { $('o-eyebrow').textContent = 'Session closed'; $('o-text').textContent = 'The host left, so the session closed. Open a new lobby or play solo. Your cash and guns are kept.'; }
-  else { $('o-eyebrow').textContent = 'Open world · six crews · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
+  else { $('o-eyebrow').textContent = 'Open world · six crews and the police · solo or online'; $('o-text').textContent = MENU_TEXT; }
   if (!NET.mode) NET.lobby();
 }
 const MENU_TEXT = $('o-text').textContent;
@@ -21,9 +21,12 @@ const MENU_TEXT = $('o-text').textContent;
 // one button per crew, built from the crew table
 CREWS.forEach((c, t) => { const b = document.createElement('button'), n = document.createElement('b'), d = document.createElement('small'), m = document.createElement('i'); b.className = 'crew c' + t; b.id = 'crew' + t; b.type = 'button'; b.style.setProperty('--c', c.edge); b.style.setProperty('--c-rgb', c.halo ? '207,212,219' : c.rgb); b.setAttribute('aria-pressed', 'false');
   n.textContent = c.name; d.textContent = c.side + '. Holds ' + c.holds + '.'; m.textContent = 'YOUR CREW'; b.append(n, d, m); b.addEventListener('click', () => setCrew(t)); $('crews').appendChild(b); });
-function crewLock(v) { for (let t = 0; t < NCREW; t++) $('crew' + t).disabled = v; }
-function wearCrew(t) { P.team = clamp(t | 0, 0, NCREW - 1); for (let q = 0; q < NCREW; q++) $('crew' + q).setAttribute('aria-pressed', String(q === P.team)); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
-const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && +v >= 0 && +v < NCREW) return +v | 0; } catch (e) {} return -1; };
+{ const b = document.createElement('button'), n = document.createElement('b'), d = document.createElement('small'), m = document.createElement('i'); b.className = 'crew c' + TEAM_COP + ' cop'; b.id = 'crew' + TEAM_COP; b.type = 'button'; b.style.setProperty('--c', COPSIDE.edge); b.style.setProperty('--c-rgb', COPSIDE.rgb); b.setAttribute('aria-pressed', 'false');
+  n.textContent = 'Police'; d.textContent = 'Port Calder PD. A wage, pay for every gangster you take down, a cruiser and backup. No turf.'; m.textContent = 'YOUR SIDE'; b.append(n, d, m); b.addEventListener('click', () => setCrew(TEAM_COP)); $('crews').appendChild(b); }
+const SIDE_IDS = CREWS.map((c, t) => t).concat([TEAM_COP]);
+function crewLock(v) { SIDE_IDS.forEach(t => { $('crew' + t).disabled = v; }); $('crew' + TEAM_COP).disabled = v || (!!NET.lob && !G.rivals && !NET.lob.lead); }
+function wearCrew(t) { P.team = sideOf(t); SIDE_IDS.forEach(q => $('crew' + q).setAttribute('aria-pressed', String(q === P.team))); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
+const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && ((+v >= 0 && +v < NCREW) || +v === TEAM_COP)) return +v | 0; } catch (e) {} return -1; };
 const ownCrew = () => { const c = savedCrew(); if (c >= 0 && c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
 function setCrew(t) { wearCrew(t); try { localStorage.setItem('pc-crew', String(P.team)); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); }
 // --- progress. Cash, guns, armor and the city's turf are written to this browser a moment after anything changes, and, on the Claude
@@ -68,7 +71,7 @@ const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_
 const sum36 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h.toString(36); };
 function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }, j = JSON.stringify({ c: d.c, w: d.w || [], n: d.n | 0, a: d.a | 0, cr: d.cr | 0, z: d.z || null, t: d.t || Date.now(), rp: d.rp | 0, b: d.b || [], pv: d.pv || null }); return 'PC-' + b64e(j) + '-' + sum36(j); }
 function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
-const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
+const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; G.rivals = $('set-sides').value === '1'; };
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
@@ -80,7 +83,7 @@ function beginPlay() {
   Object.assign(P, { bank: (sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash) + away, armor: sv ? clamp(sv.a | 0, 0, 100) : 0, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
   hudCache.heat = 0; $('h-stars').hidden = true; closeShop(); $('dead').hidden = true; $('board').hidden = true; $('bigmap').hidden = true;
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
-  banner('Port Calder', 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
+  banner('Port Calder', P.team === TEAM_COP ? 'You are on the force · Port Calder PD' : 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
   P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
     : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
   if (!sv) P.hints.push([31, 'T opens your phone: call homies, the mechanic, the fixer, or line up work']);
@@ -96,7 +99,7 @@ $('deploy').addEventListener('click', () => {
   readSettings(); G.solo = true; startWorld(); beginPlay();
 });
 $('leave').addEventListener('click', leaveSession);
-$('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); });
+$('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-sides').addEventListener('change', () => { readSettings(); NET.say(); NET.lobby(); });
 $('set-view').addEventListener('change', () => { P.view = +$('set-view').value === 1 ? 1 : 3; try { localStorage.setItem('pc-view', String(P.view)); } catch (e) {} });
 $('set-gfx').addEventListener('change', () => { GFX.low = $('set-gfx').value === 'low'; try { localStorage.setItem('pc-gfx', GFX.low ? 'low' : 'high'); } catch (e) {} applyGfx(); resize(); });
 $('co-host').addEventListener('click', () => lobbySet({ lead: true, ready: true }));
@@ -218,7 +221,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

@@ -309,7 +309,7 @@ function updateBot(b, dt) {
   if (b.dead) { b.deadT += dt; b.spd = 0; return; }
   if (b.knock > 0) { b.knockT -= dt; if (b.knockT <= 0) b.knock = 0; b.vx *= Math.max(0, 1 - dt * 3); b.vz *= Math.max(0, 1 - dt * 3); moveEntity(b, b.vx * dt, b.vz * dt, dt, .32, 'p', 1.75); b.spd = 0; b.aim = 0; return; }
   b.brainT -= dt; const civ = b.team === TEAM_CIV;
-  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.homie) homieBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
+  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.homie) homieBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
   if (b.dead) return;
   if (civ) civAct(b, dt); else if (b.homie) homieAct(b, dt); else if (b.street && !b.tgt && !b.hunt && !b.car) streetAct(b, dt); else crewAct(b, dt);
 }

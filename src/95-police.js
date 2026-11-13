@@ -8,10 +8,11 @@ const copNear = (x, z, r) => { for (let i = 0; i < bots.length; i++) { const b =
 GAME.crime = (who, pts, min, gap) => {
   if (!AUTH() || !G.cops || G.phase !== 'play' || !who || who.kind === 'bot' || who.dead || who.gone) return;
   if (who === P && DBG.notarget) return;
+  if (who.team === TEAM_COP) return;                                                    // an officer is not wanted for anything
   if (gap && G.time - (who.crimeAt || -9) < gap) return; who.crimeAt = G.time;
   who.wp = Math.min(CFG.stars[4] + 40, Math.max((who.wp || 0) + pts, min ? CFG.stars[min - 1] : 0));
   const h = starsOf(who.wp);
-  if (h > (who.heat | 0)) { if (!(who.heat > 0)) { who.seenT = G.time; who.dispT = G.time + 1.2; who.lostT = -8; } who.heat = h; who.lkx = who.x; who.lky = who.y; who.lkz = who.z; }   // the first car gets time to arrive before the clock starts
+  if (h > (who.heat | 0)) { if (!(who.heat > 0)) { who.seenT = G.time; who.dispT = G.time + 1.2; who.lostT = -8; } who.heat = h; who.lkx = who.x; who.lky = who.y; who.lkz = who.z; if (humans().some(q => q.team === TEAM_COP && q !== who)) GAME.ev('wn', GAME.ref(who), h); }   // any officers in the session hear it on the radio   // the first car gets time to arrive before the clock starts
   if (who.heat > 0) { who.crimeT = G.time; who.lostT = Math.min(who.lostT || 0, 0); }
 };
 GAME.clearHeat = a => { a.wp = 0; a.heat = 0; a.evade = false; a.lostT = 0; a.heliT = 0; };
@@ -46,7 +47,7 @@ function updatePolice() {    // four times a second
   let cops = 0, manned = 0, spare = 0, anyHeat = false; const hs = humans(), empty = [];
   for (let i = 0; i < bots.length; i++) if (bots[i].team === TEAM_COP && !bots[i].dead) cops++;
   for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || c.wreck) continue;
-    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o) && (!c.spec.air || c.landed)) empty.push(c); }   // a helicopter with nobody aboard comes down first
+    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o) && (!c.spec.air || c.landed) && !c.pv && !c.pa) empty.push(c); }   // a police player's own cruiser is not the force's to clear away   // a helicopter with nobody aboard comes down first
   hs.forEach(a => {
     if (!(a.heat > 0)) { if (a.wp > 0) a.wp = Math.max(0, a.wp - .15); a.evade = false; return; }   // small things are forgotten
     if (a.dead || !G.cops) { GAME.clearHeat(a); return; }

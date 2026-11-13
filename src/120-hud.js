@@ -22,9 +22,9 @@ function feed(a, v, wc, head) {
 const haloOf = h => `-1px -1px 0 ${h},1px -1px 0 ${h},-1px 1px 0 ${h},1px 1px 0 ${h},0 0 3px ${h}`;
 const inkCss = c => 'color:' + c.ink + (c.halo ? ';text-shadow:' + haloOf(c.halo) : '');
 { const st = document.createElement('style'); st.textContent = CREWS.map((c, t) => `#turf .zs b.t${t}{background:${c.css};border-color:${c.edge};color:${c.on}} #feed .k${t},.ink${t},#board .c${t} h3,.crew.c${t} b,#h-banner.t${t} .big{${inkCss(c)}} .roster li.c${t}{border-left-color:${c.edge}}`).join('\n'); document.head.appendChild(st); }
-const inkOf = (el, t) => { const c = CREWS[t]; el.style.color = c.ink; el.style.textShadow = c.halo ? haloOf(c.halo) : ''; };
-const lite = t => CREWS[t].halo ? CREWS[t].edge : CREWS[t].css;             // a crew's colour where it has to show up on the dark map or a dark bar
-const ringOf = (t, d) => CREWS[t].halo ? CREWS[t].edge : d;                // the edge round a crew's dot
+const inkOf = (el, t) => { const c = SIDE(t); el.style.color = c.ink; el.style.textShadow = c.halo ? haloOf(c.halo) : ''; };
+const lite = t => SIDE(t).halo ? SIDE(t).edge : SIDE(t).css;             // a side's colour where it has to show up on the dark map or a dark bar
+const ringOf = (t, d) => SIDE(t).halo ? SIDE(t).edge : d;                // the edge round a side's dot
 // --- the map: drawn once, then moved and turned under the radar every frame
 const MS = 1.4, MAPW = ISLE.x1 + 60, MAPD = CITY.d + 60, mapCv = texCanvas(Math.ceil(MAPW * MS), Math.ceil(MAPD * MS)), MO = 30;   // the city, the channel and the airport island
 { const g = mapCv.getContext('2d'), X = x => (x + MO) * MS, R = (x0, z0, x1, z1, c) => { g.fillStyle = c; g.fillRect(X(x0), X(z0), (x1 - x0) * MS, (z1 - z0) * MS); };
@@ -62,7 +62,7 @@ function drawRadar() {
   const hot = P.heat > 0, fl = Math.sin(G.time * 11) > 0;
   cars.forEach(c => { if (c.cop && c.occ[0] && c.occ[0].team === TEAM_COP) { if (hot && !c.wreck) blip(g, c.x, c.z, k, R, fl ? '#ff4a4a' : '#5c98ff', 4.4, '#fff', true); return; } if (!c.wreck && c !== P.car && (c.occ[0] || c.team === P.team)) blip(g, c.x, c.z, k, R, c.occ[0] && isCrew(c.occ[0].team) ? CREWS[c.occ[0].team].css : c.team === P.team ? '#d8d6cc' : '#8b929c', 3, c.occ[0] && isCrew(c.occ[0].team) ? ringOf(c.occ[0].team, '#111') : '#111'); });
   bots.forEach(b => { if (b.dead || b.car) return; if (b.team === TEAM_COP) { if (hot) blip(g, b.x, b.z, k, R, fl ? '#5c98ff' : '#ff4a4a', 3.2, '#fff'); return; } if (!isCrew(b.team)) return; if (b.team === P.team) blip(g, b.x, b.z, k, R, CREWS[b.team].css, b.homie ? 3.6 : 3, b.homie ? '#fff' : ringOf(b.team)); else if (G.time - (b.shotT || -9) < 2.5 || hyp(b.x - P.x, b.z - P.z) < 22) blip(g, b.x, b.z, k, R, CREWS[b.team].css, 3.4, ringOf(b.team, '#111')); });
-  for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.dead) continue; if (r.team === P.team) blip(g, r.x, r.z, k, R, CREWS[r.team].css, 4.2, '#fff', true); else if (G.time - (r.shotT || -9) < 2.5 || hyp(r.x - P.x, r.z - P.z) < 25) blip(g, r.x, r.z, k, R, CREWS[r.team].css, 4.2, ringOf(r.team, '#111')); }
+  for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.dead) continue; if (r.team === P.team) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, '#fff', true); else if (P.team === TEAM_COP && r.heat > 0) blip(g, r.x, r.z, k, R, Math.sin(G.time * 9) > 0 ? '#ff4a4a' : '#ffc83d', 4.6, '#fff', true); else if (G.time - (r.shotT || -9) < 2.5 || hyp(r.x - P.x, r.z - P.z) < 25) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, ringOf(r.team, '#111')); }
   g.save(); g.rotate(-angTo(P.cyaw, P.car ? P.car.yaw : P.yaw)); g.beginPath(); g.moveTo(0, -8); g.lineTo(5.5, 6); g.lineTo(0, 3); g.lineTo(-5.5, 6); g.closePath(); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#111'; g.stroke(); g.restore();
   radarXY(P.x, P.z - 1000, 1, blipO); const nl = hyp(blipO[0], blipO[1]) || 1; g.fillStyle = '#f2efe6'; g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', blipO[0] / nl * (R - 10), blipO[1] / nl * (R - 10));
   g.restore();
@@ -80,7 +80,7 @@ function drawBigMap() {
   { const c = myAir(); if (c && !c.wreck) { dot(c.x, c.z, 7, '#b9a2ff', '#fff'); g.fillStyle = '#f2efe6'; g.font = '600 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Your helicopter', X(c.x), X(c.z) - 13); } }
   EVTS.forEach(E => { const I = EV_INFO[E.k]; evSpot(E, _ev); dot(_ev.x, _ev.z, 10, I.col, '#111'); g.fillStyle = '#111'; g.font = '700 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(I.icon, X(_ev.x), X(_ev.z) + 1); });
   if (RACE.on) RACE.cps.slice(RACE.i).forEach((cp, q) => dot(cp[0], cp[1], q ? 4 : 7, '#ffc83d', '#111'));
-  bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, b.homie ? 4.5 : 3.5, CREWS[b.team].css, b.homie ? '#fff' : ringOf(b.team)); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, CREWS[r.team].css, '#fff'); }
+  bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, b.homie ? 4.5 : 3.5, SIDE(b.team).css, b.homie ? '#fff' : ringOf(b.team)); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, SIDE(r.team).css, '#fff'); else if (!r.dead && P.team === TEAM_COP && r.heat > 0) dot(r.x, r.z, 6, '#ff4a4a', '#ffc83d'); }
   dot(P.x, P.z, 6, '#fff', '#111');
   const key = [['#8fe36b', 'Guns'], ['#9fd0e8', 'Car shop: repairs, resprays, upgrades'], ['#ff5fa2', 'A till worth robbing'], ['#ffc83d', 'Your business'], ['#7dffb0', 'For sale on your turf'], ['#7dc3ff', 'Your car'], ['#b9a2ff', 'Your helicopter'], ['#1d3a4d', 'Helipad', '#7fb8ff'], ['#fff', 'You']].concat(CREWS.map((q, t) => [q.css, q.name + (t === P.team ? ' · your crew' : ''), ringOf(t, '#111')]));
   g.fillStyle = 'rgba(14,16,20,.82)'; g.fillRect(6, c.height - 12 - key.length * 18, 270, key.length * 18 + 6);
@@ -89,8 +89,8 @@ function drawBigMap() {
 function drawBoard() {
   const el = $('board'), cell = (tr, tag, x) => { const c = document.createElement(tag); c.textContent = x; tr.appendChild(c); return c; }, head = (box, l, r) => { const h = document.createElement('h3'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = l; b.textContent = r; h.append(a, b); box.appendChild(h); }; el.textContent = '';
   // who is in the city
-  { const box = document.createElement('div'); box.className = 'c' + P.team; let mates = 0; bots.forEach(o => { if (o.team === P.team && !o.dead && !o.temp) mates++; }); head(box, CREWS[P.team].name, mates + ' on the street');
-    const tb = document.createElement('table'), rows = [[P.name + ' (you)', P.kills | 0, P.deaths | 0, P.heat | 0, true, P.rank || 1]]; for (const q in NET.remotes) { const r = NET.remotes[q]; rows.push([r.name, r.kills | 0, r.deaths | 0, r.heat | 0, false, r.rank | 0]); }
+  { const box = document.createElement('div'); box.className = 'c' + P.team; let mates = 0; bots.forEach(o => { if (o.team === P.team && !o.dead && !o.temp) mates++; }); head(box, SIDE(P.team).name, P.team === TEAM_COP ? 'on duty' : mates + ' on the street');
+    const tb = document.createElement('table'), rows = [[P.name + ' (you)' + (G.rivals ? ' · ' + SIDE(P.team).short : ''), P.kills | 0, P.deaths | 0, P.heat | 0, true, P.rank || 1]]; for (const q in NET.remotes) { const r = NET.remotes[q]; rows.push([r.name + (G.rivals ? ' · ' + SIDE(r.team).short : ''), r.kills | 0, r.deaths | 0, r.heat | 0, false, r.rank | 0]); }
     rows.sort((p, q) => q[1] - p[1]); const hr = document.createElement('tr'); ['Player', 'Rank', 'Kills', 'Deaths', 'Wanted'].forEach(x => cell(hr, 'th', x)); tb.appendChild(hr);
     rows.slice(0, 10).forEach(r => { const tr = document.createElement('tr'); if (r[4]) tr.className = 'me'; cell(tr, 'td', r[0]); cell(tr, 'td', r[5] || '–'); cell(tr, 'td', r[1]); cell(tr, 'td', r[2]); cell(tr, 'td', r[3] ? '★'.repeat(r[3]) : '–'); tb.appendChild(tr); }); box.appendChild(tb); el.appendChild(box); }
   // who holds what

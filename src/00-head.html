@@ -251,6 +251,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 .crew[aria-pressed=true] i{visibility:visible}
 .crew:disabled{cursor:default;opacity:.6}
 .crew:disabled[aria-pressed=true]{opacity:1}
+.crew.cop{grid-column:1/-1}.crew.cop b{color:#7fb0ff}
 .row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
 .btn{font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:.04em;color:var(--chalk);background:transparent;border:2px solid var(--chalk);padding:7px 16px;cursor:pointer}
 .btn.go{background:var(--gold);border-color:var(--gold);color:#141108;font-size:28px;padding:9px 24px}
@@ -344,12 +345,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
   <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
     <div class="col">
-      <div class="eyebrow" id="o-eyebrow">Open world · six crews · solo or co-op</div>
+      <div class="eyebrow" id="o-eyebrow">Open world · six crews and the police · solo or online</div>
       <h1 class="lockup" id="o-title">Port Calder <em>Open World</em></h1>
-      <p id="o-text">No rounds and no clock. Six crews split a city that carries on around them, each with one neighbourhood and its eye on the middle of town. Take any car, call your crew, buy up the block, take turf street by street and live off what it pays, and stay ahead of the police. Everyone in the lobby rides together.</p>
+      <p id="o-text">No rounds and no clock. Six crews split a city that carries on around them, each with one neighbourhood and its eye on the middle of town. Take any car or helicopter, call your crew, rob the bank, buy up the block, take turf street by street and live off what it pays, and stay ahead of the police, or join them. Online, ride together as one crew or pick rival sides.</p>
       <div class="stats" id="o-stats" hidden></div>
       <div class="crews" id="crews" role="group" aria-label="Choose your crew"></div>
-      <div class="row"><button id="deploy" class="btn go" type="button">Play solo</button><button id="leave" class="btn" type="button" hidden>Leave session</button><span class="row" id="set-box"><label for="set-bots">Crew size</label><select id="set-bots"><option value="3">3 bots</option><option value="4" selected>4 bots</option><option value="6">6 bots</option></select><label for="set-cops">Police</label><select id="set-cops"><option value="1" selected>On</option><option value="0">Off</option></select></span></div>
+      <div class="row"><button id="deploy" class="btn go" type="button">Play solo</button><button id="leave" class="btn" type="button" hidden>Leave session</button><span class="row" id="set-box"><label for="set-bots">Crew size</label><select id="set-bots"><option value="3">3 bots</option><option value="4" selected>4 bots</option><option value="6">6 bots</option></select><label for="set-cops">Police</label><select id="set-cops"><option value="1" selected>On</option><option value="0">Off</option></select><label for="set-sides">Players</label><select id="set-sides"><option value="0" selected>One crew</option><option value="1">Rival sides</option></select></span></div>
       <div class="row" id="row-lobby"><label for="co-name">Name</label><input id="co-name" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Player"><button id="co-host" class="btn" type="button" disabled>Open lobby</button><button id="co-join" class="btn" type="button" disabled>Join lobby</button><button id="co-ready" class="btn" type="button" hidden>Ready up</button><button id="co-start" class="btn" type="button" hidden>Start session</button><button id="co-leave" class="btn" type="button" hidden>Leave lobby</button></div>
       <ul class="roster" id="co-roster" hidden></ul>
       <div class="status" id="co-status">Multiplayer: connecting…</div>

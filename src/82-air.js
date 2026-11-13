@@ -101,7 +101,7 @@ function stepHeli(c, dt, inp) {
 }
 // someone has just taken the controls: a police car, or the gunship off the airport police's pad, is a crime
 GAME.boarded = (c, who) => {
-  if (c.stolen || !who || who.kind === 'bot') return;
+  if (c.stolen || !who || who.kind === 'bot' || who.team === TEAM_COP) return;   // an officer may take a police car or the police gunship
   if (c.cop) { c.stolen = true; GAME.crime(who, 20, 1); }
   else if (c.spec.air === 'gun' && c.home && c.home.kind === 'gun') { c.stolen = true; GAME.crime(who, 60, 3); GAME.ev('gs', GAME.ref(who)); }
 };

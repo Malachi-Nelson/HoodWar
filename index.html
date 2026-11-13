@@ -251,6 +251,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 .crew[aria-pressed=true] i{visibility:visible}
 .crew:disabled{cursor:default;opacity:.6}
 .crew:disabled[aria-pressed=true]{opacity:1}
+.crew.cop{grid-column:1/-1}.crew.cop b{color:#7fb0ff}
 .row{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
 .btn{font-family:var(--font-display);font-weight:400;font-size:22px;letter-spacing:.04em;color:var(--chalk);background:transparent;border:2px solid var(--chalk);padding:7px 16px;cursor:pointer}
 .btn.go{background:var(--gold);border-color:var(--gold);color:#141108;font-size:28px;padding:9px 24px}
@@ -344,12 +345,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
   <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
     <div class="col">
-      <div class="eyebrow" id="o-eyebrow">Open world · six crews · solo or co-op</div>
+      <div class="eyebrow" id="o-eyebrow">Open world · six crews and the police · solo or online</div>
       <h1 class="lockup" id="o-title">Port Calder <em>Open World</em></h1>
-      <p id="o-text">No rounds and no clock. Six crews split a city that carries on around them, each with one neighbourhood and its eye on the middle of town. Take any car, call your crew, buy up the block, take turf street by street and live off what it pays, and stay ahead of the police. Everyone in the lobby rides together.</p>
+      <p id="o-text">No rounds and no clock. Six crews split a city that carries on around them, each with one neighbourhood and its eye on the middle of town. Take any car or helicopter, call your crew, rob the bank, buy up the block, take turf street by street and live off what it pays, and stay ahead of the police, or join them. Online, ride together as one crew or pick rival sides.</p>
       <div class="stats" id="o-stats" hidden></div>
       <div class="crews" id="crews" role="group" aria-label="Choose your crew"></div>
-      <div class="row"><button id="deploy" class="btn go" type="button">Play solo</button><button id="leave" class="btn" type="button" hidden>Leave session</button><span class="row" id="set-box"><label for="set-bots">Crew size</label><select id="set-bots"><option value="3">3 bots</option><option value="4" selected>4 bots</option><option value="6">6 bots</option></select><label for="set-cops">Police</label><select id="set-cops"><option value="1" selected>On</option><option value="0">Off</option></select></span></div>
+      <div class="row"><button id="deploy" class="btn go" type="button">Play solo</button><button id="leave" class="btn" type="button" hidden>Leave session</button><span class="row" id="set-box"><label for="set-bots">Crew size</label><select id="set-bots"><option value="3">3 bots</option><option value="4" selected>4 bots</option><option value="6">6 bots</option></select><label for="set-cops">Police</label><select id="set-cops"><option value="1" selected>On</option><option value="0">Off</option></select><label for="set-sides">Players</label><select id="set-sides"><option value="0" selected>One crew</option><option value="1">Rival sides</option></select></span></div>
       <div class="row" id="row-lobby"><label for="co-name">Name</label><input id="co-name" type="text" maxlength="14" autocomplete="off" spellcheck="false" placeholder="Player"><button id="co-host" class="btn" type="button" disabled>Open lobby</button><button id="co-join" class="btn" type="button" disabled>Join lobby</button><button id="co-ready" class="btn" type="button" hidden>Ready up</button><button id="co-start" class="btn" type="button" hidden>Start session</button><button id="co-leave" class="btn" type="button" hidden>Leave lobby</button></div>
       <ul class="roster" id="co-roster" hidden></ul>
       <div class="status" id="co-status">Multiplayer: connecting…</div>
@@ -384,12 +385,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 16:57 UTC';
+  const BUILD = 'build 13 Nov 17:14 UTC';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const STALE = 7000;   // a player the relay has not heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v7/' + code + '/';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v8/' + code + '/';
   const table = {}, seen = {}, subs = [];
   let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
@@ -491,6 +492,7 @@ const CFG = {
   hourly: { A: 100, B: 100, C: 160, D: 140, E: 100, F: 100, G: 140, H: 100, I: 120, J: 100 },   // what each neighbourhood pays its crew every hour of the day: the home turfs less, the middle of town more
   offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
   ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
+  cop: { pay: 150, rankPay: 15 },   // a police officer's wage every in-game hour, and how much more each rank adds
   rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150, deal: 250 } },   // what each thing is worth towards the next rank
 };
 // Six crews, each in its own colour, with a yard on the edge of town and one neighbourhood to start with; the middle of the city is anybody's.
@@ -548,6 +550,11 @@ const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];
 const CREW_PAINT = CREWS.map(c => c.paint), COP_PAINT = 0x14181f;
+// The police as a side a player can take. Not a crew: no turf, no yard, no letter on the top bar. A salary every hour, the pay for every
+// gangster taken down, a cruiser, backup on the phone, and the police helicopter on the airport pad.
+const COPSIDE = { name: 'Police', short: 'POLICE', side: 'Port Calder PD', holds: 'nothing: the whole city is the beat', color: 0x2f6bff, css: '#5c98ff', ink: '#7fb0ff', edge: '#5c98ff', rgb: '92,152,255', dark: 0x14224d, paint: COP_PAINT, glow: 0x5c98ff, on: '#06102a', sign: ['#0b1530', '#7fb0ff'], tops: [0x1c2a4a, 0x1c2a4a, 0x16213a, 0x1c1e22] };
+const SIDE = t => t === TEAM_COP ? COPSIDE : CREWS[t] || CREWS[0];      // a player's side, crew or police
+const sideOf = v => (v | 0) === TEAM_COP ? TEAM_COP : clamp(v | 0, 0, NCREW - 1);
 const HANDLES = ['Ghost', 'Tiny', 'Smoke', 'Lucky', 'Ace', 'Duke', 'Rook', 'Juno', 'Mako', 'Onyx', 'Vega', 'Nix', 'Zed', 'Kilo', 'Moss', 'Rio', 'Sable', 'Jinx', 'Tank', 'Dot', 'Wren', 'Cruz', 'Bishop', 'Echo', 'Pax', 'Lark', 'Ozzy', 'Remy', 'Sol', 'Trey', 'Ivy', 'Knox'];
 
 /* =====================================================================
@@ -1643,6 +1650,7 @@ function genAirport(bridgeEnds) {
     paint(px - 2.6, pz - 3.6, px - 1.6, pz + 3.6, WHT, CURB + .06); paint(px + 1.6, pz - 3.6, px + 2.6, pz + 3.6, WHT, CURB + .06); paint(px - 1.6, pz - .5, px + 1.6, pz + .5, WHT, CURB + .06);
     const pad = { x: px, z: pz, yaw: -PI / 2, kind, y: CURB, name: 'Port Calder International' }; AIRPORT.pads.push(pad); if (kind === 'gun') AIRPORT.gun = pad; });   // 'free': kept clear for the helicopters people own
   AIRPORT.guards = [{ x: 954, z: 22, yaw: PI / 2 }, { x: 955, z: 40, yaw: PI / 2 }, { x: 979, z: 18, yaw: 0 }];
+  SPAWNS[TEAM_COP] = [{ x: 942, z: 24, yaw: -PI / 2 }, { x: 942, z: 36, yaw: -PI / 2 }, { x: LINE.x - 8.3, z: LINE.sz - 3, yaw: 0 }, { x: LINE.x + 8.3, z: LINE.sz + 3, yaw: PI }];   // a police player's start: the air support hangar, or outside the El station
   // and two in town, on open ground a helicopter can be set down on: the strip mall's car park and the container yard at the docks
   [[251, 219, 'the strip mall car park'], [649, 303, 'the docks']].forEach(q => { const [px, pz, nm] = q; paintRing(px, pz, 7.4, .5, 0xd9b13a, CURB + .02); paint(px - 2.6, pz - 3.6, px - 1.6, pz + 3.6, WHT, CURB + .02); paint(px + 1.6, pz - 3.6, px + 2.6, pz + 3.6, WHT, CURB + .02); paint(px - 1.6, pz - .5, px + 1.6, pz + .5, WHT, CURB + .02);
     AIRPORT.city.push({ x: px, z: pz, yaw: 0, y: CURB, kind: 'city', name: nm }); });
@@ -2400,7 +2408,7 @@ function updateCarVisual(c, dt) {
 /* =====================================================================
    8. STATE + COMBAT
    ===================================================================== */
-const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
+const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, rivals: false, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
 // each turf: who holds it (-1 nobody), which crew is in the middle of taking it and how far along they are, and how many of each crew stand in it
 // ctrl: how firmly the holder runs the neighbourhood, 0..100. Hits against them in it wear it down, and a hold worn thin is quicker to break.
 const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false, ctrl: 100, calmT: -99, warnT: -99 }));
@@ -2415,7 +2423,8 @@ const P = { kind: 'me', team: 0, name: 'Player', slot: 0, rp: 0, rank: 1, biz: n
   heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: 60, lky: CURB, lkz: 300 };
 function eachActor(fn) { fn(P); for (const k in NET.remotes) fn(NET.remotes[k]); for (let i = 0; i < bots.length; i++) fn(bots[i]); }
 const isCrew = t => t >= 0 && t < NCREW;
-const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !== b.team;          // any two people from different crews
+const copPlayer = a => a.team === TEAM_COP && a.kind !== 'bot';
+const rival = (a, b) => a !== b && ((isCrew(a.team) && isCrew(b.team) && a.team !== b.team) || (isCrew(a.team) && copPlayer(b)) || (copPlayer(a) && isCrew(b.team)));   // any two people from different crews, and the crews against a player on the force
 const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
 const wanted = a => a.kind !== 'bot' && a.heat > 0;
 // who a bot will open fire on: any other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
@@ -2515,7 +2524,7 @@ function explode(x, y, z, owner, power, wid) {
     PROPS.forEach(p => { if (!p.down && hyp(p.x - x, p.z - z) < R * .7) { if (knockProp(p, p.x - x, p.z - z)) GAME.onKnock(p, null); } });
     GAME.noise(x, z, owner, 60); if (owner && owner.kind !== 'bot') GAME.crime(owner, 12, 0, 1);
   }
-  if (!P.dead) { const d = hyp(P.x - x, P.y + 1 - y, P.z - z); if (d < R && (!owner || owner === P || !isCrew(owner.team) || owner.team !== P.team)) hurtPlayer(170 * power * (1 - d / (R * 1.15)) * (owner === P ? .7 : 1), owner, wid || 'boom'); }
+  if (!P.dead) { const d = hyp(P.x - x, P.y + 1 - y, P.z - z); if (d < R && (!owner || owner === P || !(isCrew(owner.team) || owner.team === TEAM_COP) || owner.team !== P.team)) hurtPlayer(170 * power * (1 - d / (R * 1.15)) * (owner === P ? .7 : 1), owner, wid || 'boom'); }
 }
 function blowCar(c) {
   if (c.wreck) return; c.wreck = true; c.wreckT = 0; c.burn = 0; c.hp = 0; c.vx *= .3; c.vz *= .3; c.ai = null; c.inp.thr = 0;
@@ -2687,7 +2696,7 @@ function stepHeli(c, dt, inp) {
 }
 // someone has just taken the controls: a police car, or the gunship off the airport police's pad, is a crime
 GAME.boarded = (c, who) => {
-  if (c.stolen || !who || who.kind === 'bot') return;
+  if (c.stolen || !who || who.kind === 'bot' || who.team === TEAM_COP) return;   // an officer may take a police car or the police gunship
   if (c.cop) { c.stolen = true; GAME.crime(who, 20, 1); }
   else if (c.spec.air === 'gun' && c.home && c.home.kind === 'gun') { c.stolen = true; GAME.crime(who, 60, 3); GAME.ev('gs', GAME.ref(who)); }
 };
@@ -2894,7 +2903,7 @@ function tryFire() {
 function punch() {
   P.punchT = .34; P.fireT = 60 / WEAPONS.fist.rpm; P.shootT = .8;
   const fx = -Math.sin(P.cyaw), fz = -Math.cos(P.cyaw); let best = null, bd = WEAPONS.fist.reach;
-  eachActor(a => { if (a === P || a.dead || a.car || (isCrew(a.team) && a.team === P.team)) return; const dx = a.x - P.x, dz = a.z - P.z, d = hyp(dx, dz); if (d >= bd || Math.abs(a.y - P.y) > 1.4 || (dx * fx + dz * fz) / (d || 1) < .4) return; bd = d; best = a; });
+  eachActor(a => { if (a === P || a.dead || a.car || ((isCrew(a.team) || a.team === TEAM_COP) && a.team === P.team)) return; const dx = a.x - P.x, dz = a.z - P.z, d = hyp(dx, dz); if (d >= bd || Math.abs(a.y - P.y) > 1.4 || (dx * fx + dz * fz) / (d || 1) < .4) return; bd = d; best = a; });
   SFX.punch(!!best); if (best) { FX.blood(best.x, best.y + 1.4, best.z, 3); hitActor(best, WEAPONS.fist.dmg, false, P, 'fist'); shake(.15); }
 }
 // --- cars: which one is in reach, and what F would do with it
@@ -2905,8 +2914,8 @@ function carInReach() {
 }
 function carOffer(c) {   // -> { seat, jack, text } or null
   const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
-  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen ? ' · it brings three stars' : '') };
-  if (isCrew(dr.team) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
+  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen && P.team !== TEAM_COP ? ' · it brings three stars' : '') };
+  if ((isCrew(dr.team) || dr.team === TEAM_COP) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
   if (carSpeed(c) < 7) return { seat: 0, jack: true, text: `<b>F</b>Jack the ${nm}` };
   return null;
 }
@@ -3419,7 +3428,7 @@ function updateBot(b, dt) {
   if (b.dead) { b.deadT += dt; b.spd = 0; return; }
   if (b.knock > 0) { b.knockT -= dt; if (b.knockT <= 0) b.knock = 0; b.vx *= Math.max(0, 1 - dt * 3); b.vz *= Math.max(0, 1 - dt * 3); moveEntity(b, b.vx * dt, b.vz * dt, dt, .32, 'p', 1.75); b.spd = 0; b.aim = 0; return; }
   b.brainT -= dt; const civ = b.team === TEAM_CIV;
-  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.homie) homieBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
+  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.homie) homieBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
   if (b.dead) return;
   if (civ) civAct(b, dt); else if (b.homie) homieAct(b, dt); else if (b.street && !b.tgt && !b.hunt && !b.car) streetAct(b, dt); else crewAct(b, dt);
 }
@@ -3445,10 +3454,11 @@ const copNear = (x, z, r) => { for (let i = 0; i < bots.length; i++) { const b =
 GAME.crime = (who, pts, min, gap) => {
   if (!AUTH() || !G.cops || G.phase !== 'play' || !who || who.kind === 'bot' || who.dead || who.gone) return;
   if (who === P && DBG.notarget) return;
+  if (who.team === TEAM_COP) return;                                                    // an officer is not wanted for anything
   if (gap && G.time - (who.crimeAt || -9) < gap) return; who.crimeAt = G.time;
   who.wp = Math.min(CFG.stars[4] + 40, Math.max((who.wp || 0) + pts, min ? CFG.stars[min - 1] : 0));
   const h = starsOf(who.wp);
-  if (h > (who.heat | 0)) { if (!(who.heat > 0)) { who.seenT = G.time; who.dispT = G.time + 1.2; who.lostT = -8; } who.heat = h; who.lkx = who.x; who.lky = who.y; who.lkz = who.z; }   // the first car gets time to arrive before the clock starts
+  if (h > (who.heat | 0)) { if (!(who.heat > 0)) { who.seenT = G.time; who.dispT = G.time + 1.2; who.lostT = -8; } who.heat = h; who.lkx = who.x; who.lky = who.y; who.lkz = who.z; if (humans().some(q => q.team === TEAM_COP && q !== who)) GAME.ev('wn', GAME.ref(who), h); }   // any officers in the session hear it on the radio   // the first car gets time to arrive before the clock starts
   if (who.heat > 0) { who.crimeT = G.time; who.lostT = Math.min(who.lostT || 0, 0); }
 };
 GAME.clearHeat = a => { a.wp = 0; a.heat = 0; a.evade = false; a.lostT = 0; a.heliT = 0; };
@@ -3483,7 +3493,7 @@ function updatePolice() {    // four times a second
   let cops = 0, manned = 0, spare = 0, anyHeat = false; const hs = humans(), empty = [];
   for (let i = 0; i < bots.length; i++) if (bots[i].team === TEAM_COP && !bots[i].dead) cops++;
   for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || c.wreck) continue;
-    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o) && (!c.spec.air || c.landed)) empty.push(c); }   // a helicopter with nobody aboard comes down first
+    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o) && (!c.spec.air || c.landed) && !c.pv && !c.pa) empty.push(c); }   // a police player's own cruiser is not the force's to clear away   // a helicopter with nobody aboard comes down first
   hs.forEach(a => {
     if (!(a.heat > 0)) { if (a.wp > 0) a.wp = Math.max(0, a.wp - .15); a.evade = false; return; }   // small things are forgotten
     if (a.dead || !G.cops) { GAME.clearHeat(a); return; }
@@ -3810,14 +3820,19 @@ function onEvent(e, mine) {
   else if (k === 'bn') banner(e[2], e[3], e[4], e[5]);
   else if (k === 'ej') { if (e[2] === NET.slot && P.car && !mine) { GAME.leaveCar(false); P.knock = 1; P.knockT = 1.2; banner('Thrown out', '', 1.5); } }
   else if (k === 'ch') { const a = GAME.unref(e[2]); if (a === P) { SFX.chain(); banner(e[3] ? 'Chain saved' : 'Chain snatched', '+$' + (e[3] ? CFG.pay.save : CFG.pay.chain), 1.8, 'gold'); } }
-  else if (k === 'db') { const a = GAME.unref(e[2]); if (a) banner('Drive-by inbound', (a.team === P.team ? 'Your crew is' : CREWS[a.team].name + ' is') + ' rolling through', 2.6, 't' + a.team); }
+  else if (k === 'db') { const a = GAME.unref(e[2]); if (a) banner('Drive-by inbound', (a.team === P.team ? 'Your crew is' : SIDE(a.team).name + ' is') + ' rolling through', 2.6, 't' + a.team); }
   else if (k === 'rd') { const z = ZONES[e[3]]; if (z && (e[2] === P.team || ZS[e[3]].owner === P.team || hyp(z.x - P.x, z.z - P.z) < 170)) note(e[2] === P.team ? 'Your crew is moving on ' + z.name : CREWS[e[2]].name + ' is moving on ' + z.name, 'k' + e[2]); }
   else if (k === 'ti') { const bz = SAVE.live && G.state !== 'menu' ? bizIncome() : 0; if (bz > 0) { P.earn += bz; gain(bz); }   // each player's own businesses, on their own machine
     note('Hourly income · ' + e[2] + (e[2] === 1 ? ' neighbourhood' : ' neighbourhoods') + ' · +$' + e[3] + (bz > 0 ? ' · businesses +$' + bz : ''), 'g'); }
   else if (k === 'hm') { if (GAME.unref(e[2]) === P) { PH.homUntil = G.time + 300; banner('Homies on the way', e[3] + ' of your crew coming round the corner', 2.4, 't' + P.team); } }
-  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && P.pv) { c.pv = P; applySpec(c, P.pv); } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
+  else if (k === 'pv') { if (GAME.unref(e[2]) === P) { const c = carById(e[3]); if (c && c.cop) { c.pv = P; note('Your cruiser is at a kerb nearby · it is on your map', 'g'); return; } if (c && P.pv) { c.pv = P; applySpec(c, P.pv); } note('Your ' + (P.pv && CARS[P.pv.t] ? CARS[P.pv.t].name : 'car') + ' is at a kerb nearby · it is on your map', 'g'); } }
   else if (k === 'hz') { const z = ZONES[e[2]]; if (e[3] === P.team) { banner('Hold broken', 'Their grip on ' + z.name + ' is gone · take the ring', 3, 't' + P.team); SFX.cap(true); } }
-  else if (k === 'hw') { const z = ZONES[e[2]]; note(CREWS[e[3]].name + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
+  else if (k === 'hw') { const z = ZONES[e[2]]; if (e[4] === undefined || e[4] === P.team) note((isCrew(e[3]) ? CREWS[e[3]].name : 'Someone') + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
+  else if (k === 'tp') { if (GAME.unref(e[2]) === P) { const bz = SAVE.live && G.state !== 'menu' ? bizIncome() : 0; if (bz > 0) { P.earn += bz; gain(bz); } note('Hourly income · ' + e[3] + (e[3] === 1 ? ' neighbourhood' : ' neighbourhoods') + ' · +$' + e[4] + (bz > 0 ? ' · businesses +$' + bz : ''), 'g'); } }
+  else if (k === 'tw') { if (GAME.unref(e[2]) === P) note('Paycheck · +$' + e[3], 'g'); }
+  else if (k === 'ia') { if (GAME.unref(e[2]) === P) { P.spent += 250; note('Internal affairs · that was a civilian · −$250', 'g'); } }
+  else if (k === 'bt') { const a = GAME.unref(e[2]), v = GAME.unref(e[3]); if (a === P) banner('Bounty', '+$' + e[4] + ' for ' + nameOf(v), 2.4, 'gold'); else if (v === P) note(nameOf(a) + ' collected the bounty on you', 'g'); }
+  else if (k === 'wn') { const a = GAME.unref(e[2]); if (P.team === TEAM_COP && a && a !== P) note('Dispatch · ' + nameOf(a) + ' is wanted · ' + '★'.repeat(e[3]), 'g'); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st') heistNews(e);
@@ -3830,9 +3845,9 @@ GAME.onKill = (k, v, wid, head) => {
   v.deaths = (v.deaths | 0) + 1;
   if (v.boss && !v.boss.over) GAME.bossDown(v, k);
   if (k && k !== v) {
-    if (rival(k, v)) { k.kills = (k.kills | 0) + 1; GAME.pay(k, CFG.pay.kill + (head ? CFG.pay.head : 0)); GAME.rp(k, CFG.rp.kill + (head ? CFG.rp.head : 0)); addPickup('chain', v.x, groundAt(v.x, v.z, v.y + .5, 'p'), v.z, v.team); if (k.kind !== 'bot' && copNear(v.x, v.z, 50)) GAME.crime(k, 8);
+    if (rival(k, v)) { if (v.team === TEAM_COP && k.kind !== 'bot') GAME.crime(k, 30, 3); if (copPlayer(k) && v.kind !== 'bot' && (v.heat | 0) > 0) { const pay = 300 * v.heat; GAME.pay(k, pay); GAME.rp(k, 60 * v.heat); GAME.ev('bt', GAME.ref(k), GAME.ref(v), pay); } k.kills = (k.kills | 0) + 1; GAME.pay(k, CFG.pay.kill + (head ? CFG.pay.head : 0)); GAME.rp(k, CFG.rp.kill + (head ? CFG.rp.head : 0)); addPickup('chain', v.x, groundAt(v.x, v.z, v.y + .5, 'p'), v.z, v.team); if (k.kind !== 'bot' && copNear(v.x, v.z, 50)) GAME.crime(k, 8);
       const zi = hoodAt(v.x, v.z); if (zi >= 0 && ZS[zi].owner === v.team) GAME.hurtHood(zi, k, k.kind === 'bot' ? 3 : 6); if (k.kind !== 'bot') GAME.notor(k, v.team, 12); }   // every one of theirs you drop on their own ground loosens their hold, and they remember who did it
-    else if (k.kind !== 'bot') { if (v.team === TEAM_CIV) GAME.crime(k, 15); else if (v.team === TEAM_COP) { k.kills = (k.kills | 0) + 1; GAME.crime(k, 30, 3); GAME.rp(k, CFG.rp.cop); } }   // bystanders pay nothing and cost plenty
+    else if (k.kind !== 'bot') { if (v.team === TEAM_CIV) { GAME.crime(k, 15); if (k.team === TEAM_COP) GAME.ev('ia', GAME.ref(k)); } else if (v.team === TEAM_COP && k.team !== TEAM_COP) { k.kills = (k.kills | 0) + 1; GAME.crime(k, 30, 3); GAME.rp(k, CFG.rp.cop); } }   // bystanders pay nothing and cost plenty
   }
   if (v.kind === 'bot' && v.team !== TEAM_CIV && v.wpn !== 'pistol' && v.wpn !== 'fist' && rand() < .5) addPickup(v.wpn, v.x + rs(1.6), groundAt(v.x, v.z, v.y + .5, 'p'), v.z + rs(1.6), -1);
   if (v.kind === 'bot' && isCrew(v.team) && !v.temp) G.respawnQ[v.team].push(G.time + lerp(CFG.botRespawn[0], CFG.botRespawn[1], rand()));
@@ -3846,7 +3861,8 @@ GAME.playerDied = (src, wid, head) => {
   if (AUTH()) GAME.onKill(src, P, wid, head); else NET.died(src, wid, head);
 };
 function zoneSpawn(zi) { const n = NAV[zoneNode[zi]], opts = n.e.map(e => NAV[e[0]]).filter(q => q.y < 1 && !q.iso && hyp(q.x - ZONES[zi].x, q.z - ZONES[zi].z) < 40); if (!opts.length) return null; const e = opts[(rand() * opts.length) | 0]; return { x: e.x + rs(1.2), y: e.y, z: e.z + rs(1.2), yaw: yawOf(ZONES[zi].x - e.x, ZONES[zi].z - e.z) }; }
-function baseSpawn(team) { const s = SPAWNS[team][(rand() * SPAWNS[team].length) | 0]; return { x: s.x + rs(1), y: CURB, z: s.z + rs(1), yaw: s.yaw }; }
+function baseSpawn(team) { return baseSpawnAt(SPAWNS[team][(rand() * SPAWNS[team].length) | 0]); }
+function baseSpawnAt(s) { return { x: s.x + rs(1), y: CURB, z: s.z + rs(1), yaw: s.yaw }; }
 function spawnPoint(team, forward) {   // forward: the chance of coming back at a quiet turf the crew holds instead of at home
   if (rand() < forward) { const own = []; ZS.forEach((s, i) => { if (s.owner === team && !s.hot) own.push(i); });
     if (own.length) { const s = zoneSpawn(own[(rand() * own.length) | 0]); if (s && (G.time < 1 || nearHuman(s.x, s.z) > 40)) return s; } }
@@ -3854,11 +3870,13 @@ function spawnPoint(team, forward) {   // forward: the chance of coming back at 
 }
 // a player comes back at whichever is nearer to where they fell: the crew's yard, or a quiet turf the crew holds
 GAME.respawn = home => {
+  if (P.team === TEAM_COP) { const S = SPAWNS[TEAM_COP], s = home ? S[2] : S.reduce((b, q) => hyp(q.x - P.x, q.z - P.z) < hyp(b.x - P.x, b.z - P.z) ? q : b, S[0]); SPAWNS.cop = [s]; }   // an officer comes back at the nearer station house
   let zi = -1, bd = hyp(SPAWNS[P.team][0].x - P.x, SPAWNS[P.team][0].z - P.z); if (!home) ZS.forEach((z, i) => { if (z.owner !== P.team || z.hot) return; const d = hyp(ZONES[i].x - P.x, ZONES[i].z - P.z); if (d < bd) { bd = d; zi = i; } });
   if (!home) { const fee = Math.min(200, Math.floor(Math.max(0, P.cash) * .01) * 10); if (fee > 0) { P.spent += fee; P.cash -= fee; note('Patched up · −$' + fee, 'g'); } }
-  const s = (zi >= 0 && zoneSpawn(zi)) || baseSpawn(P.team); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
+  const s = (zi >= 0 && zoneSpawn(zi)) || (P.team === TEAM_COP ? baseSpawnAt(SPAWNS.cop[0]) : baseSpawn(P.team)); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
   for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = Math.max(P.inv[id].res, d.mag * 2); } }
   if (P.nades < 1) P.nades = 1; $('dead').hidden = true;
+  if (P.team === TEAM_COP) { giveWeapon('smg'); if ((P.rank | 0) >= 4) giveWeapon('rifle'); P.armor = 100; if (P.nades < 2) P.nades = 2; }   // the armory kits out an officer every time
 };
 // --- turf: the crew with the most people standing in a ring works on it. A held turf is first broken (it becomes nobody's),
 //     then taken; the holders showing up in force undo the work. How fast a hold breaks depends on how firm it is (ctrl):
@@ -3886,7 +3904,7 @@ GAME.hurtHood = (zi, by, amt) => {
   if (zi < 0 || !by) return; const s = ZS[zi]; if (s.owner < 0 || (isCrew(by.team) && by.team === s.owner)) return;
   const was = s.ctrl; s.ctrl = Math.max(0, s.ctrl - amt); s.calmT = G.time;
   if (by.kind !== 'bot' || by.team === G.crew) { if (was > 0 && s.ctrl <= 0) GAME.ev('hz', zi, by.team); }
-  else if (s.owner === G.crew && was >= 50 && s.ctrl < 50 && G.time - s.warnT > 60) { s.warnT = G.time; GAME.ev('hw', zi, by.team); }
+  else if ((s.owner === G.crew || (G.rivals && humans().some(h => h.team === s.owner))) && was >= 50 && s.ctrl < 50 && G.time - s.warnT > 60) { s.warnT = G.time; GAME.ev('hw', zi, by.team, s.owner); }
 };
 GAME.takeCash = (p, who) => { if (p.gone) return; removePickup(p); GAME.pay(who, p.amt || 300); };
 // --- notoriety: each crew keeps its own count of what a player has done to it. Skulls bring cars of shooters, as stars bring the police.
@@ -4089,7 +4107,7 @@ function resetWorld() {
   ZS.forEach((s, i) => { const o = TURF_START[ZONES[i].id]; s.owner = o === undefined ? -1 : o; s.by = -1; s.prog = 0; s.n.fill(0); s.hot = false; s.ctrl = s.owner >= 0 ? 100 : 0; s.calmT = -99; s.warnT = -99; });
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
   Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), hour: 17, polT: 0, gangT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10, streetT: 0, streetMax: TOUCH.on ? 8 : 12, evT: 35 });
-  G.raidT[G.crew] += 40;                           // somebody else makes the first move
+  if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
   [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
 }
 // only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
@@ -4108,8 +4126,12 @@ function startWorld(at) {
   for (let k = walkersWanted(); k > 0; k--) spawnPed(true);
 }
 // every hour of the day each neighbourhood pays the crew that runs it, less for one it only half controls
-function payHour() { let n = 0, amt = 0; ZS.forEach((s, i) => { if (s.owner !== G.crew) return; n++; amt += ZONES[i].val * (.5 + .5 * s.ctrl / 100); }); amt = Math.round(amt / 10) * 10; if (amt > 0) { humans().forEach(a => GAME.pay(a, amt)); GAME.ev('ti', n, amt); } }
-const hourlyNow = () => { let amt = 0; ZS.forEach((s, i) => { if (s.owner === G.crew) amt += ZONES[i].val * (.5 + .5 * s.ctrl / 100); }); return Math.round(amt / 10) * 10; };
+function turfPay(team) { let n = 0, amt = 0; ZS.forEach((s, i) => { if (s.owner !== team) return; n++; amt += ZONES[i].val * (.5 + .5 * s.ctrl / 100); }); return [n, Math.round(amt / 10) * 10]; }
+function payHour() {
+  if (!G.rivals && G.crew !== TEAM_COP) { const [n, amt] = turfPay(G.crew); if (amt > 0) { humans().forEach(a => GAME.pay(a, amt)); GAME.ev('ti', n, amt); } return; }
+  humans().forEach(a => { if (a.team === TEAM_COP) { const w = CFG.cop.pay + CFG.cop.rankPay * ((a === P ? P.rank : a.rank) | 0); GAME.pay(a, w); GAME.ev('tw', GAME.ref(a), w); return; } const [n, amt] = turfPay(a.team); if (amt > 0) { GAME.pay(a, amt); GAME.ev('tp', GAME.ref(a), n, amt); } });
+}
+const hourlyNow = () => P.team === TEAM_COP ? CFG.cop.pay + CFG.cop.rankPay * (P.rank | 0) : turfPay(G.rivals ? P.team : G.crew)[1];
 function authTick(dt) {
   G.tod = (G.tod + dt * TOD_RATE) % 24;
   updateZones(dt); updateRaids(dt);
@@ -4483,6 +4505,7 @@ function phoneItems(pg) {
   if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
+  if (P.team === TEAM_COP) return copItems(r, cd);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
   else if (r < UNLOCK.homies) out.push({ label: 'Homies', sub: 'Your crew picks up from rank ' + UNLOCK.homies, off: true });
   else if (cd(PH.homT, 60)) out.push({ label: 'Homies', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
@@ -4501,6 +4524,19 @@ function phoneItems(pg) {
   out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
   return out;
 }
+// an officer's phone: backup, a cruiser, and the shops; no fixer, no jobs, no heists, no lab
+function copItems(r, cd) {
+  const out = [], n = Math.max(2, homieCount(r));
+  if (homiesOut()) out.push({ label: 'Backup', sub: 'Officers with you · tap to stand them down', act: dismissHomies });
+  else if (cd(PH.homT, 60)) out.push({ label: 'Backup', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
+  else out.push({ label: 'Backup', sub: n + ' officers come and work with you', act: () => { closeShop(); if (homiesOut()) return; PH.homT = G.time; if (AUTH()) { if (!GAME.homies(P, n)) note('Nobody could get to you here · try from a street', 'g'); } else NET.req('hm', n); } });
+  if (cd(PH.mechT, 20)) out.push({ label: 'Cruiser', sub: 'On the way · call back in ' + cd(PH.mechT, 20) + 's', off: true });
+  else out.push({ label: 'Cruiser', sub: 'A police ' + (r >= 6 ? 'SUV' : 'car') + ' at a kerb near you, lights and siren on H', act: () => { closeShop(); PH.mechT = G.time; sendCruiser(); } });
+  out.push({ label: 'Pay', sub: '$' + (CFG.cop.pay + CFG.cop.rankPay * r) + ' an hour, the going rate for every gangster you drop, $300 a star for a wanted player', off: true });
+  out.push(page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
+  return out;
+}
+function sendCruiser() { const sp = { t: (P.rank | 0) >= 6 ? 'suv' : 'sedan', c: COP_PAINT, ar: 1, en: 1, no: 0, gr: 1, bp: 0, ne: 0 }; if (AUTH()) { if (!GAME.pv(P, sp)) note('No kerb free near you · try a street', 'g'); } else NET.req('pv', CARS[sp.t].n, ALLPAINT.indexOf(COP_PAINT), 1, 1, 0, 1, 0, 0); }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
 function callDriveBy() { if (!P.driveby) return; P.driveby = false; P.streak = 0; if (AUTH()) { if (!GAME.callDriveBy(P)) P.driveby = true; } else NET.req('db'); }
 function callHomies() { closeShop(); if (homiesOut() || (P.rank || 1) < UNLOCK.homies) return; PH.homT = G.time; if (AUTH()) { if (!GAME.homies(P, homieCount(P.rank))) note('Nobody could get to you here · try from a street', 'g'); } else NET.req('hm', homieCount(P.rank)); }
@@ -4512,8 +4548,8 @@ function sendPV() { const v = P.pv; if (!v || !CARS[v.t]) return; if (AUTH()) { 
 
 // --- homies: a few of your crew who walk with you, get in the car with you, and shoot at whoever is shooting at you
 GAME.homies = (a, n) => {   // on the machine that runs the world
-  if (!a || a.dead || a.gone || !isCrew(a.team)) return 0; let have = 0, made = 0; bots.forEach(b => { if (b.homie === a && !b.dead) have++; });
-  for (let k = have; k < n; k++) { const s = homieSpot(a); if (!s) break; const b = spawnBot(a.team, s.x + rs(1), s.y, s.z + rs(1), { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'smg', 'rifle']) }); if (!b) break;
+  if (!a || a.dead || a.gone || !(isCrew(a.team) || a.team === TEAM_COP)) return 0; let have = 0, made = 0; const cop = a.team === TEAM_COP; bots.forEach(b => { if (b.homie === a && !b.dead) have++; });
+  for (let k = have; k < n; k++) { const s = homieSpot(a); if (!s) break; const b = spawnBot(a.team, s.x + rs(1), s.y, s.z + rs(1), cop ? { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun']), name: 'Officer' } : { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'smg', 'rifle']) }); if (!b) break;
     Object.assign(b, { homie: a, until: G.time + 300, skill: 1.3, hp: 160, react: .2, yaw: yawOf(a.x - s.x, a.z - s.z) }); made++; }
   if (made) GAME.ev('hm', GAME.ref(a), made); return made;
 };
@@ -4584,7 +4620,7 @@ const UPG = {   // level costs, and what each level does in words
 };
 function modItems(pg) {
   const c = P.car; if (!c) return [];
-  if (pg === 'paint') return [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]].concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
+  if (pg === 'paint') return (isCrew(P.team) ? [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]] : []).concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
     : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
   const out = [], mine = c.pv === P;
   out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
@@ -4811,7 +4847,8 @@ function heistNews(e) {
        "presence" record. One player hosts: their machine runs the bots, the traffic, the turf and the police, and
        publishes it ten times a second. Everyone else sends where they are, what they hit and what they ask for.
        A player's own body and the car they are driving are theirs to simulate; the host fits them into its world.
-       Every player is in the host's crew, and players cannot hurt each other: the session is one open city, not a match.
+       By default every player is in the host's crew and players cannot hurt each other. With rival sides on, each keeps the crew
+       they picked, or the police, and anyone on another side is fair game.
    ===================================================================== */
 Object.assign(NET, { hostPeer: null, seq: 0, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, slots: {}, dmgOut: {}, lob: null, bytes: 0, myBoom: -9, knSeen: 0, joinT: 0 });
 const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT]);
@@ -4821,7 +4858,7 @@ const r2 = v => Math.round(v * 100) / 100;
 const cleanName = n => String(n || '').replace(/[^\w \-]/g, '').trim().slice(0, 14) || 'Player';
 const myName = () => cleanName($('co-name').value);
 const SNAP = .13;   // everything from another machine is drawn this far in the past, so there are always two positions to glide between
-const crewOf = v => clamp(v | 0, 0, NCREW - 1);
+const crewOf = sideOf;   // a side from the wire: a crew, or the police
 function snapPush(buf, s) { s.t = performance.now() / 1000; const L = buf[buf.length - 1]; if (L && s.t - L.t < .02) { buf[buf.length - 1] = s; return; } buf.push(s); if (buf.length > 8) buf.shift(); }
 function snapAt(buf, o) {   // o gets x, y, z, yaw (and pitch, vf when the snapshots carry them)
   if (!buf.length) return false; const rt = performance.now() / 1000 - SNAP; let a = buf[0], b = buf[buf.length - 1];
@@ -4858,7 +4895,7 @@ function netPeers(dt, each) {
     if (s.t === 'h' && (!host || host.presence.t !== 'h')) host = pr;
     if (!Array.isArray(s.p)) continue;
     seen[pr.peer] = 1; let r = NET.remotes[pr.peer];
-    if (!r) { const team = G.crew, ch = makeChar(makeLook(hashStr(pr.peer), team)); if (!ch) continue;
+    if (!r) { const team = G.rivals ? sideOf(s.cr) : G.crew, ch = makeChar(makeLook(hashStr(pr.peer), team)); if (!ch) continue;
       r = NET.remotes[pr.peer] = { kind: 'rp', peer: pr.peer, slot: -1, team, name: cleanName(s.n), x: s.p[0], y: s.p[1], z: s.p[2], yaw: s.p[3], pitch: 0, dead: false, deadT: 0, car: null, seat: 0, wpn: 'pistol', ch, buf: [], shots: s.a ? s.a[0] : 0, spd: 0, hs: 0, qs: 0, kdSeen: s.kd ? s.kd[0] : 0, hpSeen: (s.hp || []).reduce((m, h) => Math.max(m, h[0]), 0), kills: 0, deaths: 0, earn: 0, aim: 0, knock: 0, tag: null, safe: false, vbuf: [], heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: s.p[0], lky: s.p[1], lkz: s.p[2] };
       (s.h || []).forEach(h => { if (h[0] > r.hs) r.hs = h[0]; }); (s.q || []).forEach(q => { if (q[0] > r.qs) r.qs = q[0]; });
       if (NET.mode === 'host') { let k = 1; const used = Object.keys(NET.slots).map(p => NET.slots[p]); while (used.includes(k)) k++; NET.slots[pr.peer] = k; r.slot = k; note(r.name + ' joined the session', 'g'); } }
@@ -4868,7 +4905,7 @@ function netPeers(dt, each) {
     const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128);
     { const hf = Array.isArray(s.hf) ? s.hf : [0, 0]; if (r.hg === undefined) { r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if ((hf[0] | 0) > r.hg) fxHeli(r, 'gun', (hf[0] | 0) - r.hg); if ((hf[1] | 0) > r.hr) fxHeli(r, 'pod', (hf[1] | 0) - r.hr); r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
     if (A[0] !== r.shots) { if (A[0] > r.shots && !r.dead) { fxShot(r, r.wpn); if (NET.mode === 'host') GAME.noise(r.x, r.z, r); } r.shots = A[0]; }
-    const team = G.crew; if (team !== r.team || cleanName(s.n) !== r.name) { r.team = team; r.name = cleanName(s.n); setLook(r.ch, makeLook(hashStr(pr.peer), team)); killTag(r.tag); r.tag = null; }
+    const team = G.rivals ? sideOf(s.cr) : G.crew; if (team !== r.team || cleanName(s.n) !== r.name) { r.team = team; r.name = cleanName(s.n); setLook(r.ch, makeLook(hashStr(pr.peer), team)); killTag(r.tag); r.tag = null; }
     r.v = Array.isArray(s.v) ? s.v : null; if ((s.rk | 0) !== (r.rank | 0)) { r.rank = clamp(s.rk | 0, 0, 999); killTag(r.tag); r.tag = null; }
     // incoming fire from this player
     (s.hp || []).forEach(h => { if (h[0] <= r.hpSeen) return; r.hpSeen = h[0]; if (h[1] !== NET.slot || r.team === P.team) return; const wid = widOf(h[4]); hurtPlayer(+h[2] || 0, r, wid, !!h[3]); if (wid === 'car' && !P.dead && !P.car) { P.knock = 1; P.knockT = 1; } });
@@ -4991,7 +5028,7 @@ NET.host = dt => {
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -5003,8 +5040,9 @@ NET.host = dt => {
 // ---- a joined player: draws the host's world, plays their own body
 function applyHost(s) {
   const W = s.W; if (!W) return;
-  G.tod = W.d; if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; } G.robMask = W.r | 0; G.phase = 'play';
-  if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }                 // everyone rides with the host's crew
+  G.tod = W.d; if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; G.rivals = !!W.o[2]; } G.robMask = W.r | 0; G.phase = 'play';
+  if (G.rivals) G.crew = crewOf(W.c);                                                                         // each on the side they picked
+  else if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }          // everyone rides with the host's side
   if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
   evFromHost(W.e);
   (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; if ((e[9] | 0) > NET.xpSeen) addRP((e[9] | 0) - NET.xpSeen); NET.xpSeen = e[9] | 0; P.heat = e[6] | 0; P.evade = !!e[7]; P.gs = String(e[8] || ''); } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
@@ -5048,7 +5086,7 @@ NET.stop = () => {
 };
 // ---- the lobby: players gather on the menu and ready up, the leader picks the crew and starts the session for everyone at once.
 //      Anyone who turns up later joins the session where it stands.
-NET.say = () => { if (!NET.room || NET.mode) return; const L = NET.lob; NET.room.presence(L ? { t: 'L', ld: L.lead ? 1 : 0, rd: L.lead || L.ready ? 1 : 0, n: myName(), cr: P.team, rk: myRank(), o: L.lead ? [G.botsPer, G.cops ? 1 : 0] : null } : { t: 'm', ld: null, rd: null, n: myName(), cr: P.team, rk: myRank(), o: null }).catch(() => {}); };
+NET.say = () => { if (!NET.room || NET.mode) return; const L = NET.lob; NET.room.presence(L ? { t: 'L', ld: L.lead ? 1 : 0, rd: L.lead || L.ready ? 1 : 0, n: myName(), cr: P.team, rk: myRank(), o: L.lead ? [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0] : null } : { t: 'm', ld: null, rd: null, n: myName(), cr: P.team, rk: myRank(), o: null }).catch(() => {}); };
 const myRank = () => { const s = SAVE.live ? null : loadSave(); return s ? rankOf(+s.rp || 0) : P.rank || 1; };   // in the lobby, the rank on file
 NET.lobby = () => {
   if (!NET.room || NET.mode) return;
@@ -5059,9 +5097,10 @@ NET.lobby = () => {
     if (L.lead && leads.length && leads[0].peer < me) { L.lead = false; L.ready = true; NET.say(); }
     else if (!L.lead && !leads.length && !inL.some(p => p.peer < me)) { L.lead = true; NET.say(); }
   }
-  if (L && !L.lead && leads.length) { const lp = leads[0].presence; if (Array.isArray(lp.o)) { G.botsPer = clamp(+lp.o[0] || 4, 1, 8); G.cops = !!lp.o[1]; $('set-bots').value = String(G.botsPer); $('set-cops').value = G.cops ? '1' : '0'; } if (crewOf(lp.cr) !== P.team) { wearCrew(crewOf(lp.cr)); NET.say(); } }
+  if (L && !L.lead && leads.length) { const lp = leads[0].presence, was = G.rivals; if (Array.isArray(lp.o)) { G.botsPer = clamp(+lp.o[0] || 4, 1, 8); G.cops = !!lp.o[1]; G.rivals = !!lp.o[2]; $('set-bots').value = String(G.botsPer); $('set-cops').value = G.cops ? '1' : '0'; $('set-sides').value = G.rivals ? '1' : '0'; }
+    if (G.rivals) { if (!was) { ownCrew(); NET.say(); } } else if (crewOf(lp.cr) !== P.team) { wearCrew(crewOf(lp.cr)); NET.say(); } }   // one crew: wear the leader's; rival sides: your own
   const allReady = inL.every(p => p.presence.rd), waiting = inL.filter(p => !p.presence.rd).length, plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
-  $('co-host').hidden = $('co-join').hidden = !!L; $('co-ready').hidden = !L || L.lead; $('co-start').hidden = !L || !L.lead; $('co-leave').hidden = !L; $('deploy').hidden = !!L; $('set-bots').disabled = $('set-cops').disabled = !!L && !L.lead; crewLock(!!L && !L.lead);
+  $('co-host').hidden = $('co-join').hidden = !!L; $('co-ready').hidden = !L || L.lead; $('co-start').hidden = !L || !L.lead; $('co-leave').hidden = !L; $('deploy').hidden = !!L; $('set-bots').disabled = $('set-cops').disabled = $('set-sides').disabled = !!L && !L.lead; crewLock(!!L && !L.lead && !G.rivals);
   $('co-host').disabled = !!host || leads.length > 0; $('co-join').disabled = !host && !leads.length; $('co-join').textContent = host ? 'Join session' : 'Join lobby';
   $('co-ready').textContent = L && L.ready ? 'Not ready' : 'Ready up'; $('co-start').disabled = !allReady;
   const rows = [];
@@ -5069,15 +5108,15 @@ NET.lobby = () => {
   else if (host) others.filter(p => p.presence.t === 'h' || p.presence.t === 'c').forEach(p => rows.push([cleanName(p.presence.n), p.presence.t === 'h' ? 'Host · in the city' : 'In the city', true, p.presence.t === 'h' ? 0 : 1, p.peer, crewOf(p.presence.cr), p.presence.rk | 0]));
   rows.sort((a, b) => a[3] - b[3] || (a[4] < b[4] ? -1 : 1));
   const ul = $('co-roster'); ul.hidden = !rows.length; ul.textContent = '';
-  rows.forEach(r => { const li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = r[0] + (r[6] > 0 ? ' · rank ' + r[6] : '') + ' · ' + CREWS[r[5]].name; b.textContent = r[1]; li.className = 'c' + r[5] + (r[2] ? ' ok' : ''); li.appendChild(a); li.appendChild(b); ul.appendChild(li); });
+  rows.forEach(r => { const li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = r[0] + (r[6] > 0 ? ' · rank ' + r[6] : '') + ' · ' + SIDE(r[5]).name; b.textContent = r[1]; li.className = 'c' + r[5] + (r[2] ? ' ok' : ''); li.appendChild(a); li.appendChild(b); ul.appendChild(li); });
   const st = $('co-status'); st.className = 'status ok';
-  st.textContent = L ? (L.lead ? (!inL.length ? 'Lobby open. Waiting for players. You can also start now: anyone who arrives later can join the session.' : allReady ? 'Everyone is ready. Start when you like.' : 'Waiting for ' + plural(waiting, 'player') + ' to ready up.') : L.ready ? 'Ready. Waiting for the leader to start.' : 'The leader picks the crew. Ready up when you are set.')
+  st.textContent = L ? (L.lead ? (!inL.length ? 'Lobby open. Waiting for players. You can also start now: anyone who arrives later can join the session.' : allReady ? 'Everyone is ready. Start when you like.' : 'Waiting for ' + plural(waiting, 'player') + ' to ready up.') : L.ready ? 'Ready. Waiting for the leader to start.' : G.rivals ? 'Rival sides: pick your own crew, or the police. Ready up when you are set.' : 'The leader picks the crew. Ready up when you are set.')
     : host ? 'A session is running. You can join it now.' : leads.length ? cleanName(leads[0].presence.n) + ' has a lobby open with ' + plural(inL.length, 'player') + '.' : others.length ? plural(others.length, 'other player') + ' on this page. Open a lobby for them to join.' : 'Online. Nobody else has this page open yet.';
 };
 function coopBegin(mode) {
   NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-roster').hidden = true;
   initAudio(); NET.start(mode); G.solo = false;
-  if (mode === 'host') startWorld(); else { const hp = NET.room.peers().find(p => p.presence && p.presence.t === 'h'); if (hp) wearCrew(crewOf(hp.presence.cr)); G.crew = P.team; resetWorld(); }
+  if (mode === 'host') startWorld(); else { const hp = NET.room.peers().find(p => p.presence && p.presence.t === 'h'), W = hp && hp.presence.W; if (W && Array.isArray(W.o)) G.rivals = !!W.o[2]; if (hp && !G.rivals) wearCrew(crewOf(hp.presence.cr)); G.crew = hp ? crewOf(hp.presence.cr) : P.team; resetWorld(); }
   beginPlay();
 }
 const lobbySet = L => { NET.lob = L; NET.say(); NET.lobby(); };
@@ -5085,7 +5124,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-7'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-8'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();
@@ -5115,9 +5154,9 @@ function feed(a, v, wc, head) {
 const haloOf = h => `-1px -1px 0 ${h},1px -1px 0 ${h},-1px 1px 0 ${h},1px 1px 0 ${h},0 0 3px ${h}`;
 const inkCss = c => 'color:' + c.ink + (c.halo ? ';text-shadow:' + haloOf(c.halo) : '');
 { const st = document.createElement('style'); st.textContent = CREWS.map((c, t) => `#turf .zs b.t${t}{background:${c.css};border-color:${c.edge};color:${c.on}} #feed .k${t},.ink${t},#board .c${t} h3,.crew.c${t} b,#h-banner.t${t} .big{${inkCss(c)}} .roster li.c${t}{border-left-color:${c.edge}}`).join('\n'); document.head.appendChild(st); }
-const inkOf = (el, t) => { const c = CREWS[t]; el.style.color = c.ink; el.style.textShadow = c.halo ? haloOf(c.halo) : ''; };
-const lite = t => CREWS[t].halo ? CREWS[t].edge : CREWS[t].css;             // a crew's colour where it has to show up on the dark map or a dark bar
-const ringOf = (t, d) => CREWS[t].halo ? CREWS[t].edge : d;                // the edge round a crew's dot
+const inkOf = (el, t) => { const c = SIDE(t); el.style.color = c.ink; el.style.textShadow = c.halo ? haloOf(c.halo) : ''; };
+const lite = t => SIDE(t).halo ? SIDE(t).edge : SIDE(t).css;             // a side's colour where it has to show up on the dark map or a dark bar
+const ringOf = (t, d) => SIDE(t).halo ? SIDE(t).edge : d;                // the edge round a side's dot
 // --- the map: drawn once, then moved and turned under the radar every frame
 const MS = 1.4, MAPW = ISLE.x1 + 60, MAPD = CITY.d + 60, mapCv = texCanvas(Math.ceil(MAPW * MS), Math.ceil(MAPD * MS)), MO = 30;   // the city, the channel and the airport island
 { const g = mapCv.getContext('2d'), X = x => (x + MO) * MS, R = (x0, z0, x1, z1, c) => { g.fillStyle = c; g.fillRect(X(x0), X(z0), (x1 - x0) * MS, (z1 - z0) * MS); };
@@ -5155,7 +5194,7 @@ function drawRadar() {
   const hot = P.heat > 0, fl = Math.sin(G.time * 11) > 0;
   cars.forEach(c => { if (c.cop && c.occ[0] && c.occ[0].team === TEAM_COP) { if (hot && !c.wreck) blip(g, c.x, c.z, k, R, fl ? '#ff4a4a' : '#5c98ff', 4.4, '#fff', true); return; } if (!c.wreck && c !== P.car && (c.occ[0] || c.team === P.team)) blip(g, c.x, c.z, k, R, c.occ[0] && isCrew(c.occ[0].team) ? CREWS[c.occ[0].team].css : c.team === P.team ? '#d8d6cc' : '#8b929c', 3, c.occ[0] && isCrew(c.occ[0].team) ? ringOf(c.occ[0].team, '#111') : '#111'); });
   bots.forEach(b => { if (b.dead || b.car) return; if (b.team === TEAM_COP) { if (hot) blip(g, b.x, b.z, k, R, fl ? '#5c98ff' : '#ff4a4a', 3.2, '#fff'); return; } if (!isCrew(b.team)) return; if (b.team === P.team) blip(g, b.x, b.z, k, R, CREWS[b.team].css, b.homie ? 3.6 : 3, b.homie ? '#fff' : ringOf(b.team)); else if (G.time - (b.shotT || -9) < 2.5 || hyp(b.x - P.x, b.z - P.z) < 22) blip(g, b.x, b.z, k, R, CREWS[b.team].css, 3.4, ringOf(b.team, '#111')); });
-  for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.dead) continue; if (r.team === P.team) blip(g, r.x, r.z, k, R, CREWS[r.team].css, 4.2, '#fff', true); else if (G.time - (r.shotT || -9) < 2.5 || hyp(r.x - P.x, r.z - P.z) < 25) blip(g, r.x, r.z, k, R, CREWS[r.team].css, 4.2, ringOf(r.team, '#111')); }
+  for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.dead) continue; if (r.team === P.team) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, '#fff', true); else if (P.team === TEAM_COP && r.heat > 0) blip(g, r.x, r.z, k, R, Math.sin(G.time * 9) > 0 ? '#ff4a4a' : '#ffc83d', 4.6, '#fff', true); else if (G.time - (r.shotT || -9) < 2.5 || hyp(r.x - P.x, r.z - P.z) < 25) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, ringOf(r.team, '#111')); }
   g.save(); g.rotate(-angTo(P.cyaw, P.car ? P.car.yaw : P.yaw)); g.beginPath(); g.moveTo(0, -8); g.lineTo(5.5, 6); g.lineTo(0, 3); g.lineTo(-5.5, 6); g.closePath(); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#111'; g.stroke(); g.restore();
   radarXY(P.x, P.z - 1000, 1, blipO); const nl = hyp(blipO[0], blipO[1]) || 1; g.fillStyle = '#f2efe6'; g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', blipO[0] / nl * (R - 10), blipO[1] / nl * (R - 10));
   g.restore();
@@ -5173,7 +5212,7 @@ function drawBigMap() {
   { const c = myAir(); if (c && !c.wreck) { dot(c.x, c.z, 7, '#b9a2ff', '#fff'); g.fillStyle = '#f2efe6'; g.font = '600 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Your helicopter', X(c.x), X(c.z) - 13); } }
   EVTS.forEach(E => { const I = EV_INFO[E.k]; evSpot(E, _ev); dot(_ev.x, _ev.z, 10, I.col, '#111'); g.fillStyle = '#111'; g.font = '700 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(I.icon, X(_ev.x), X(_ev.z) + 1); });
   if (RACE.on) RACE.cps.slice(RACE.i).forEach((cp, q) => dot(cp[0], cp[1], q ? 4 : 7, '#ffc83d', '#111'));
-  bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, b.homie ? 4.5 : 3.5, CREWS[b.team].css, b.homie ? '#fff' : ringOf(b.team)); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, CREWS[r.team].css, '#fff'); }
+  bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, b.homie ? 4.5 : 3.5, SIDE(b.team).css, b.homie ? '#fff' : ringOf(b.team)); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, SIDE(r.team).css, '#fff'); else if (!r.dead && P.team === TEAM_COP && r.heat > 0) dot(r.x, r.z, 6, '#ff4a4a', '#ffc83d'); }
   dot(P.x, P.z, 6, '#fff', '#111');
   const key = [['#8fe36b', 'Guns'], ['#9fd0e8', 'Car shop: repairs, resprays, upgrades'], ['#ff5fa2', 'A till worth robbing'], ['#ffc83d', 'Your business'], ['#7dffb0', 'For sale on your turf'], ['#7dc3ff', 'Your car'], ['#b9a2ff', 'Your helicopter'], ['#1d3a4d', 'Helipad', '#7fb8ff'], ['#fff', 'You']].concat(CREWS.map((q, t) => [q.css, q.name + (t === P.team ? ' · your crew' : ''), ringOf(t, '#111')]));
   g.fillStyle = 'rgba(14,16,20,.82)'; g.fillRect(6, c.height - 12 - key.length * 18, 270, key.length * 18 + 6);
@@ -5182,8 +5221,8 @@ function drawBigMap() {
 function drawBoard() {
   const el = $('board'), cell = (tr, tag, x) => { const c = document.createElement(tag); c.textContent = x; tr.appendChild(c); return c; }, head = (box, l, r) => { const h = document.createElement('h3'), a = document.createElement('span'), b = document.createElement('span'); a.textContent = l; b.textContent = r; h.append(a, b); box.appendChild(h); }; el.textContent = '';
   // who is in the city
-  { const box = document.createElement('div'); box.className = 'c' + P.team; let mates = 0; bots.forEach(o => { if (o.team === P.team && !o.dead && !o.temp) mates++; }); head(box, CREWS[P.team].name, mates + ' on the street');
-    const tb = document.createElement('table'), rows = [[P.name + ' (you)', P.kills | 0, P.deaths | 0, P.heat | 0, true, P.rank || 1]]; for (const q in NET.remotes) { const r = NET.remotes[q]; rows.push([r.name, r.kills | 0, r.deaths | 0, r.heat | 0, false, r.rank | 0]); }
+  { const box = document.createElement('div'); box.className = 'c' + P.team; let mates = 0; bots.forEach(o => { if (o.team === P.team && !o.dead && !o.temp) mates++; }); head(box, SIDE(P.team).name, P.team === TEAM_COP ? 'on duty' : mates + ' on the street');
+    const tb = document.createElement('table'), rows = [[P.name + ' (you)' + (G.rivals ? ' · ' + SIDE(P.team).short : ''), P.kills | 0, P.deaths | 0, P.heat | 0, true, P.rank || 1]]; for (const q in NET.remotes) { const r = NET.remotes[q]; rows.push([r.name + (G.rivals ? ' · ' + SIDE(r.team).short : ''), r.kills | 0, r.deaths | 0, r.heat | 0, false, r.rank | 0]); }
     rows.sort((p, q) => q[1] - p[1]); const hr = document.createElement('tr'); ['Player', 'Rank', 'Kills', 'Deaths', 'Wanted'].forEach(x => cell(hr, 'th', x)); tb.appendChild(hr);
     rows.slice(0, 10).forEach(r => { const tr = document.createElement('tr'); if (r[4]) tr.className = 'me'; cell(tr, 'td', r[0]); cell(tr, 'td', r[5] || '–'); cell(tr, 'td', r[1]); cell(tr, 'td', r[2]); cell(tr, 'td', r[3] ? '★'.repeat(r[3]) : '–'); tb.appendChild(tr); }); box.appendChild(tb); el.appendChild(box); }
   // who holds what
@@ -5431,13 +5470,13 @@ function requestLock() { if (TEST || TOUCH.on) return; try { const p = canvas.re
 let SENS = .0022; try { const s = +localStorage.getItem('pc-sens'); if (s > .0004 && s < .01) SENS = s; } catch (e) {}
 function showOverlay(mode) {
   const o = $('overlay'); o.hidden = false; $('hud').hidden = mode !== 'paused'; $('o-stats').hidden = true; $('leave').hidden = mode !== 'paused';
-  const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = false; if (inGame) $('co-roster').hidden = true;
+  const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = $('set-sides').disabled = false; if (inGame) $('co-roster').hidden = true;
   if (mode === 'paused') { $('o-eyebrow').textContent = 'Paused'; $('o-text').textContent = NET.mode ? 'The city keeps moving while this menu is open.' : 'The city waits.'; $('deploy').textContent = 'Resume'; $('deploy').hidden = false;
     let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span><span>Hourly <b>$${hourlyNow().toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span>`; $('row-save').hidden = true; return; }
   $('row-save').hidden = false; saveLine();
   $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; crewLock(false);
   if (mode === 'lost') { $('o-eyebrow').textContent = 'Session closed'; $('o-text').textContent = 'The host left, so the session closed. Open a new lobby or play solo. Your cash and guns are kept.'; }
-  else { $('o-eyebrow').textContent = 'Open world · six crews · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
+  else { $('o-eyebrow').textContent = 'Open world · six crews and the police · solo or online'; $('o-text').textContent = MENU_TEXT; }
   if (!NET.mode) NET.lobby();
 }
 const MENU_TEXT = $('o-text').textContent;
@@ -5445,9 +5484,12 @@ const MENU_TEXT = $('o-text').textContent;
 // one button per crew, built from the crew table
 CREWS.forEach((c, t) => { const b = document.createElement('button'), n = document.createElement('b'), d = document.createElement('small'), m = document.createElement('i'); b.className = 'crew c' + t; b.id = 'crew' + t; b.type = 'button'; b.style.setProperty('--c', c.edge); b.style.setProperty('--c-rgb', c.halo ? '207,212,219' : c.rgb); b.setAttribute('aria-pressed', 'false');
   n.textContent = c.name; d.textContent = c.side + '. Holds ' + c.holds + '.'; m.textContent = 'YOUR CREW'; b.append(n, d, m); b.addEventListener('click', () => setCrew(t)); $('crews').appendChild(b); });
-function crewLock(v) { for (let t = 0; t < NCREW; t++) $('crew' + t).disabled = v; }
-function wearCrew(t) { P.team = clamp(t | 0, 0, NCREW - 1); for (let q = 0; q < NCREW; q++) $('crew' + q).setAttribute('aria-pressed', String(q === P.team)); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
-const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && +v >= 0 && +v < NCREW) return +v | 0; } catch (e) {} return -1; };
+{ const b = document.createElement('button'), n = document.createElement('b'), d = document.createElement('small'), m = document.createElement('i'); b.className = 'crew c' + TEAM_COP + ' cop'; b.id = 'crew' + TEAM_COP; b.type = 'button'; b.style.setProperty('--c', COPSIDE.edge); b.style.setProperty('--c-rgb', COPSIDE.rgb); b.setAttribute('aria-pressed', 'false');
+  n.textContent = 'Police'; d.textContent = 'Port Calder PD. A wage, pay for every gangster you take down, a cruiser and backup. No turf.'; m.textContent = 'YOUR SIDE'; b.append(n, d, m); b.addEventListener('click', () => setCrew(TEAM_COP)); $('crews').appendChild(b); }
+const SIDE_IDS = CREWS.map((c, t) => t).concat([TEAM_COP]);
+function crewLock(v) { SIDE_IDS.forEach(t => { $('crew' + t).disabled = v; }); $('crew' + TEAM_COP).disabled = v || (!!NET.lob && !G.rivals && !NET.lob.lead); }
+function wearCrew(t) { P.team = sideOf(t); SIDE_IDS.forEach(q => $('crew' + q).setAttribute('aria-pressed', String(q === P.team))); setLook(meChar, makeLook(hashStr(myName()) + 3, P.team)); vmSleeve.color.setHex(meChar.look.top); vmSkin.color.setHex(meChar.look.skin); }
+const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && ((+v >= 0 && +v < NCREW) || +v === TEAM_COP)) return +v | 0; } catch (e) {} return -1; };
 const ownCrew = () => { const c = savedCrew(); if (c >= 0 && c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
 function setCrew(t) { wearCrew(t); try { localStorage.setItem('pc-crew', String(P.team)); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); }
 // --- progress. Cash, guns, armor and the city's turf are written to this browser a moment after anything changes, and, on the Claude
@@ -5492,7 +5534,7 @@ const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_
 const sum36 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h.toString(36); };
 function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }, j = JSON.stringify({ c: d.c, w: d.w || [], n: d.n | 0, a: d.a | 0, cr: d.cr | 0, z: d.z || null, t: d.t || Date.now(), rp: d.rp | 0, b: d.b || [], pv: d.pv || null }); return 'PC-' + b64e(j) + '-' + sum36(j); }
 function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
-const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
+const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; G.rivals = $('set-sides').value === '1'; };
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 6); if (sv.sw && P.inv.glocks) P.inv.glocks.sw = true; }
   // what the player's turf made while they were away: an hour of income for every real hour, at most eight
@@ -5504,7 +5546,7 @@ function beginPlay() {
   Object.assign(P, { bank: (sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash) + away, armor: sv ? clamp(sv.a | 0, 0, 100) : 0, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
   hudCache.heat = 0; $('h-stars').hidden = true; closeShop(); $('dead').hidden = true; $('board').hidden = true; $('bigmap').hidden = true;
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
-  banner('Port Calder', 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
+  banner('Port Calder', P.team === TEAM_COP ? 'You are on the force · Port Calder PD' : 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
   P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
     : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
   if (!sv) P.hints.push([31, 'T opens your phone: call homies, the mechanic, the fixer, or line up work']);
@@ -5520,7 +5562,7 @@ $('deploy').addEventListener('click', () => {
   readSettings(); G.solo = true; startWorld(); beginPlay();
 });
 $('leave').addEventListener('click', leaveSession);
-$('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); });
+$('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-sides').addEventListener('change', () => { readSettings(); NET.say(); NET.lobby(); });
 $('set-view').addEventListener('change', () => { P.view = +$('set-view').value === 1 ? 1 : 3; try { localStorage.setItem('pc-view', String(P.view)); } catch (e) {} });
 $('set-gfx').addEventListener('change', () => { GFX.low = $('set-gfx').value === 'low'; try { localStorage.setItem('pc-gfx', GFX.low ? 'low' : 'high'); } catch (e) {} applyGfx(); resize(); });
 $('co-host').addEventListener('click', () => lobbySet({ lead: true, ready: true }));
@@ -5642,7 +5684,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

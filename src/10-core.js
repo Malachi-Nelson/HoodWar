@@ -29,6 +29,7 @@ const CFG = {
   hourly: { A: 100, B: 100, C: 160, D: 140, E: 100, F: 100, G: 140, H: 100, I: 120, J: 100 },   // what each neighbourhood pays its crew every hour of the day: the home turfs less, the middle of town more
   offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
   ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
+  cop: { pay: 150, rankPay: 15 },   // a police officer's wage every in-game hour, and how much more each rank adds
   rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150, deal: 250 } },   // what each thing is worth towards the next rank
 };
 // Six crews, each in its own colour, with a yard on the edge of town and one neighbourhood to start with; the middle of the city is anybody's.
@@ -86,4 +87,9 @@ const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];
 const CREW_PAINT = CREWS.map(c => c.paint), COP_PAINT = 0x14181f;
+// The police as a side a player can take. Not a crew: no turf, no yard, no letter on the top bar. A salary every hour, the pay for every
+// gangster taken down, a cruiser, backup on the phone, and the police helicopter on the airport pad.
+const COPSIDE = { name: 'Police', short: 'POLICE', side: 'Port Calder PD', holds: 'nothing: the whole city is the beat', color: 0x2f6bff, css: '#5c98ff', ink: '#7fb0ff', edge: '#5c98ff', rgb: '92,152,255', dark: 0x14224d, paint: COP_PAINT, glow: 0x5c98ff, on: '#06102a', sign: ['#0b1530', '#7fb0ff'], tops: [0x1c2a4a, 0x1c2a4a, 0x16213a, 0x1c1e22] };
+const SIDE = t => t === TEAM_COP ? COPSIDE : CREWS[t] || CREWS[0];      // a player's side, crew or police
+const sideOf = v => (v | 0) === TEAM_COP ? TEAM_COP : clamp(v | 0, 0, NCREW - 1);
 const HANDLES = ['Ghost', 'Tiny', 'Smoke', 'Lucky', 'Ace', 'Duke', 'Rook', 'Juno', 'Mako', 'Onyx', 'Vega', 'Nix', 'Zed', 'Kilo', 'Moss', 'Rio', 'Sable', 'Jinx', 'Tank', 'Dot', 'Wren', 'Cruz', 'Bishop', 'Echo', 'Pax', 'Lark', 'Ozzy', 'Remy', 'Sol', 'Trey', 'Ivy', 'Knox'];

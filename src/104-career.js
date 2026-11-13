@@ -80,6 +80,7 @@ function phoneItems(pg) {
   if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
+  if (P.team === TEAM_COP) return copItems(r, cd);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
   else if (r < UNLOCK.homies) out.push({ label: 'Homies', sub: 'Your crew picks up from rank ' + UNLOCK.homies, off: true });
   else if (cd(PH.homT, 60)) out.push({ label: 'Homies', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
@@ -98,6 +99,19 @@ function phoneItems(pg) {
   out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
   return out;
 }
+// an officer's phone: backup, a cruiser, and the shops; no fixer, no jobs, no heists, no lab
+function copItems(r, cd) {
+  const out = [], n = Math.max(2, homieCount(r));
+  if (homiesOut()) out.push({ label: 'Backup', sub: 'Officers with you · tap to stand them down', act: dismissHomies });
+  else if (cd(PH.homT, 60)) out.push({ label: 'Backup', sub: 'Call back in ' + cd(PH.homT, 60) + 's', off: true });
+  else out.push({ label: 'Backup', sub: n + ' officers come and work with you', act: () => { closeShop(); if (homiesOut()) return; PH.homT = G.time; if (AUTH()) { if (!GAME.homies(P, n)) note('Nobody could get to you here · try from a street', 'g'); } else NET.req('hm', n); } });
+  if (cd(PH.mechT, 20)) out.push({ label: 'Cruiser', sub: 'On the way · call back in ' + cd(PH.mechT, 20) + 's', off: true });
+  else out.push({ label: 'Cruiser', sub: 'A police ' + (r >= 6 ? 'SUV' : 'car') + ' at a kerb near you, lights and siren on H', act: () => { closeShop(); PH.mechT = G.time; sendCruiser(); } });
+  out.push({ label: 'Pay', sub: '$' + (CFG.cop.pay + CFG.cop.rankPay * r) + ' an hour, the going rate for every gangster you drop, $300 a star for a wanted player', off: true });
+  out.push(page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
+  return out;
+}
+function sendCruiser() { const sp = { t: (P.rank | 0) >= 6 ? 'suv' : 'sedan', c: COP_PAINT, ar: 1, en: 1, no: 0, gr: 1, bp: 0, ne: 0 }; if (AUTH()) { if (!GAME.pv(P, sp)) note('No kerb free near you · try a street', 'g'); } else NET.req('pv', CARS[sp.t].n, ALLPAINT.indexOf(COP_PAINT), 1, 1, 0, 1, 0, 0); }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
 function callDriveBy() { if (!P.driveby) return; P.driveby = false; P.streak = 0; if (AUTH()) { if (!GAME.callDriveBy(P)) P.driveby = true; } else NET.req('db'); }
 function callHomies() { closeShop(); if (homiesOut() || (P.rank || 1) < UNLOCK.homies) return; PH.homT = G.time; if (AUTH()) { if (!GAME.homies(P, homieCount(P.rank))) note('Nobody could get to you here · try from a street', 'g'); } else NET.req('hm', homieCount(P.rank)); }
@@ -109,8 +123,8 @@ function sendPV() { const v = P.pv; if (!v || !CARS[v.t]) return; if (AUTH()) { 
 
 // --- homies: a few of your crew who walk with you, get in the car with you, and shoot at whoever is shooting at you
 GAME.homies = (a, n) => {   // on the machine that runs the world
-  if (!a || a.dead || a.gone || !isCrew(a.team)) return 0; let have = 0, made = 0; bots.forEach(b => { if (b.homie === a && !b.dead) have++; });
-  for (let k = have; k < n; k++) { const s = homieSpot(a); if (!s) break; const b = spawnBot(a.team, s.x + rs(1), s.y, s.z + rs(1), { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'smg', 'rifle']) }); if (!b) break;
+  if (!a || a.dead || a.gone || !(isCrew(a.team) || a.team === TEAM_COP)) return 0; let have = 0, made = 0; const cop = a.team === TEAM_COP; bots.forEach(b => { if (b.homie === a && !b.dead) have++; });
+  for (let k = have; k < n; k++) { const s = homieSpot(a); if (!s) break; const b = spawnBot(a.team, s.x + rs(1), s.y, s.z + rs(1), cop ? { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun']), name: 'Officer' } : { temp: true, wpn: pick(rand, ['smg', 'rifle', 'shotgun', 'smg', 'rifle']) }); if (!b) break;
     Object.assign(b, { homie: a, until: G.time + 300, skill: 1.3, hp: 160, react: .2, yaw: yawOf(a.x - s.x, a.z - s.z) }); made++; }
   if (made) GAME.ev('hm', GAME.ref(a), made); return made;
 };
@@ -181,7 +195,7 @@ const UPG = {   // level costs, and what each level does in words
 };
 function modItems(pg) {
   const c = P.car; if (!c) return [];
-  if (pg === 'paint') return [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]].concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
+  if (pg === 'paint') return (isCrew(P.team) ? [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]] : []).concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
     : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
   const out = [], mine = c.pv === P;
   out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });

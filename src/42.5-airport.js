@@ -116,6 +116,7 @@ function genAirport(bridgeEnds) {
     paint(px - 2.6, pz - 3.6, px - 1.6, pz + 3.6, WHT, CURB + .06); paint(px + 1.6, pz - 3.6, px + 2.6, pz + 3.6, WHT, CURB + .06); paint(px - 1.6, pz - .5, px + 1.6, pz + .5, WHT, CURB + .06);
     const pad = { x: px, z: pz, yaw: -PI / 2, kind, y: CURB, name: 'Port Calder International' }; AIRPORT.pads.push(pad); if (kind === 'gun') AIRPORT.gun = pad; });   // 'free': kept clear for the helicopters people own
   AIRPORT.guards = [{ x: 954, z: 22, yaw: PI / 2 }, { x: 955, z: 40, yaw: PI / 2 }, { x: 979, z: 18, yaw: 0 }];
+  SPAWNS[TEAM_COP] = [{ x: 942, z: 24, yaw: -PI / 2 }, { x: 942, z: 36, yaw: -PI / 2 }, { x: LINE.x - 8.3, z: LINE.sz - 3, yaw: 0 }, { x: LINE.x + 8.3, z: LINE.sz + 3, yaw: PI }];   // a police player's start: the air support hangar, or outside the El station
   // and two in town, on open ground a helicopter can be set down on: the strip mall's car park and the container yard at the docks
   [[251, 219, 'the strip mall car park'], [649, 303, 'the docks']].forEach(q => { const [px, pz, nm] = q; paintRing(px, pz, 7.4, .5, 0xd9b13a, CURB + .02); paint(px - 2.6, pz - 3.6, px - 1.6, pz + 3.6, WHT, CURB + .02); paint(px + 1.6, pz - 3.6, px + 2.6, pz + 3.6, WHT, CURB + .02); paint(px - 1.6, pz - .5, px + 1.6, pz + .5, WHT, CURB + .02);
     AIRPORT.city.push({ x: px, z: pz, yaw: 0, y: CURB, kind: 'city', name: nm }); });

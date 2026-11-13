@@ -32,10 +32,14 @@ Plays with a keyboard and mouse, or on a phone or tablet held sideways. The cont
 - **Getting out.** Jump out up high and a parachute opens. Ditch in the water and you swim ashore.
 - **Police helicopter.** At three stars a police helicopter joins the chase: it circles where you were last seen with two marksmen in the doors and, after dark, a searchlight on you. It only knows what it can see, so get under cover to lose it, or shoot it down.
 
+## Playing the police
+
+Pick **Police** under the crews on the menu. Officers start outside the El station (or at the airport police hangar), get an SMG and armor from the armory every time they come back (a rifle too from rank 4), and are never wanted. The crews shoot at an officer on sight. Pay: a wage every in-game hour, the going rate for every gangster you take down, and $300 a star for a wanted player. Killing a bystander costs $250. The phone calls **Backup** (officers who walk with you) and a **Cruiser** with lights and siren (H); the airport police's gunship is yours to take. Dispatch tells you on the radio when another player becomes wanted, and wanted players show on your radar.
+
 ## Rank, phone, businesses and your car
 
-- **Rank.** Kills (more for a headshot), taking neighbourhoods, jobs, robberies, buying businesses and upgrading cars all earn RP, shown in the blue badge and bar under your cash. Ranking up opens guns in the gun shop (Pump Shotgun at rank 2, Assault Rifle at 4, Marksman Rifle at 6), more homies, the fixer, and +5 health every other rank.
-- **The phone** (T, or PHONE on a touch screen). **Homies**: two to four of your crew come round the corner, walk with you, get in your car and shoot at whoever is shooting at you (from rank 2). **Mechanic**: brings your car to a kerb near you. **Fixer**: the police forget you, $200 a star (from rank 3). **Work**: lines up a job straight away.
+- **Rank.** Kills (more for a headshot), taking neighbourhoods, jobs, robberies, buying businesses and upgrading cars all earn RP, shown in the blue badge and bar under your cash. Ranking up opens guns in the gun shop (Pump Shotgun at rank 2, Dual Glocks at 3, Assault Rifle at 4, the Glock switch at 5, Marksman Rifle at 6, grenade launcher at 7, M60 at 8, bazooka at 10), more homies, the fixer, and +5 health every other rank.
+- **The phone** (T, or PHONE on a touch screen). **Homies**: two to four of your crew come round the corner, walk with you, get in your car and shoot at whoever is shooting at you (from rank 2). **Mechanic**: brings your car to a kerb near you. **Fixer**: the police forget you, $200 a star (from rank 3). **Work**: lines up a job straight away. **Heists**, **Drug business**, **Online · cars** and **Aircraft** are on it too.
 - **Businesses.** A shop or two in every neighbourhood will sell to the crew that runs it; the ones for sale have a green ring at the door. Each pays its owner every in-game hour while your crew holds the neighbourhood, and nothing while somebody else does.
 - **Car shop.** Stop in your crew's garage, or the car shop on Gas & Auto Row: repairs, resprays (which also lose the police, if they cannot see you go in), armor plating, an engine tune, and **Make it yours**, which keeps the car on file. Your car waits at a kerb near you when you start, and the mechanic brings it, upgrades and all.
 
@@ -57,7 +61,7 @@ Cash, guns, grenades, armour, your rank, your businesses, your car, your helicop
 
 Everyone on the plain link shares one public room. **Make a private room** gives you a link with a code for just your group.
 
-Everyone in a session plays on the leader's crew, and players cannot hurt each other. The leader's browser runs the city (bots, traffic, turf, jobs, police), so the session starts from the leader's saved turf, and when the leader leaves, the session closes for everyone. Each player keeps their own cash, guns, rank, businesses and car; turf income, job rewards and the RP for them are paid to everyone in the session, and homies follow whoever called them.
+The leader picks **Players** before starting: **One crew** puts everyone in the leader's crew (or on the force, if the leader picked the police), and players cannot hurt each other. **Rival sides** lets everyone pick their own crew or the police: then each side takes turf for itself, each player is paid for their own side's neighbourhoods, and anyone on another side is fair game. The leader's browser runs the city (bots, traffic, turf, jobs, police), so the session starts from the leader's saved turf, and when the leader leaves, the session closes for everyone. Each player keeps their own cash, guns, rank, businesses and car; turf income, job rewards and the RP for them are paid to everyone in the session, and homies follow whoever called them.
 
 Each player's browser posts its state to a free public MQTT relay, which passes it to the others in the room. There is no game server and nothing connects browser to browser.
 

@@ -1,7 +1,7 @@
 /* =====================================================================
    8. STATE + COMBAT
    ===================================================================== */
-const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
+const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, rivals: false, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
 // each turf: who holds it (-1 nobody), which crew is in the middle of taking it and how far along they are, and how many of each crew stand in it
 // ctrl: how firmly the holder runs the neighbourhood, 0..100. Hits against them in it wear it down, and a hold worn thin is quicker to break.
 const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false, ctrl: 100, calmT: -99, warnT: -99 }));
@@ -16,7 +16,8 @@ const P = { kind: 'me', team: 0, name: 'Player', slot: 0, rp: 0, rank: 1, biz: n
   heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: 60, lky: CURB, lkz: 300 };
 function eachActor(fn) { fn(P); for (const k in NET.remotes) fn(NET.remotes[k]); for (let i = 0; i < bots.length; i++) fn(bots[i]); }
 const isCrew = t => t >= 0 && t < NCREW;
-const rival = (a, b) => a !== b && isCrew(a.team) && isCrew(b.team) && a.team !== b.team;          // any two people from different crews
+const copPlayer = a => a.team === TEAM_COP && a.kind !== 'bot';
+const rival = (a, b) => a !== b && ((isCrew(a.team) && isCrew(b.team) && a.team !== b.team) || (isCrew(a.team) && copPlayer(b)) || (copPlayer(a) && isCrew(b.team)));   // any two people from different crews, and the crews against a player on the force
 const sameSide = (a, b) => a.team === b.team && a.team !== TEAM_CIV;                                 // crew with crew, police with police
 const wanted = a => a.kind !== 'bot' && a.heat > 0;
 // who a bot will open fire on: any other crew, a wanted player if it is police, and whoever last shot it across the crew/police line
@@ -116,7 +117,7 @@ function explode(x, y, z, owner, power, wid) {
     PROPS.forEach(p => { if (!p.down && hyp(p.x - x, p.z - z) < R * .7) { if (knockProp(p, p.x - x, p.z - z)) GAME.onKnock(p, null); } });
     GAME.noise(x, z, owner, 60); if (owner && owner.kind !== 'bot') GAME.crime(owner, 12, 0, 1);
   }
-  if (!P.dead) { const d = hyp(P.x - x, P.y + 1 - y, P.z - z); if (d < R && (!owner || owner === P || !isCrew(owner.team) || owner.team !== P.team)) hurtPlayer(170 * power * (1 - d / (R * 1.15)) * (owner === P ? .7 : 1), owner, wid || 'boom'); }
+  if (!P.dead) { const d = hyp(P.x - x, P.y + 1 - y, P.z - z); if (d < R && (!owner || owner === P || !(isCrew(owner.team) || owner.team === TEAM_COP) || owner.team !== P.team)) hurtPlayer(170 * power * (1 - d / (R * 1.15)) * (owner === P ? .7 : 1), owner, wid || 'boom'); }
 }
 function blowCar(c) {
   if (c.wreck) return; c.wreck = true; c.wreckT = 0; c.burn = 0; c.hp = 0; c.vx *= .3; c.vz *= .3; c.ai = null; c.inp.thr = 0;
