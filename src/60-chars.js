@@ -129,8 +129,10 @@ function poseChar(c, s, dt) {
 function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; }
 
 // name tags over other players
-function nameTag(text, css, down) {
-  const c = texCanvas(256, 64), x = c.getContext('2d'); x.font = '700 34px "Saira Condensed", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)'; x.strokeText(text, 128, 34); x.fillStyle = css; x.fillText(text, 128, 34);
+function nameTag(text, css, down, rank) {   // rank: drawn in a little badge before the name, the way online players show theirs
+  const c = texCanvas(256, 64), x = c.getContext('2d'); x.font = '700 34px "Saira Condensed", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)';
+  let cx = 128; if (rank > 0) { const w = Math.min(196, x.measureText(text).width); cx = 128 + 22; const bx = cx - w / 2 - 24; x.beginPath(); x.arc(bx, 33, 19, 0, Math.PI * 2); x.fillStyle = '#2f6fd6'; x.fill(); x.lineWidth = 3; x.strokeStyle = '#eaf2ff'; x.stroke(); x.fillStyle = '#fff'; x.font = '700 24px "Saira Condensed", system-ui, sans-serif'; x.fillText(String(rank), bx, 35); x.font = '700 34px "Saira Condensed", system-ui, sans-serif'; x.lineWidth = 6; x.strokeStyle = 'rgba(0,0,0,.85)'; }
+  x.strokeText(text, cx, 34); x.fillStyle = css; x.fillText(text, cx, 34);
   const tex = new T.CanvasTexture(c), sp = new T.Sprite(new T.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: .92, fog: false })); sp.scale.set(1.5, .375, 1); sp.renderOrder = 5; scene.add(sp); return sp;
 }
 function killTag(sp) { if (!sp) return; scene.remove(sp); sp.material.map.dispose(); sp.material.dispose(); }

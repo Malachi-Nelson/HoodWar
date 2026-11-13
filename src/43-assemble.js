@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------
    4d. Put the city together: one generator per block, then kerbs, lamps, parking and the walking graph.
    --------------------------------------------------------------------- */
-const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgJd', 'hhcwYid'];   // one letter per block, west to east, north row first
+const DIST = ['hhwNowi', 'hPKtzwB', 'hlSMtLi', 'AwCkwwD', 'hpwwgJd', 'QhcwYiR'];   // one letter per block, west to east, north row first
 const RING = [];
 let mallLightAt = null;
 for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
@@ -14,8 +14,10 @@ for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) {
     case 'z': genCivic(L); break;
     case 'i': genIndustrial(L, false); break;
     case 'J': genIndustrial(L, true); break;
-    case 'N': genYard(L, 2, false, { h: 8.2, mat: 'brick2', col: 0x6a5a8a, col2: 0x8a7a9a, kind: 'n', style: 'north', tag: 'tagN', motto: 'NORTH SIDE', shop: 'N.G. MOTORS', station: 2 }); break;
-    case 'Y': genYard(L, 3, true, { h: 9, mat: 'corr', col: 0xa89a3a, col2: 0x8a7f4a, kind: 'y', style: 'steel', tag: 'tagS', motto: 'SOUTH SIDE', shop: 'YARD WORKS', station: 0 }); break;
+    case 'N': genYard(L, 2, false, { h: 8.2, mat: 'brick2', col: 0x4a6650, col2: 0x7a8f7e, kind: 'n', style: 'crew2', tag: 'tag2', motto: 'NORTH SIDE', shop: 'NORTH SIDE MOTORS', station: 2 }); break;
+    case 'Y': genYard(L, 3, true, { h: 9, mat: 'corr', col: 0xa89a3a, col2: 0x8a7f4a, kind: 'y', style: 'crew3', tag: 'tag3', motto: 'SOUTH SIDE', shop: 'YARD WORKS', station: 0 }); break;
+    case 'Q': genYard(L, 4, false, { h: 7.6, mat: 'brick', col: 0xb9b5ab, col2: 0x9a978e, kind: 'q', style: 'crew4', tag: 'tag4', motto: 'WEST END', shop: 'WEST END AUTO', station: 1 }); break;
+    case 'R': genYard(L, 5, true, { h: 9.4, mat: 'corr', col: 0x3a3d44, col2: 0x4a4d54, kind: 'r', style: 'crew5', tag: 'tag5', motto: 'LAKESHORE', shop: 'LAKESHORE AUTO', station: 0 }); break;
     case 'K': genMarket(L); break;
     case 'd': genDocks(L, false); break;
     case 'D': genDocks(L, true); ZONES.push({ id: 'E', name: 'The Docks', x: L.cx, z: L.cz, r: 18 }); navNode(L.cx, CURB, L.cz); break;

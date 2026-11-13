@@ -80,9 +80,9 @@ function carProps(c, px, pz, R, sp) {
 function stepCar(c, dt, inp) {
   const S = c.spec, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw);
   let vf = c.vx * fx + c.vz * fz, vl = c.vx * rx + c.vz * rz; const sp = Math.abs(vf), dead = c.wreck || c.hp <= 0 || c.burn > 0;
-  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1;
+  const thr = dead ? 0 : inp.thr, limp = c.hp < S.hp * .25 ? .6 : 1, tn = 1 + (c.tune | 0) * .12;   // tn: a car-shop engine tune
   c.steer = lerp(c.steer, inp.steer, Math.min(1, dt * (Math.abs(inp.steer) > Math.abs(c.steer) ? 5.5 : 9)));
-  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
+  if (thr > 0) { if (vf < -.6) vf += 26 * thr * dt; else vf += S.accel * limp * tn * thr * Math.max(0, 1 - Math.pow(Math.max(0, vf) / (S.vmax * limp * tn), 1.6)) * dt * (sp < 6 ? 1.25 : 1); }
   else if (thr < 0) { if (vf > .6) vf += 27 * thr * dt; else vf += S.accel * .6 * thr * Math.max(0, 1 + vf / 13) * dt; }
   vf -= vf * (.16 + .0011 * sp) * dt; if (!thr && sp < 1.2) vf -= vf * Math.min(1, dt * 2.5);
   if (inp.hb) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 8 * dt);

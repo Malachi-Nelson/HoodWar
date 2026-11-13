@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------
-   4c. Landmarks: the ten turfs, the four crew yards, and the blocks that give the city its shape.
+   4c. Landmarks: the ten turfs, the crew yards, and the blocks that give the city its shape.
    --------------------------------------------------------------------- */
 // a stall under an awning: the counter faces `face`, the vendor works behind it, customers stop in front
 function stall(x, z, face, col) {
@@ -48,7 +48,7 @@ function genCourts(L) {
   fence(fx0, fz0, cx - 3, fz0, H, 'link'); fence(cx + 3, fz0, fx1, fz0, H, 'link'); fence(fx0, fz1, cx - 3, fz1, H, 'link'); fence(cx + 3, fz1, fx1, fz1, H, 'link');
   fence(fx0, fz0, fx0, cz - 2.5, H, 'link'); fence(fx0, cz + 2.5, fx0, fz1, H, 'link'); fence(fx1, fz0, fx1, cz - 2.5, H, 'link'); fence(fx1, cz + 2.5, fx1, fz1, H, 'link');
   for (let k = 0; k < 3; k++) { addBox(cx - 26, cx - 8, CURB, CURB + .4 * (k + 1), fz0 - 5 + k * 1.1, fz0 - 3.9 + k * 1.1, 'flat', { col: 0x9aa0a3, a: false, n: false }); addBox(cx + 8, cx + 26, CURB, CURB + .4 * (k + 1), fz0 - 5 + k * 1.1, fz0 - 3.9 + k * 1.1, 'flat', { col: 0x9aa0a3, a: false, n: false }); }
-  building(L.x0 + 3, L.z1 - 16, L.x0 + 25, L.z1 - 3, 5, { mat: 'brick2', col: 0xb5694f }); sign('EMBER ROW REC CENTER', 'white', L.x0 + 14, CURB + 4, L.z1 - 16.08, 12, 1.1, 'n'); sign('EMBER ROW', 'tagE', L.x0 + 25.08, CURB + 2.2, L.z1 - 9.5, 8, 2, 'e');
+  building(L.x0 + 3, L.z1 - 16, L.x0 + 25, L.z1 - 3, 5, { mat: 'brick2', col: 0xb5694f }); sign('EMBER ROW REC CENTER', 'white', L.x0 + 14, CURB + 4, L.z1 - 16.08, 12, 1.1, 'n'); FRONTS.push({ x: L.x0 + 14, z: L.z1 - 17.8, name: 'EMBER ROW REC CENTER' }); sign(CREWS[0].short, 'tag0', L.x0 + 25.08, CURB + 2.2, L.z1 - 9.5, 8, 2, 'e');
   ground(L.x1 - 22, L.z1 - 18, L.x1 - 4, L.z1 - 4, 'dirt');                                           // playground
   deco(L.x1 - 19, L.x1 - 18.8, CURB, CURB + 2.6, L.z1 - 15, L.z1 - 14.8, 0xb3261e); deco(L.x1 - 13, L.x1 - 12.8, CURB, CURB + 2.6, L.z1 - 15, L.z1 - 14.8, 0xb3261e); deco(L.x1 - 19, L.x1 - 12.8, CURB + 2.6, CURB + 2.75, L.z1 - 15, L.z1 - 14.8, 0xb3261e);
   addBox(L.x1 - 10, L.x1 - 7, CURB, CURB + 1.5, L.z1 - 10, L.z1 - 7, 'flat', { col: 0xd9a521, a: false }); addBox(L.x1 - 7, L.x1 - 4.4, CURB, CURB + .7, L.z1 - 9.3, L.z1 - 7.7, 'flat', { col: 0x1f4e8c, a: false, n: false });
@@ -66,9 +66,9 @@ function carport(x0, z0, x1, z1, col) { [[x0, z0], [x1, z0], [x0, z1], [x1, z1]]
 function genEmberBase(L) {
   ground(L.x0, L.z0, L.x1, L.z1, 'lot');
   building(L.x0 + 5, L.z0 + 5, L.x0 + 31, L.z0 + 25, 7.4, { mat: 'brick', col: 0x8a3f2c, tank: true, kind: 'e' });
-  sign('EMBER ROW', 'ember', L.x0 + 18, CURB + 5.6, L.z0 + 25.08, 13, 2.2, 's'); sign('EMBER ROW', 'tagE', L.x0 + 31.08, CURB + 2.4, L.z0 + 15, 10, 2.6, 'e'); sign('WEST SIDE', 'tagW', L.x0 + 10, CURB + 2, L.z0 + 25.08, 6, 1.5, 's');
+  sign(CREWS[0].name.toUpperCase(), 'crew0', L.x0 + 18, CURB + 5.6, L.z0 + 25.08, 13, 2.2, 's'); sign(CREWS[0].short, 'tag0', L.x0 + 31.08, CURB + 2.4, L.z0 + 15, 10, 2.6, 'e'); sign('WEST SIDE', 'tagW', L.x0 + 10, CURB + 2, L.z0 + 25.08, 6, 1.5, 's');
   deco(L.x0 + 17, L.x0 + 19, CURB, CURB + 2.4, L.z0 + 25, L.z0 + 25.06, 0x2a1a14);
-  building(L.x1 - 24, L.z0 + 4, L.x1 - 4, L.z0 + 16, 4.4, { mat: 'brick2', col: 0x9c5a47, kind: 'e' }); sign('E.R. AUTO', 'ember', L.x1 - 14, CURB + 3.6, L.z0 + 16.08, 8, 1, 's'); deco(L.x1 - 17, L.x1 - 11, CURB, CURB + 3, L.z0 + 16, L.z0 + 16.06, 0x55595e);
+  building(L.x1 - 24, L.z0 + 4, L.x1 - 4, L.z0 + 16, 4.4, { mat: 'brick2', col: 0x9c5a47, kind: 'e' }); sign('WEST SIDE AUTO', 'crew0', L.x1 - 14, CURB + 3.6, L.z0 + 16.08, 8, 1, 's'); deco(L.x1 - 17, L.x1 - 11, CURB, CURB + 3, L.z0 + 16, L.z0 + 16.06, 0x55595e);
   carport(L.x0 + 6, L.z1 - 14.5, L.x0 + 27, L.z1 - 6.5, CREWS[0].dark);
   [L.z0 + 5, L.z0 + 18, L.z1 - 9].forEach(z => BASECARS[0].push({ x: L.x1 + WALK + 1.15, z, yaw: PI }));        // the crew's cars wait at the kerb outside the east gate
   BASECARS[0].push({ x: L.x0 + 16.5, z: L.z1 - 10.5, yaw: -PI / 2, lot: true });
@@ -87,7 +87,7 @@ function boat(x, z) { addBox(x - 1.3, x + 1.3, CURB + .7, CURB + 2, z - 3.6, z +
 function genTideBase(L) {
   ground(L.x0, L.z0, L.x1, L.z1, 'lot');
   warehouse(L.x1 - 42, L.z0 + 5, L.x1 - 5, L.z0 + 27, 9.5, 's', { col: 0x2f6f96 });
-  sign('TIDEWATER MARINE', 'tide', L.x1 - 23.5, CURB + 7.8, L.z0 + 27.08, 17, 2, 's'); sign('TIDEWATER', 'tagT', L.x1 - 42.08, CURB + 2.6, L.z0 + 16, 11, 2.6, 'w'); sign('DOCK SIDE', 'tagW', L.x1 - 34, CURB + 2.2, L.z0 + 4.92, 6, 1.5, 'n');
+  sign('TIDEWATER MARINE', 'crew1', L.x1 - 23.5, CURB + 7.8, L.z0 + 27.08, 17, 2, 's'); FRONTS.push({ x: L.x1 - 23.5, z: L.z0 + 28.8, name: 'TIDEWATER MARINE' }); sign(CREWS[1].short, 'tag1', L.x1 - 42.08, CURB + 2.6, L.z0 + 16, 11, 2.6, 'w'); sign('DOCK SIDE', 'tagW', L.x1 - 34, CURB + 2.2, L.z0 + 4.92, 6, 1.5, 'n');
   boat(L.x0 + 8, L.z0 + 12); boat(L.x0 + 14, L.z0 + 13); boat(L.x0 + 24, L.z0 + 11);
   carport(L.x0 + 30, L.z1 - 14.5, L.x0 + 51, L.z1 - 6.5, CREWS[1].dark);
   [L.z0 + 5, L.z0 + 18, L.z1 - 9].forEach(z => BASECARS[1].push({ x: L.x0 - WALK - 1.15, z, yaw: 0 }));
@@ -103,13 +103,13 @@ function genTideBase(L) {
   for (let k = 0; k < 3; k++) cyl(L.x0 + 30 + k * 1.3, CURB, CURB + 1.1, L.z0 + 4, .45, 'flat', pick(W, [0x1f4e8c, 0x30363a, 0xd9a521]), { a: false, seg: 8 });
   navNode(L.x0 + 2, CURB, g); navNode(L.x0 + 17, CURB, L.z1 - 2); navNode(L.x0 + 24, CURB, g + 4); navNode(L.x1 - 46, CURB, L.z0 + 30); navNode(L.x1 - 14, CURB, L.z1 - 16);
 }
-// The two newer crews keep the same kind of yard as the first two: a clubhouse, a workshop, a carport, a fence with two gates.
+// The other crews keep the same kind of yard as the first two: a clubhouse, a workshop, a carport, a fence with two gates.
 // `flip` mirrors it east to west, so its street gate can face the middle of town from either side.
 function genYard(L, t, flip, o) {
   const C = CREWS[t], X = d => flip ? L.x1 - d : L.x0 + d, bx = (a, b) => [Math.min(X(a), X(b)), Math.max(X(a), X(b))], sd = flip ? -1 : 1, name = C.name.toUpperCase();
   ground(L.x0, L.z0, L.x1, L.z1, 'lot');
   { const b = bx(5, 31); building(b[0], L.z0 + 5, b[1], L.z0 + 25, o.h, { mat: o.mat, col: o.col, tank: !flip, kind: o.kind }); }
-  sign(name, o.style, X(18), CURB + 5.6, L.z0 + 25.08, 13, 2.2, 's'); sign(name, o.tag, X(31) + sd * .08, CURB + 2.4, L.z0 + 15, 10, 2.6, flip ? 'w' : 'e'); sign(o.motto, 'tagW', X(10), CURB + 2, L.z0 + 25.08, 6, 1.5, 's');
+  sign(name, o.style, X(18), CURB + 5.6, L.z0 + 25.08, 13, 2.2, 's'); sign(C.short, o.tag, X(31) + sd * .08, CURB + 2.4, L.z0 + 15, 10, 2.6, flip ? 'w' : 'e'); sign(o.motto, 'tagW', X(10), CURB + 2, L.z0 + 25.08, 6, 1.5, 's');
   deco(X(18) - 1, X(18) + 1, CURB, CURB + 2.4, L.z0 + 25, L.z0 + 25.06, 0x1c1a18);
   { const b = bx(56, 76); building(b[0], L.z0 + 4, b[1], L.z0 + 16, 4.4, { mat: 'brick2', col: o.col2, kind: o.kind }); sign(o.shop, o.style, X(66), CURB + 3.6, L.z0 + 16.08, 8, 1, 's'); deco(X(66) - 3, X(66) + 3, CURB, CURB + 3, L.z0 + 16, L.z0 + 16.06, 0x55595e); }
   { const b = bx(6, 27); carport(b[0], L.z1 - 14.5, b[1], L.z1 - 6.5, C.dark); }
@@ -137,7 +137,7 @@ function genMarket(L) {
   cart(L.cx + 21, L.z1 - 4.5, 'n', 'ROASTED CORN', 'gold');
   [[L.x0 + 20, L.z0 + 31], [L.x1 - 20, L.z0 + 31], [L.x0 + 15, L.z1 - 6], [L.x1 - 13, L.z1 - 12]].forEach(q => { crate(q[0], q[1], 1.1); crate(q[0] + 1.2, q[1] + .3, .8); });
   planter(L.x0 + 12, L.z1 - 13, 1.2); planter(L.cx - 14, L.z1 - 3, 1.2); bench(L.cx - 6, L.z1 - 4, true); bench(L.cx + 8, L.z1 - 4, true); bench(L.cx, L.z0 + 27, true);
-  sign('UPTOWN MARKET', 'green', L.cx, CURB + 3.3, L.z0 + 21.06, 12, 1.4, 's'); sign('NORTHGATE', 'tagN', L.cx - 24, CURB + 2.2, L.z0 + 21.06, 8, 2, 's');
+  sign('UPTOWN MARKET', 'green', L.cx, CURB + 3.3, L.z0 + 21.06, 12, 1.4, 's'); sign(CREWS[2].short, 'tag2', L.cx - 24, CURB + 2.2, L.z0 + 21.06, 8, 2, 's');
   boombox(L.cx + 12, L.z0 + 30, 1); POI.push({ k: 'hang', x: L.cx - 12, z: zc + 9, cap: 4 }, { k: 'hang', x: L.cx + 15, z: zc - 3, cap: 3 }, { k: 'hang', x: L.cx - 20, z: zc - 6, cap: 3 }); ROOSTS.push([L.cx - 4, zc + 2], [L.cx + 8, L.z1 - 9]);
   ZONES.push({ id: 'G', name: 'Uptown Market', x: L.cx, z: zc, r: 15 });
   navNode(L.cx, CURB, zc); navNode(L.cx - 19, CURB, zc); navNode(L.cx + 19, CURB, zc); navNode(L.cx, CURB, L.z1 - 2); navNode(L.cx - 24, CURB, L.z0 + 30); navNode(L.cx + 24, CURB, L.z0 + 30); navNode(L.x0 + 2, CURB, zc); navNode(L.x1 - 2, CURB, zc);
@@ -216,7 +216,7 @@ function genProjects(L) {
   dumpster(L.x0 + 26, L.z0 + 8, false); dumpster(L.x1 - 26, L.z0 + 9, false); bench(L.x0 + 26, L.cz + 19, true); bench(L.cx + 6, L.cz + 19, true);
   POI.push({ k: 'hoop', x: L.x0 + 7.6, z: L.z1 - 8, dir: 1, cap: 2 }, { k: 'hang', x: L.x0 + 26, z: L.z0 + 30, cap: 4 }, { k: 'hang', x: L.cx + 10, z: L.z0 + 24, cap: 3 }); boombox(L.cx - 4, L.cz + 21, 1);
   [[L.x0 + 26, L.z0 + 24], [L.cx + 10, L.z0 + 14], [L.cx + 10, L.z0 + 34], [L.x0 + 24, L.z1 - 6], [L.cx - 2, L.z1 - 6]].forEach(q => tree(q[0], q[1], 1.3));
-  sign('EMBER ROW', 'tagE', L.x0 + 21.08, CURB + 2.2, L.z0 + 30, 9, 2.2, 'e'); sign('CALDER HOMES', 'white', L.x0 + 39, CURB + 3.4, L.z0 + 43.08, 9, 1, 's');
+  sign(CREWS[4].short, 'tag4', L.x0 + 21.08, CURB + 2.2, L.z0 + 30, 9, 2.2, 'e'); sign('CALDER HOMES', 'white', L.x0 + 39, CURB + 3.4, L.z0 + 43.08, 9, 1, 's');
   navNode(L.x0 + 26, CURB, L.cz + 15.5); navNode(L.cx + 10, CURB, L.cz + 15.5); navNode(L.x0 + 26, CURB, L.z0 + 2.5); navNode(L.cx + 10, CURB, L.z0 + 2.5); navNode(L.x1 - 15, CURB, L.z1 - 16); navNode(L.x0 + 26, CURB, L.z1 - 2);
 }
 function genGas(L) {
@@ -256,7 +256,7 @@ function genMall(L) {
   wall('z', x0, x0 + t, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc); wall('z', x1 - t, x1, z0 + t, z1 - t, y, top, [[cz - 4, cz + 4, 0, 4.2]], 'concrete', wc);
   FOOT.push([x0, z0, x1, z1, 'm']);
   sign('CALDER MALL', 'cyan', cx, y + 7.6, z0 - .06, 20, 2.6, 'n'); sign('CALDER MALL', 'cyan', cx, y + 7.6, z1 + .06, 20, 2.6, 's'); sign('CALDER MALL', 'cyan', x0 - .06, y + 7.6, cz, 16, 2.2, 'w'); sign('CALDER MALL', 'cyan', x1 + .06, y + 7.6, cz, 16, 2.2, 'e');
-  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); };
+  let sn = 0; const msign = (...a) => { const t = MALL_SHOPS[sn++ % MALL_SHOPS.length]; sign(t, styleOf(t), ...a); if (a[1] < CURB + 5) FRONTS.push({ x: a[0] + FACE[a[5]][0] * 1.6, z: a[2] + FACE[a[5]][1] * 1.6, name: t }); };   // ground-floor shops can be bought
   [[x0 + t, cx - 8, z0 + t, cz - 7], [cx + 8, x1 - t, z0 + t, cz - 7], [x0 + t, cx - 8, cz + 7, z1 - t], [cx + 8, x1 - t, cz + 7, z1 - t]].forEach((q, k) => {
     addBox(q[0], q[1], y, top - .1, q[2], q[3], 'shop', { tv: 5.2, tu: 8.2, col: 0xd9d2c4, faces: 15 });
     const west = k % 2 === 0, north = k < 2, fx = west ? q[1] : q[0], fz = north ? q[3] : q[2];                    // the two faces that look onto the concourses

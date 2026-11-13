@@ -96,6 +96,13 @@ await shotOf(B, '/tmp/mpB.png');
 const rob = await B.evaluate(() => { const g = __pc, P = g.P, r = g.ROBS[2]; P.x = r.x; P.z = r.z; P.y = .15; P.vx = P.vz = 0; g.setWeapon('pistol'); g.step(2, 1 / 30); return { cash: P.cash, open: g.tillOpen(2) }; });
 await pump(6); await B.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' })); }); await pump(75);
 log('stick-up by client', { before: rob, after: await B.evaluate(() => ({ cash: __pc.P.cash, open: __pc.tillOpen(2), heat: __pc.P.heat, banner: document.querySelector('#h-banner .big').textContent })), hostTill: await A.evaluate(() => __pc.tillOpen(2)), hostFeed: await A.textContent('#feed') });
+// v4: RP reaches the client through the host; the client calls homies and has the mechanic bring its car
+log('client RP', await B.evaluate(() => ({ rp: __pc.P.rp, rank: __pc.P.rank })));
+await B.evaluate(() => { const g = __pc; g.addRP(g.rpFor(2) - g.P.rp + 5); g.P.pv = { t: 'suv', c: g.CREWS[0].paint, ar: 1, en: 2 }; g.openPhone(); g.buy('1'); g.sendPV(); });
+await pump(40);
+log('client homies on host', await A.evaluate(() => { const g = __pc, hm = g.bots.filter(b => b.homie && b.homie.name === 'Bob'); return { n: hm.length, d: hm.map(b => Math.round(Math.hypot(b.x - b.homie.x, b.z - b.homie.z))), pv: g.cars.filter(c => c.pv && c.pv.name === 'Bob').map(c => c.type + ' plate ' + c.plate + ' tune ' + c.tune) }; }));
+log('client sees its car', await B.evaluate(() => { const c = __pc.myPV(); return c ? { type: c.type, plate: c.plate, tune: c.tune, d: Math.round(Math.hypot(c.x - __pc.P.x, c.z - __pc.P.z)) } : null; }));
+log('client rank tag on host', await A.evaluate(() => { const r = Object.values(__pc.NET.remotes).find(q => q.name === 'Bob'); return r ? r.rank : null; }));
 // a third player turns up and joins the running session
 C = await open('C'); await sleep(1300); await C.fill('#co-name', 'Cara'); await C.dispatchEvent('#co-name', 'change'); await C.click('#crew2'); await sleep(300);
 log('C before joining', { status: await C.textContent('#co-status'), join: await C.textContent('#co-join') });

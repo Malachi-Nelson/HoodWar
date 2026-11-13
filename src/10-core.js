@@ -26,21 +26,26 @@ const CFG = {
   stars: [10, 30, 60, 100, 150],   // heat it takes to reach each wanted star
   robEvery: 240,              // seconds before a till that was emptied is worth robbing again
   gang: [10, 30, 60, 100, 150],     // notoriety it takes for each skull a crew puts on your head
-  hourly: { A: 80, B: 100, C: 150, D: 120, E: 150, F: 120, G: 120, H: 100, I: 80, J: 120 },   // what each neighbourhood pays its crew every hour of the day
+  hourly: { A: 100, B: 100, C: 160, D: 140, E: 100, F: 100, G: 140, H: 100, I: 120, J: 100 },   // what each neighbourhood pays its crew every hour of the day: the home turfs less, the middle of town more
   offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
   ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
+  rp: { kill: 25, head: 15, cop: 15, capture: 300, rob: 75, chain: 20, buy: 150, mod: 25, job: { truck: 200, hit: 250, war: 250, chop: 200, stash: 200, race: 150 } },   // what each thing is worth towards the next rank
 };
-// Four invented crews, named for the parts of town they come from. Each has a yard and starts with two turfs.
-// `tops` is what its people wear; `paint` is the colour of its cars.
+// Six crews, each in its own colour, with a yard on the edge of town and one neighbourhood to start with; the middle of the city is anybody's.
+// `tops` is what its people wear; `paint` is the colour of its cars; `glow` lights its rings and beams. `ink` writes its name on the dark HUD,
+// with `halo` round the letters when the colour itself is too dark to read there; `on` is the colour of a letter on its swatch.
 const CREWS = [
-  { name: 'Ember Row', short: 'EMBER', side: 'West side',  holds: 'The Courts and The Corner',       color: 0xff5a36, css: '#ff5a36', rgb: '255,90,54',   dark: 0x7a2415, paint: 0xc8401f, tops: [0xff5a36, 0xc8401f, 0x8a2a14, 0x1c1e22] },
-  { name: 'Tidewater', short: 'TIDE',  side: 'Dock side',  holds: 'the Station and The Docks',       color: 0x2fb6ff, css: '#2fb6ff', rgb: '47,182,255',  dark: 0x124a6e, paint: 0x1f86c8, tops: [0x2fb6ff, 0x1f86c8, 0x145a8a, 0x1c1e22] },
-  { name: 'Northgate', short: 'NORTH', side: 'North side', holds: 'Civic Square and Uptown Market',  color: 0xb684ff, css: '#b684ff', rgb: '182,132,255', dark: 0x4a2f7a, paint: 0x7a4fd0, tops: [0xb684ff, 0x8a5fe0, 0x5a3a9a, 0x1c1e22] },
-  { name: 'Steelyard', short: 'STEEL', side: 'South side', holds: 'Gas & Auto Row and The Foundry',  color: 0xf2d21b, css: '#f2d21b', rgb: '242,210,27',  dark: 0x6e5d0c, paint: 0xd9b80f, tops: [0xf2d21b, 0xd0b010, 0x8a7a14, 0x1c1e22] },
+  { name: 'Bloods',                    short: 'BLOODS',     side: 'West side',  holds: 'The Courts',     color: 0xe8322b, css: '#ff3b30', ink: '#ff4d42', rgb: '255,59,48',   dark: 0x6e1410, paint: 0xb3201a, glow: 0xff3b30, on: '#1a0504', sign: ['#1a0908', '#ff3b30'], tops: [0xd8261f, 0xb3201a, 0x7e1611, 0x1c1e22] },
+  { name: 'Crips',                     short: 'CRIPS',      side: 'Dock side',  holds: 'The Docks',      color: 0x2f7dff, css: '#2f7dff', ink: '#5b9cff', rgb: '47,125,255',  dark: 0x123a7a, paint: 0x1f5fc8, glow: 0x2f7dff, on: '#040d1c', sign: ['#07101c', '#4a90ff'], tops: [0x2a6fe8, 0x1f5fc8, 0x153f8a, 0x1c1e22] },
+  { name: 'Sex Money Murder',          short: 'SMM',        side: 'North side', holds: 'Civic Square',   color: 0x2fc451, css: '#2fc451', ink: '#45d866', rgb: '47,196,81',   dark: 0x135a23, paint: 0x1d8f3b, glow: 0x2fc451, on: '#04160a', sign: ['#07160c', '#3ddc5a'], tops: [0x2bb84b, 0x1d8f3b, 0x14612a, 0x1c1e22] },
+  { name: 'Vice Lords',                short: 'VICE LORDS', side: 'South side', holds: 'Gas & Auto Row', color: 0xf2d21b, css: '#f2d21b', ink: '#f2d21b', rgb: '242,210,27',  dark: 0x6e5d0c, paint: 0xd9b80f, glow: 0xf2d21b, on: '#171303', sign: ['#17150a', '#f2d21b'], tops: [0xf2d21b, 0xd0b010, 0x8a7a14, 0x1c1e22] },
+  { name: 'Gangster Disciple Killers', short: 'GDK',        side: 'Southwest',  holds: 'The Corner',     color: 0xf2f2f2, css: '#f2f2f2', ink: '#ffffff', rgb: '242,242,242', dark: 0x8a8d92, paint: 0xe6e6e6, glow: 0xffffff, on: '#111214', sign: ['#16181c', '#f4f4f4'], tops: [0xf2f2f2, 0xdcdcdc, 0xbdbdbd, 0x1c1e22] },
+  { name: 'Gangster Disciples',        short: 'GD',         side: 'Southeast',  holds: 'The Foundry',    color: 0x1b1c20, css: '#1b1c20', ink: '#16171a', rgb: '22,23,26',    dark: 0x0e0f11, paint: 0x141518, glow: 0x9aa3b4, on: '#f2f2f2', sign: ['#e6e6e6', '#111214'], tops: [0x161616, 0x232323, 0x0e0e0e, 0x30343a], halo: '#e6e9ee', edge: '#cfd4db' },
 ];
 const NCREW = CREWS.length, TEAM_CIV = NCREW, TEAM_COP = NCREW + 1;
-// which crew holds each turf when a session starts; anything not listed is nobody's
-const TURF_START = { A: 0, B: 0, D: 1, E: 1, F: 2, G: 2, H: 3, J: 3 };
+CREWS.forEach(c => { c.edge = c.edge || c.css; });
+// which crew holds each neighbourhood when a session starts; anything not listed is nobody's
+const TURF_START = { A: 0, E: 1, F: 2, H: 3, B: 4, J: 5 };
 // range: [full damage out to, half damage from] in metres. `car`: can be fired from a vehicle.
 const WEAPONS = {
   fist:     { name: 'Fists',          slot: 0, melee: true, dmg: 34, rpm: 115, reach: 2.1, kick: 0, zoom: 62, snd: [.05, 500] },

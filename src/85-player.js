@@ -113,6 +113,7 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
+  { const bp = bizPrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
@@ -127,13 +128,25 @@ function updateRob(dt) {
   R.t += dt; P.shootT = Math.max(P.shootT, .3); if (R.t < 3.5) return;
   P.rob = null; if (AUTH()) GAME.rob(P, R.i); else NET.req('rb', R.i);
 }
-function openShop(s) { shopOpen = s; $('shop-title').textContent = s.name; renderShop(); $('shop').hidden = false; SFX.tick(); }
+// one panel for every menu: the gun shop, the car shop and the phone. A menu other than the gun shop brings its own items:
+// { label, sub, cost, off (cannot be had right now), own (already yours), act }
+function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, foot: 'Press a number or click to buy. F or Esc closes.' }); }
+function openMenu(m) { shopOpen = m; $('shop-title').textContent = m.title; $('shop').className = 'pane menu-' + m.kind; $('shop-foot').textContent = m.foot || ''; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
-function renderShop() { const ol = $('shop-list'); ol.textContent = ''; SHOP.forEach(it => { const li = document.createElement('li'), own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
-    li.className = own || full ? 'own' : P.cash < it.cost ? 'no' : ''; li.dataset.key = it.key; const b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); b.textContent = it.key; a.textContent = it.label; c.textContent = own ? 'Owned' : full ? 'Full' : '$' + it.cost; li.append(b, a, c); ol.appendChild(li); }); }
+const gunLocked = it => !!WEAPONS[it.what] && (UNLOCK[it.what] || 1) > (P.rank || 1);
+function renderShop() {
+  if (!shopOpen) return; const ol = $('shop-list'); ol.textContent = '';
+  const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
+  if (shopOpen.kind !== 'gun') { shopOpen.list = shopOpen.items(); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); }); return; }
+  SHOP.forEach(it => { const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4), lock = gunLocked(it);
+    row(it.key, it.label, '', own ? 'Owned' : full ? 'Full' : lock ? 'Rank ' + UNLOCK[it.what] : '$' + it.cost, own || full ? 'own' : lock || P.cash < it.cost ? 'no' : ''); });
+}
 function buy(key) {
+  if (!shopOpen) return;
+  if (shopOpen.kind !== 'gun') { const it = (shopOpen.list || []).find(q => q.key === key); if (!it || it.off || !it.act || (it.cost > 0 && P.cash < it.cost)) { SFX.deny(); return; } it.act(); if (shopOpen && shopOpen.kind !== 'gun') renderShop(); return; }
   const it = SHOP.find(q => q.key === key); if (!it) return;
   const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
+  if (gunLocked(it)) { SFX.deny(); banner(it.label, 'Opens at rank ' + UNLOCK[it.what], 1.6); return; }
   if (own || full || P.cash < it.cost) { SFX.deny(); return; }
   P.spent += it.cost; P.cash -= it.cost; SFX.buy(); gain(-it.cost);
   if (it.what === 'ammo') { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } }
@@ -170,7 +183,7 @@ function updateOnFoot(dt) {
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
   if (P.rob) updateRob(dt); findPrompt(); collectPickups();
-  if (shopOpen && hyp(shopOpen.x - P.x, shopOpen.z - P.z) > 3.4) closeShop();
+  if (shopOpen && shopOpen.kind === 'gun' && hyp(shopOpen.x - P.x, shopOpen.z - P.z) > 3.4) closeShop();
 }
 // --- at the wheel, or riding
 function updateInCar(dt) {
@@ -182,12 +195,7 @@ function updateInCar(dt) {
     stepCar(c, dt, inp);
     if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
     GAME.roadkill(c, P);
-    for (let i = 0; i < GARAGES.length; i++) { const g = GARAGES[i]; if ((g.team !== undefined && g.team !== P.team) || hyp(g.x - c.x, g.z - c.z) > 3.4 || carSpeed(c) > 3 || c.burn > 0) continue;
-      const deny = (big, sub) => { if (G.time - (P.denyT || 0) > 3) { P.denyT = G.time; banner(big, sub || '', 1.8); SFX.deny(); } };
-      if (P.heat > 0) {   // a respray: the car comes out another colour and the police stop looking, if they are not watching it go in
-        if (c.cop) deny('No resprays for police cars'); else if (!P.evade) deny('Lose the police first', 'they can see you'); else if (P.cash < 300) deny('A respray costs $300');
-        else { P.spent += 300; P.cash -= 300; gain(-300); c.hp = c.spec.hp; const hex = PAINTS.filter(h => h !== c.color)[(rand() * (PAINTS.length - 1)) | 0]; setPaint(c, hex); if (AUTH()) GAME.clearHeat(P); else { NET.req('rs', c.id, PAINTS.indexOf(hex)); P.heat = 0; } SFX.buy(); banner('Resprayed', 'The police have lost you · $300', 2.4, 'gold'); } }
-      else if (c.hp < c.spec.hp - 20) { if (P.cash >= 200) { P.spent += 200; P.cash -= 200; gain(-200); c.hp = c.spec.hp; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name + ' · $200', 1.8); } else deny('Repairs cost $200'); } }
+    garageCheck(c);   // stop in a garage and the car shop opens: repairs, resprays that lose the police, armor, engine, and keeping the car
   }
   seatPos(c, P.seat, _sp); P.x = _sp.x; P.z = _sp.z; P.y = c.y; P.vx = c.vx; P.vz = c.vz; P.vy = 0; P.onGround = true; P.yaw = c.yaw; P.spd = 0; P.pitch = P.cpitch; P.sprint = false;
   P.shootT -= dt; if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
@@ -199,7 +207,7 @@ function updatePlayer(dt) {
   P.fireT -= dt; P.switchT -= dt; P.safeT -= dt; P.kick = Math.max(0, P.kick - dt * 1.3); if (P.punchT > 0) P.punchT -= dt;
   if (P.dead) { P.deadT += dt; P.spd = 0; if (P.deadT >= CFG.respawn && G.phase === 'play') GAME.respawn(); return; }
   if (P.enter) updateEnter(dt); else if (P.car) updateInCar(dt); else updateOnFoot(dt);
-  if (G.time - P.lastHit > CFG.player.regenDelay && P.hp < CFG.player.hp) P.hp = Math.min(CFG.player.hp, P.hp + CFG.player.regenRate * dt);
+  if (G.time - P.lastHit > CFG.player.regenDelay && P.hp < maxHp()) P.hp = Math.min(maxHp(), P.hp + CFG.player.regenRate * dt);
   P.cash = (P.bank === undefined ? CFG.startCash : P.bank) + P.earn - P.spent;
 }
 // --- camera

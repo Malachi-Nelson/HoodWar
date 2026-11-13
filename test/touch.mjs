@@ -8,7 +8,7 @@ p.on('console', m => { const t = m.text(); if (m.type() === 'error' && !/ERR_FAI
 p.on('pageerror', e => errs.push('PAGEERROR: ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 5).join('\n')));
 await p.route('**/three.min.js', r => r.fulfill({ path: ROOT + 'node_modules/three/build/three.min.js', contentType: 'application/javascript' }));
 await p.route('**fonts.googleapis.com/**', r => r.abort());
-await p.addInitScript(() => { window.__PC_TEST = true; window.__PC_MANUAL = true; try { if (!sessionStorage.getItem('cleared')) { localStorage.clear(); sessionStorage.setItem('cleared', '1'); } } catch (e) {} });
+await p.addInitScript(() => { window.__PC_TEST = true; window.__PC_MANUAL = true; try { if (location.protocol === 'file:' && !localStorage.getItem('pc-test-init')) { localStorage.clear(); localStorage.setItem('pc-test-init', '1'); } } catch (e) {} });
 await p.goto('file://' + ROOT + 'dist/claude.html'); await p.waitForTimeout(1500);
 const log = (k, v) => console.log(k, JSON.stringify(v));
 const run = async (name, fn, arg) => { try { const r = await p.evaluate(fn, arg); log(name, r); return r; } catch (e) { log(name, 'EVAL ERROR ' + e.message.split('\n')[0]); return null; } };

@@ -179,8 +179,8 @@ function updateBarks(dt) {
       else if (b.act === ACT.talk && d < 7 && rand() < .1) say(b, 'chat', '#f2efe6', 18);
       else if (d < 1.1 && P.spd > 5.5 && b.spd < 3) say(b, 'bump', '#f2efe6', 6);
     } else if (b.team === TEAM_COP) { if (up && P.heat > 0 && d < 24) say(b, 'cop', '#9db8ff', 8); }
-    else if (b.team === P.team) { if (!P.car && d < 5 && b.act > 0 && rand() < .12) say(b, 'crew', CREWS[b.team].css, 30); }
-    else if (up && d < 24 && rand() < .5) say(b, 'rival', CREWS[b.team].css, 10);
+    else if (b.team === P.team) { if (!P.car && d < 5 && b.act > 0 && rand() < .12) say(b, 'crew', lite(b.team), 30); }
+    else if (up && d < 24 && rand() < .5) say(b, 'rival', lite(b.team), 10);
   }
 }
 

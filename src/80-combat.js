@@ -11,7 +11,7 @@ const NET = { mode: null, room: null, remotes: {}, me: null, slot: 0 };
 const AUTH = () => NET.mode !== 'client';           // this machine runs the bots, the traffic, the turf and the police
 const bots = [], pickups = [], grenades = [];
 const GAME = {};
-const P = { kind: 'me', team: 0, name: 'Player', slot: 0, x: 60, y: CURB, z: 300, vy: 0, vx: 0, vz: 0, onGround: true, yaw: 0, pitch: 0, cyaw: 0, cpitch: -.1, hp: 100, armor: 0, dead: false, deadT: 0, wpn: 'pistol', inv: {}, nades: 1, cash: CFG.startCash,
+const P = { kind: 'me', team: 0, name: 'Player', slot: 0, rp: 0, rank: 1, biz: new Set(), pv: null, pvAsk: 0, garage: null, x: 60, y: CURB, z: 300, vy: 0, vx: 0, vz: 0, onGround: true, yaw: 0, pitch: 0, cyaw: 0, cpitch: -.1, hp: 100, armor: 0, dead: false, deadT: 0, wpn: 'pistol', inv: {}, nades: 1, cash: CFG.startCash,
   fireT: 0, reloadT: 0, switchT: 0, ads: 0, punchT: 0, car: null, seat: 0, enter: null, view: 3, streak: 0, shots: 0, shootT: 0, lastHit: -99, safeT: 0, kills: 0, deaths: 0, spd: 0, knock: 0, kick: 0, earn: 0, spent: 0,
   heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: 60, lky: CURB, lkz: 300 };
 function eachActor(fn) { fn(P); for (const k in NET.remotes) fn(NET.remotes[k]); for (let i = 0; i < bots.length; i++) fn(bots[i]); }
@@ -78,6 +78,7 @@ function hitActor(t, dmg, head, sh, wid) {
 function hitCar(c, dmg, sh) { if (AUTH()) damageCar(c, dmg, sh); else if (sh === P) NET.reportCar(c, dmg); }
 function damageBot(b, dmg, head, src, wid) {
   if (b.dead || b.gone) return;
+  if (head && src && src.kind !== 'bot') dmg = Math.max(dmg, b.hp + 1);   // a player's headshot drops anyone in one
   b.hp -= dmg; b.flinch = .25; b.hurtT = G.time;
   if (src && src !== b) {
     if (src.kind !== 'bot') { if (b.team === TEAM_CIV) GAME.crime(src, 5, 0, .4); else if (b.team === TEAM_COP) GAME.crime(src, 10, 2, .4); }
@@ -101,6 +102,7 @@ function hurtPlayer(dmg, src, wid, head) {
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
   if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
+  if (c.plate) dmg *= c.plate > 1 ? .5 : .67;   // car-shop armor plating
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -149,7 +151,7 @@ function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
   // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
   if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].color : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
   const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' ? 1e9 : 40, g, amt: type === 'cash' ? (team | 0) * 100 : 0 }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
   while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs

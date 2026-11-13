@@ -29,6 +29,7 @@ function evStart(E) { E.id = ++evtSeq; E.t0 = G.time; EVTS.push(E); GAME.ev('en'
 function evEnd(E, ok, amt, who) {
   const i = EVTS.indexOf(E); if (i < 0) return; EVTS.splice(i, 1); E.over = true;
   if (ok && amt) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
+  if (ok) humans().forEach(a => GAME.rp(a, CFG.rp.job[E.k] || 150));
   (E.guards || []).forEach(g => { g.guardOf = false; g.until = G.time + 30; });
   GAME.ev('ed', E.id, EV_KINDS.indexOf(E.k), ok ? 1 : 0, amt | 0, GAME.ref(who), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone);
 }
@@ -37,11 +38,16 @@ function updateEvents() {   // four times a second, on the machine that runs the
   for (let i = EVTS.length - 1; i >= 0; i--) EV_TICK[EVTS[i].k](EVTS[i]);
   if (G.phase !== 'play' || G.time < G.evT) return;
   if (EVTS.length >= (humans().length >= 3 ? 3 : 2)) { G.evT = G.time + 10; return; }
+  const k = pickJob(); G.evT = G.time + (k && EV_START[k]() ? 50 + rand() * 40 : 8);
+}
+function pickJob() {   // which kind of job turns up next: any kind not already running, a hood war only when the crew has turf to lose
   const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4 };
   EVTS.forEach(E => { w[E.k] = 0; });
-  let tot = 0; for (const q in w) tot += w[q]; let r = rand() * tot, k = 'truck'; for (const q in w) { r -= w[q]; if (r <= 0 && w[q] > 0) { k = q; break; } }
-  G.evT = G.time + (EV_START[k]() ? 50 + rand() * 40 : 8);
+  let tot = 0; for (const q in w) tot += w[q]; if (tot <= 0) return null; let r = rand() * tot; for (const q in w) { r -= w[q]; if (r <= 0 && w[q] > 0) return q; }
+  return null;
 }
+// work on request, from the phone: tried a few times, since a job needs somewhere suitable to happen
+GAME.forceJob = () => { if (EVTS.length >= 4 || G.phase !== 'play') return false; for (let k = 0; k < 4; k++) { const j = pickJob(); if (j && EV_START[j]()) return true; } return false; };
 
 // --- an armored truck on its round with two guards. Shoot it until the back gives, then pick the cash up off the road.
 EV_START.truck = () => {
@@ -154,7 +160,7 @@ function startRace(E) {
   let len = hyp(route[0][0] - E.x, route[0][1] - E.z); for (let k = 1; k < route.length; k++) len += hyp(route[k][0] - route[k - 1][0], route[k][1] - route[k - 1][1]);
   Object.assign(RACE, { on: true, cps: route, i: 0, left: len / 18 + 12, out: 0 }); banner('Street race', 'Every checkpoint in ' + Math.round(RACE.left) + ' seconds', 2.6, 'gold'); SFX.streak();
 }
-function endRace(ok, why) { RACE.on = false; RACE.coolT = G.time + 8; if (ok) { const amt = CFG.ev.race; P.earn += amt; gain(amt); banner('Race won', '+$' + amt, 2.6, 'gold'); SFX.streak(); } else { banner('Race over', why, 2.2); SFX.deny(); } }
+function endRace(ok, why) { RACE.on = false; RACE.coolT = G.time + 8; if (ok) { const amt = CFG.ev.race; P.earn += amt; gain(amt); addRP(CFG.rp.job.race); banner('Race won', '+$' + amt, 2.6, 'gold'); SFX.streak(); } else { banner('Race over', why, 2.2); SFX.deny(); } }
 function updateRace(dt) {   // on every machine, for its own player
   if (!RACE.on) { if (!P.car || P.seat !== 0 || P.dead || G.time < RACE.coolT) return; for (const E of EVTS) if (E.k === 'race' && E.ij && hyp(P.car.x - E.x, P.car.z - E.z) < 8) { startRace(E); break; } return; }
   RACE.left -= dt; if (P.dead) return endRace(false, 'Wasted');

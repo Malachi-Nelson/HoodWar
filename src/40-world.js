@@ -61,7 +61,8 @@ function wall(axis, p0, p1, a, b, y0, y1, ops, mat, o) {
 const SIGNS = [], SIGN_COLS = 4, SIGN_ROWS = 32, signCanvas = texCanvas(1024, 2048), signTex = asTex(signCanvas, false);
 defMat('sign', new T.MeshLambertMaterial({ map: signTex, emissiveMap: signTex, emissive: 0x000000, alphaTest: .35 }), 1, 1, { cast: false });
 const SIGN_STYLES = { shop: ['#16181c', '#f2efe6'], red: ['#a3221b', '#fff4e0'], gold: ['#d9a521', '#1a1408'], blue: ['#15467a', '#eaf4ff'], green: ['#1d5c3a', '#eafbea'], white: ['#ece8dc', '#1c1c1c'], neon: ['#0c0d12', '#ff5fa2'], cyan: ['#0c0d12', '#5fe9ff'],
-  ember: ['#1a0d0a', '#ff5a36'], tide: ['#07131c', '#2fb6ff'], north: ['#120c1c', '#b684ff'], steel: ['#17150a', '#f2d21b'], tagE: [null, '#ff5a36'], tagT: [null, '#2fb6ff'], tagN: [null, '#b684ff'], tagS: [null, '#f2d21b'], tagW: [null, '#f2efe6'] };
+  tagW: [null, '#f2efe6'] };
+CREWS.forEach((c, t) => { SIGN_STYLES['crew' + t] = c.sign; SIGN_STYLES['tag' + t] = [null, c.css]; });   // each crew's boards, and its name sprayed on walls
 function signCell(text, style) { const k = style + '|' + text; let i = SIGNS.findIndex(s => s.k === k); if (i < 0) { i = SIGNS.length; SIGNS.push({ k, text, style }); } return i % (SIGN_COLS * SIGN_ROWS); }
 function drawSigns() {
   const g = signCanvas.getContext('2d'); g.clearRect(0, 0, 1024, 2048);
@@ -71,7 +72,7 @@ function drawSigns() {
     g.fillStyle = st[1]; g.textAlign = 'center'; g.textBaseline = 'middle';
     let px = tag ? 46 : 40; g.font = (tag ? `${px}px "Permanent Marker", "Comic Sans MS", cursive` : `${px}px "Anton", Impact, "Arial Narrow", sans-serif`);
     while (g.measureText(s.text).width > 236 && px > 14) { px -= 2; g.font = g.font.replace(/^\d+px/, px + 'px'); }
-    if (tag) { g.save(); g.translate(cx + 128, cy + 34); g.rotate(-.05); g.lineWidth = 5; g.strokeStyle = 'rgba(0,0,0,.55)'; g.strokeText(s.text, 0, 0); g.fillText(s.text, 0, 0); g.restore(); }
+    if (tag) { g.save(); g.translate(cx + 128, cy + 34); g.rotate(-.05); g.lineWidth = 5; g.strokeStyle = /^#[0-3]/.test(st[1]) ? 'rgba(235,238,242,.75)' : 'rgba(0,0,0,.55)'; g.strokeText(s.text, 0, 0); g.fillText(s.text, 0, 0); g.restore(); }
     else g.fillText(s.text, cx + 128, cy + 35);
   });
   signTex.needsUpdate = true;
@@ -153,12 +154,13 @@ function awningX(z0, z1, x, face, col) { const d = FACE[face][0] * 1.3; deco(Mat
 const SHOP_NAMES = ['PORT CITY PIZZA', 'HARBOR DINER', 'FADE FACTORY BARBERS', 'SNEAKER VAULT', 'CHECK CASHING', 'PHONE REPAIR', '24 HR GYM', 'RECORDS & TAPES', 'TACO STOP', 'WINGS N THINGS', 'DOLLAR DEN', 'MATTRESS KINGDOM', 'LUCKY 7 LAUNDROMAT', 'EMBER ROW BBQ', 'BAIT & TACKLE', 'NAILS & LASHES', 'CORNER BAKERY', 'USED TIRES', 'CALDER HARDWARE', 'VIDEO PALACE', 'BEAUTY SUPPLY', 'FISH FRY', 'TAILOR & CLEANERS', 'SMOKE SHOP', 'ARCADE', 'TATTOO', 'KEYS CUT HERE', 'COFFEE', 'THRIFT', 'FURNITURE OUTLET'];
 const AWN = [0xa3221b, 0x1d5c3a, 0x15467a, 0xd9a521, 0x2a2c30, 0x7a3a8a, 0xc85a1c];
 let shopN = 0;
+const FRONTS = [];   // every shop front's door on the pavement, with the name over it: a few of them are for sale (see 104-career.js)
 const SHOP_STYLES = ['shop', 'red', 'gold', 'blue', 'green', 'white', 'neon', 'cyan'];
 const styleOf = name => { let h = 0; for (let i = 0; i < name.length; i++) h = h * 31 + name.charCodeAt(i) | 0; return SHOP_STYLES[Math.abs(h) % SHOP_STYLES.length]; };   // one board per name, so the sign sheet stays small
 function shopFront(x0, x1, z, face) { const n = Math.max(1, Math.round((x1 - x0) / 9)), w = (x1 - x0) / n, d = FACE[face][1] * .1;
-  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cx = x0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), cx, CURB + 3.45, z + d, Math.min(7, w - 1), .85, face); FRONTS.push({ x: cx, z: z + FACE[face][1] * 1.7, name: nm }); } if (W() < .6) awning(cx - w / 2 + .6, cx + w / 2 - .6, z, face, pick(W, AWN)); } }
 function shopFrontX(z0, z1, x, face) { const n = Math.max(1, Math.round((z1 - z0) / 9)), w = (z1 - z0) / n, d = FACE[face][0] * .1;
-  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
+  for (let i = 0; i < n; i++) { const cz = z0 + w * (i + .5); { const nm = SHOP_NAMES[shopN++ % SHOP_NAMES.length]; sign(nm, styleOf(nm), x + d, CURB + 3.45, cz, Math.min(7, w - 1), .85, face); FRONTS.push({ x: x + FACE[face][0] * 1.7, z: cz, name: nm }); } if (W() < .6) awningX(cz - w / 2 + .6, cz + w / 2 - .6, x, face, pick(W, AWN)); } }
 
 // --- the ground, the roads, the paint on them
 addBox(WORLD.x0, WORLD.x1, -3, 0, WORLD.z0, WORLD.z1, null);
