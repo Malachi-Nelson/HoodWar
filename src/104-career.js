@@ -219,7 +219,7 @@ function afterMod(c) { if (c.pv === P) P.pv = specOf(c); addRP(CFG.rp.mod); save
 const garageName = g => g.team !== undefined ? CREWS[g.team].name + ' garage' : 'Gas & Auto Row car shop';
 function garageCheck(c) {   // called while driving: stop in a garage and its menu opens; drive off and it closes
   let g = null; for (let i = 0; i < GARAGES.length; i++) { const q = GARAGES[i]; if ((q.team !== undefined && q.team !== P.team) || hyp(q.x - c.x, q.z - c.z) > 3.4) continue; g = q; break; }
-  if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · F or Esc to drive on' }); } }
+  if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · ' + capOf('use') + ' or Esc to drive on' }); } }
   else if (P.garage && (!g || carSpeed(c) > 4)) { P.garage = null; if (shopOpen && shopOpen.kind === 'mod') closeShop(); }
 }
 // nitrous: held down, a few seconds of push that comes back while you drive

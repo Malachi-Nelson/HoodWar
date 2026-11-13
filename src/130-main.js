@@ -85,12 +85,12 @@ function beginPlay() {
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
   banner('Port Calder', P.team === TEAM_COP ? 'You are on the force · Port Calder PD' : 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
   P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
-    : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
-  if (!sv) P.hints.push([31, 'T opens your phone: call homies, the mechanic, the fixer, or line up work']);
+    : [[5, capOf('use') + ' takes any car · ' + capOf('board') + ' shows turf · ' + capOf('map') + ' opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
+  if (!sv) P.hints.push([31, capOf('phone') + ' opens your phone: call homies, the mechanic, the fixer, or line up work']);
   SAVE.live = true; if (away > 0) { P.hints.unshift([3.6, 'While you were away your turf made $' + away.toLocaleString('en-US')]); gain(away); } saveGame(); P.hp = maxHp();
 }
 function startAttract() { readSettings(); startWorld({ x: ZONES[1].x + 18, z: ZONES[1].z }); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }   // the menu looks out over The Corner, so that is where the city gathers
-function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; saveGame(); showOverlay('paused'); }
+function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; saveGame(); showOverlay('paused'); }
 function leaveSession() { saveGame(); SAVE.live = false; if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
 $('deploy').addEventListener('click', () => {
   initAudio();
@@ -113,36 +113,30 @@ $('co-name').addEventListener('change', () => { try { localStorage.setItem('pc-n
 $('co-name').addEventListener('keydown', e => e.stopPropagation());
 document.addEventListener('pointerlockchange', () => { if (locked()) wasLocked = true; else if (wasLocked && G.state === 'playing') pause(); });
 canvas.addEventListener('mousedown', e => {
-  if (G.state !== 'playing') return; if (!locked()) requestLock();
-  if (e.button === 0) { mouse.down = true; mouse.fresh = true; } else if (e.button === 2) mouse.right = true;
+  if (G.state !== 'playing') return; if (!locked()) requestLock(); if (e.button > 2) e.preventDefault();
+  inputDown('Mouse' + e.button, true);
 });
-window.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; else if (e.button === 2) mouse.right = false; });
+window.addEventListener('mouseup', e => { if (e.button > 2 && G.state === 'playing') e.preventDefault(); inputUp('Mouse' + e.button); });
+canvas.addEventListener('auxclick', e => e.preventDefault());
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('mousemove', e => {
   if (G.state !== 'playing' || (!locked() && !TEST)) return;
   const s = SENS * (firstPerson() || P.ads > .5 ? camera.fov / 72 : 1); P.cyaw -= (e.movementX || 0) * s; P.cpitch = clamp(P.cpitch - (e.movementY || 0) * s, -1.25, 1.35); P.idleCam = 0;
 });
-canvas.addEventListener('wheel', e => { if (G.state === 'playing') { e.preventDefault(); cycleWeapon(e.deltaY > 0 ? 1 : -1); } }, { passive: false });
+canvas.addEventListener('wheel', e => { if (G.state === 'playing') { e.preventDefault(); const c = e.deltaY > 0 ? 'WheelDown' : 'WheelUp'; inputDown(c, true); inputUp(c); } }, { passive: false });
 window.addEventListener('keydown', e => {
   if (G.state !== 'playing') { if (e.code === 'Escape' && G.state === 'paused' && TEST) $('deploy').click(); return; }
-  if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code)) e.preventDefault();
-  if (e.repeat) return; keys[e.code] = true;
+  if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code) || BYIN[e.code]) e.preventDefault();
+  if (e.repeat) return;
   if (shopOpen && /^Digit[0-9]$/.test(e.code)) { const n = e.code.slice(5); buy(n === '0' ? '10' : n); return; }
-  if (e.code === 'Tab') { drawBoard(); $('board').hidden = false; } else if (e.code === 'KeyM') { $('bigmap').hidden = false; drawBigMap(); }
-  else if (e.code === 'Escape' || e.code === 'KeyP') { if (shopOpen) closeShop(); else if (!locked()) pause(); }
-  else if (e.code === 'Backquote') devOpen();
-  else if (P.dead) return;
-  else if (e.code === 'KeyF' || e.code === 'KeyE') { if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); }
-  else if (e.code === 'KeyR') startReload(); else if (e.code === 'KeyG') throwGrenade();
-  else if (/^Digit[0-9]$/.test(e.code)) { const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
-  else if (e.code === 'KeyV') { if (P.car) camFar = camFar ? 0 : 1; else { P.view = P.view === 1 ? 3 : 1; $('set-view').value = String(P.view); try { localStorage.setItem('pc-view', String(P.view)); } catch (x) {} } }
-  else if (e.code === 'KeyQ') { if (P.car) nextRadio(); else cycleWeapon(1); }
-  else if (e.code === 'KeyB') callDriveBy();
-  else if (e.code === 'KeyT' || e.code === 'ArrowUp') { if (shopOpen && shopOpen.kind === 'phone') closeShop(); else if (!shopOpen) openPhone(); }
-  else if (e.code === 'Minus' || e.code === 'Equal') { SENS = clamp(SENS * (e.code === 'Minus' ? .88 : 1.14), .0006, .008); try { localStorage.setItem('pc-sens', String(SENS)); } catch (x) {} banner('Mouse speed ' + Math.round(SENS / .0022 * 100) + '%', '', 1); }
+  if (e.code === 'Escape') { if (shopOpen) closeShop(); else if (!locked()) pause(); return; }
+  if (e.code === 'Backquote') { devOpen(); return; }
+  if (/^Digit[0-9]$/.test(e.code)) { if (P.dead) return; const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); return; }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
+  if (e.code === 'Minus' || e.code === 'Equal') { SENS = clamp(SENS * (e.code === 'Minus' ? .88 : 1.14), .0006, .008); try { localStorage.setItem('pc-sens', String(SENS)); } catch (x) {} banner('Mouse speed ' + Math.round(SENS / .0022 * 100) + '%', '', 1); return; }
+  inputDown(e.code, true);   // everything else goes through the bindings on the Controls page
 });
-window.addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') $('board').hidden = true; if (e.code === 'KeyM') $('bigmap').hidden = true; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.down = mouse.right = false; setHorn(false); $('board').hidden = true; $('bigmap').hidden = true; });
+window.addEventListener('keyup', e => inputUp(e.code));
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; mouse.down = false; if (!ADS.on) mouse.right = false; setHorn(false); $('board').hidden = true; $('bigmap').hidden = true; });
 function resize() { const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = vmCam.aspect = w / h; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); }
 window.addEventListener('resize', resize);
 
@@ -153,7 +147,7 @@ function devSet(k, v) {
   DBG[k] = v; const el = $(DEV_FLAGS[k]); if (el) el.checked = v;
   if (k === 'nav') { if (v && !navLines) { const pts = []; NAV.forEach(n => n.e.forEach(e => { if (e[0] > n.i) { const m = NAV[e[0]]; pts.push(new T.Vector3(n.x, n.y + .4, n.z), new T.Vector3(m.x, m.y + .4, m.z)); } })); navLines = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: 0x8fe36b })); scene.add(navLines); } if (navLines) navLines.visible = v; }
 }
-function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); }
+function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); }
 function devClose() { if (G.state !== 'dev') return; $('dev').hidden = true; G.state = 'playing'; wasLocked = false; requestLock(); }
 Object.keys(DEV_FLAGS).forEach(k => $(DEV_FLAGS[k]).addEventListener('change', e => devSet(k, e.target.checked)));
 CID.forEach(id => $('dv-car').add(new Option(CARS[id].name + ' (' + id + ')', id)));
@@ -180,7 +174,7 @@ window.addEventListener('keydown', e => { if (e.code === 'Backquote' && G.state 
 /* ---- the loop ---- */
 function step(dt) {
   G.time += dt;
-  if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
+  if (G.state !== 'menu') { inputTick(); updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
   updateGrenades(dt); updateProj(dt);
 }
@@ -207,6 +201,7 @@ function frame(now) {
   const raw = (now - last) / 1000, dt = Math.min(.05, raw) * DBG.scale; last = now; DBG.fps = lerp(DBG.fps, 1 / Math.max(raw, .001), .05);
   if (canvas.width !== Math.floor(canvas.clientWidth * renderer.getPixelRatio())) resize();
   const live = G.state === 'playing' || G.state === 'menu' || (NET.mode && (G.state === 'paused' || G.state === 'dev'));
+  pollPad(raw > .2 ? 0 : Math.min(.05, raw));
   if (live) step(dt);
   visuals(live ? dt : 0, now);
   if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash), rp = Math.round(P.rp || 0); if (c !== SAVE.lastC || rp !== SAVE.lastR) { SAVE.lastC = c; SAVE.lastR = rp; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
@@ -221,7 +216,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

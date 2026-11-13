@@ -14,7 +14,7 @@ GAME.ev = (...a) => { const e = [++evSeq].concat(a); EVQ.push(e); if (EVQ.length
 function onEvent(e, mine) {
   const k = e[1];
   if (k === 'k') { const a = GAME.unref(e[2]), v = GAME.unref(e[3]), you = q => !!q && (q === P || q.kind === 'rp' || q.team === P.team);
-    if (you(a) || you(v) || (v && hyp(v.x - P.x, v.z - P.z) < 140)) feed(a, v, e[4], e[5]);   /* a fight across town between two other crews does not need reporting */ if (a === P && v && v !== P && isCrew(v.team)) { P.streak++; SFX.kill(!!e[5]); hitMarker(!!e[5], true); if (P.streak === CFG.streak) { P.driveby = true; SFX.streak(); banner('Drive-by ready', 'Press B to send the crew through', 3, 'gold'); } } }
+    if (you(a) || you(v) || (v && hyp(v.x - P.x, v.z - P.z) < 140)) feed(a, v, e[4], e[5]);   /* a fight across town between two other crews does not need reporting */ if (a === P && v && v !== P && isCrew(v.team)) { P.streak++; SFX.kill(!!e[5]); hitMarker(!!e[5], true); if (P.streak === CFG.streak) { P.driveby = true; SFX.streak(); banner('Drive-by ready', 'Press ' + capOf('driveby') + ' to send the crew through', 3, 'gold'); } } }
   else if (k === 'z') { const z = ZONES[e[2]], t = e[3]; if (t === P.team) { banner(z.name, 'Your crew holds it', 2.6, 't' + t); SFX.cap(true); } else if (hyp(z.x - P.x, z.z - P.z) < 220) note(CREWS[t].name + ' took ' + z.name, 'k' + t); }   // the city is full of this; only your own crew's news fills the screen
   else if (k === 'zn') { const z = ZONES[e[2]], t = e[3]; if (e[4] === P.team) { banner(z.name, CREWS[t].name + ' broke your hold', 2.6, 't' + t); SFX.cap(false); } }
   else if (k === 'x') { if (mine) return; const x = e[2], y = e[3], z = e[4], pw = e[5] / 10, c = e[6] ? carById(e[6]) : null, o = GAME.unref(e[7]);
@@ -313,15 +313,36 @@ function resetWorld() {
   if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
   [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
 }
-// only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
-function startWorld(at) {
-  G.crew = P.team; resetWorld(); at = at || SPAWNS[P.team][0]; P.x = at.x; P.z = at.z;
-  const sv = loadSave(); if (sv && Array.isArray(sv.z) && sv.z.length === ZS.length) sv.z.forEach((q, i) => { const s = ZS[i], o = q[0] | 0; if (o < -1 || o >= NCREW) return; s.owner = o; s.ctrl = o >= 0 ? clamp(+q[1] || 50, 10, 100) : 0; });   // the city as this player left it
-  const r = rng32((Math.random() * 1e9) | 0), street = PARK.filter(s => !s.lot), lots = PARK.filter(s => s.lot && !s.truck), used = [];
+// where cars stand parked: some street spots and car park bays, each crew's cars at its yard, the airport's helicopters on their pads
+function planHomes() {
+  const r = rng32((Math.random() * 1e9) | 0), street = PARK.filter(s => !s.lot), lots = PARK.filter(s => s.lot && !s.truck), used = []; G.homes = [];
   const take = (list, n) => { for (let k = 0, guard = 0; k < n && guard < 400; guard++) { const s = list[(r() * list.length) | 0]; if (used.some(u => hyp(u.x - s.x, u.z - s.z) < 9)) continue; used.push(s); k++; G.homes.push({ spot: s, type: pick(r, STREET_CARS), team: -1, car: null, t: 0 }); } };
   take(street, 10); take(lots, 5);
   for (let t = 0; t < NCREW; t++) BASECARS[t].forEach((s, k) => G.homes.push({ spot: s, type: k === 3 ? 'coupe' : CREW_CARS[k % 3], team: t, car: null, t: 0 }));
   AIRPORT.pads.forEach((s, k) => s.kind !== 'free' && G.homes.push({ spot: s, type: s.kind === 'gun' ? 'heli' : 'chopper', team: -1, car: null, t: 0, color: s.kind === 'gun' ? 0x1d6b45 : [0xf2efe6, 0x1f4e8c][k % 2] }));   // the airport's helicopters
+  return r;
+}
+// a joined player taking over from a host that has gone: the turf, the time of day and every car with a player in it stay as they
+// were; the people, the traffic and the jobs start afresh around the players, out of their sight where it can be managed.
+function takeOverWorld() {
+  const human = o => o && (o === P || o.kind === 'rp');
+  for (let i = bots.length - 1; i >= 0; i--) removeBot(bots[i]);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (!c.occ.some(human)) { if (P.car === c) P.car = null; removeCar(c); continue; }
+    const dr = c.occ[0]; c.kin = !!(dr && dr.kind === 'rp'); c.ai = null; c.vbufOf = null; c.buf.length = 0; c.lastV = null; if (dr === P) c.mine = true; }
+  while (pickups.length) removePickup(pickups[0]); pickSeq += 500; botSeq += 50;
+  resetEvents(); POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
+  Object.assign(G, { phase: 'play', respawnQ: CREWS.map(() => []), popT: 0, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 70 + t * 30 + rand() * 40), hour: Math.floor(G.tod), polT: 0, gangT: 0, beatT: G.time + 12, streetT: 0, robT: [], evT: G.time + 25 });
+  ZS.forEach(z => { z.n.fill(0); z.by = -1; z.prog = 0; z.hot = false; });
+  planHomes();
+  for (let k = 0; k < G.traffic; k++) spawnTraffic();
+  for (let t = 0; t < NCREW; t++) for (let k = crewSize(t); k > 0; k--) spawnCrewBot(t, .75);
+  staffPosts(false); for (let k = walkersWanted(); k > 0; k--) spawnPed(false);
+}
+// only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
+function startWorld(at) {
+  G.crew = P.team; resetWorld(); at = at || SPAWNS[P.team][0]; P.x = at.x; P.z = at.z;
+  const sv = loadSave(); if (sv && Array.isArray(sv.z) && sv.z.length === ZS.length) sv.z.forEach((q, i) => { const s = ZS[i], o = q[0] | 0; if (o < -1 || o >= NCREW) return; s.owner = o; s.ctrl = o >= 0 ? clamp(+q[1] || 50, 10, 100) : 0; });   // the city as this player left it
+  const r = planHomes();
   G.homes.forEach(h => { h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : { color: PAINTS[(r() * PAINTS.length) | 0] }); });
   for (let k = 0; k < G.traffic; k++) spawnTraffic();
   for (let t = 0; t < NCREW; t++) for (let k = crewSize(t); k > 0; k--) spawnCrewBot(t, .75);      // most of each crew starts out on its turf

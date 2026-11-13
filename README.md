@@ -16,7 +16,13 @@ An open-world crew game that runs in the browser. One lake-port city and its air
 
 **Play:** https://malachi-nelson.github.io/HoodWar/
 
-Plays with a keyboard and mouse, or on a phone or tablet held sideways. The controls are listed on the menu.
+Plays with a keyboard and mouse, a controller, or on a phone or tablet held sideways. The controls are listed on the menu.
+
+## Controls
+
+**Controls** on the menu (or the pause screen) lists every action on foot, in a car and flying, with two keys or buttons each. Tap a box and press the key, mouse button (side buttons too) or wheel you want; Backspace clears a box. Where two actions share a key the page says so, and the one made for the situation wins (Q is the radio in a car and the next gun on foot). Esc, `, 1–0, - and = stay as they are. **ADS** (aim down sights) can be held or toggled, and the mouse speed is on the same page.
+
+A **controller** works as soon as it is connected (Xbox, PlayStation and most others): the left stick moves, drives and flies, the right stick looks, the triggers aim and fire on foot and drive in a car, the d-pad and A/B work the phone and the shops, and Menu pauses. Its buttons have their own tab on the Controls page, with look speed, inverted look and aim help. Bindings are kept in the browser.
 
 ## Heists and the drug business
 
@@ -45,7 +51,7 @@ Pick **Police** under the crews on the menu. Officers start outside the El stati
 
 ## Touch screens
 
-On a touch screen the game shows on-screen controls: a stick for the left thumb (push it all the way to sprint), drag anywhere on the right to look, and buttons that change between on foot, in a car and flying a helicopter; PHONE opens the phone. While you fire or aim, aim help eases the view toward a hostile near the crosshair. **Move buttons** (on the menu or the pause screen) lets you drag any button somewhere else and change its size and see-through level, separately for on foot, in a car and flying. Look speed, aim help and a fixed or floating stick are on the same row. The layout is kept in the browser.
+On a touch screen the game shows on-screen controls: a stick for the left thumb (push it all the way to sprint), drag anywhere on the right to look, and buttons that change between on foot, in a car and flying a helicopter; PHONE opens the phone. While you fire or aim, aim help eases the view toward a hostile near the crosshair. **Move buttons** (on the menu or the pause screen) lets you drag any button somewhere else and change its size and see-through level, separately for on foot, in a car and flying. Move buttons also changes what any button does (pick an action for it), hides the ones you never use, and adds up to eight buttons of your own for whatever you like. **ADS** is a button of its own: tap it on and off, or set it to work while held. Look speed, aim help and a fixed or floating stick are on the same row. The layout is kept in the browser.
 
 ## Saving
 
@@ -61,9 +67,9 @@ Cash, guns, grenades, armour, your rank, your businesses, your car, your helicop
 
 Everyone on the plain link shares one public room. **Make a private room** gives you a link with a code for just your group.
 
-The leader picks **Players** before starting: **One crew** puts everyone in the leader's crew (or on the force, if the leader picked the police), and players cannot hurt each other. **Rival sides** lets everyone pick their own crew or the police: then each side takes turf for itself, each player is paid for their own side's neighbourhoods, and anyone on another side is fair game. The leader's browser runs the city (bots, traffic, turf, jobs, police), so the session starts from the leader's saved turf, and when the leader leaves, the session closes for everyone. Each player keeps their own cash, guns, rank, businesses and car; turf income, job rewards and the RP for them are paid to everyone in the session, and homies follow whoever called them.
+The leader picks **Players** before starting: **One crew** puts everyone in the leader's crew (or on the force, if the leader picked the police), and players cannot hurt each other. **Rival sides** lets everyone pick their own crew or the police: then each side takes turf for itself, each player is paid for their own side's neighbourhoods, and anyone on another side is fair game. The leader's browser runs the city (bots, traffic, turf, jobs, police), so the session starts from the leader's saved turf. When the leader leaves, the session carries on: the next player takes over the city where it stands (turf, time of day and everyone's cars stay; people and traffic start fresh around you), and anyone who joins later comes to them. A player who loses their own connection keeps playing (the line under the clock says Reconnecting) and drops back in when it returns; a host who comes back after others took over joins their city. Each player keeps their own cash, guns, rank, businesses and car; turf income, job rewards and the RP for them are paid to everyone in the session, and homies follow whoever called them.
 
-Each player's browser posts its state to a free public MQTT relay, which passes it to the others in the room. There is no game server and nothing connects browser to browser.
+Each player's browser posts its state to two free public MQTT relays at once, which pass it to the others in the room; if one relay fails or is blocked on someone's network, play carries on through the other. There is no game server and nothing connects browser to browser. The line under the clock shows who runs the city, how many are in it and the relay round trip. If someone in the room is on a newer version of the page, the lobby says so and offers to reload.
 
 ## What is in the repository
 

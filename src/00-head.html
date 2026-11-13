@@ -74,6 +74,7 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
+#h-net{top:70px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
 #h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
 /* top-left: the jobs going on in the city */
 #evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
@@ -141,8 +142,10 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 .tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .tc-stick.down{border-style:solid}
 #touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c],#touch.air .tc[data-ctx=f],#touch.air .tc[data-ctx=c],#touch.car .tc[data-ctx=a],#touch.foot .tc[data-ctx=a]{display:none}
-#touch.air:not(.gun):not(.edit) .tc-rocket{display:none}
-#touch:not(.call) .tc-call{display:none}
+#touch.air:not(.gun):not(.edit) .tc-rocket:not(.rm){display:none}
+#touch:not(.call) .tc-call:not(.rm){display:none}
+#touch:not(.edit) .tc.off{display:none}#touch.edit .tc.off{opacity:.32!important;border-style:dotted}
+.tc-x{border-color:rgba(182,132,255,.9)}
 .tc-call{border-color:var(--gold);color:var(--gold)}
 #touch.dead .tc:not(.tc-pause){display:none}
 #touch.edit{background:rgba(14,16,20,.35)}
@@ -153,6 +156,20 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 #tedit label{display:flex;gap:8px;align-items:center;flex:1;min-width:150px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--ash)}
 #tedit input[type=range]{flex:1;accent-color:var(--gold)}
 #te-what{color:var(--gold);font-weight:700;letter-spacing:.04em}
+#tedit select{flex:1;min-width:0;font:inherit;font-size:14px;background:#0e1014;color:var(--chalk);border:1px solid var(--line);padding:4px}
+#ctl{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(96vw,660px);max-height:94vh;display:flex;flex-direction:column;gap:8px;padding:12px 14px;background:rgba(18,20,26,.97);border:1px solid var(--gold);font-size:15px;touch-action:auto}
+#ctl .ch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#ctl .ch b{font-size:19px;letter-spacing:.1em;text-transform:uppercase;margin-right:auto;color:var(--gold)}
+#ctl .tabs{display:flex;gap:6px}#ctl .tabs .btn.on{background:var(--chalk);color:#111}#ctl-x{font-size:24px;line-height:1;background:none;border:0;color:var(--chalk);cursor:pointer;padding:0 4px}
+#ctl .r{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}#ctl label{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ash)}
+#ctl select,#ctl input[type=range]{font:inherit;font-size:14px;background:#0e1014;color:var(--chalk);border:1px solid var(--line);padding:3px;accent-color:var(--gold)}
+#ctl-note{font-size:14px;color:var(--ash);min-height:1.2em}
+#ctl-list{overflow-y:auto;flex:1;min-height:120px;padding-right:4px;overscroll-behavior:contain}
+#ctl-list h4{margin:10px 0 3px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+#ctl-list .cr{display:grid;grid-template-columns:1fr minmax(84px,128px) minmax(84px,128px);gap:6px;align-items:center;padding:3px 0;border-top:1px solid var(--line)}
+#ctl-list .cr button{font:inherit;font-size:14px;padding:5px 6px;min-height:32px;background:rgba(242,239,230,.07);color:var(--chalk);border:1px solid rgba(242,239,230,.22);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctl-list .cr button:hover{border-color:var(--chalk)}#ctl-list .cr button.cap{border-color:var(--gold);color:var(--gold);background:rgba(255,200,61,.12)}
+#ctl-list .cr small{grid-column:1/-1;font-size:12px;color:var(--ash)}#ctl-list .cr small.bad{color:#ff8a7a}
+#shop li.hi{outline:2px solid var(--gold);outline-offset:1px}
 #rotate{position:absolute;inset:0;z-index:9;background:var(--asphalt);display:none;place-items:center;text-align:center;font-family:var(--font-display);font-size:30px;padding:24px}
 #rotate small{display:block;font-family:var(--font-ui);font-size:16px;color:var(--ash);margin-top:8px}
 @media (orientation:portrait){body.touch #rotate{display:grid}}
@@ -176,6 +193,7 @@ body.touch #turf{top:6px}
 body.touch #turf .zs{gap:2px}
 body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
 body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
+body.touch #h-net{top:calc(5.2vmin + 26px);font-size:11px}
 body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
 body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
 body.touch #feed div{white-space:normal;text-align:right}
@@ -265,7 +283,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 .col input[type=text],.col select{font:600 17px var(--font-ui);color:var(--chalk);background:rgba(0,0,0,.4);border:1px solid var(--ash);padding:7px 9px;min-width:0}
 .col input[type=text]{width:150px}
 .status{font-size:16px;color:var(--ash);min-height:1.3em}
-.status.ok{color:var(--cash)}
+.status.ok{color:var(--cash)}.status.warn{color:var(--gold)}#co-ver .btn{margin-left:6px}
 .roster{list-style:none;margin:0;padding:0;display:grid;gap:3px;max-width:440px}
 .roster li{display:flex;justify-content:space-between;gap:12px;font-size:17px;font-weight:600;border-left:4px solid var(--ash);padding:4px 10px;background:rgba(0,0,0,.34)}
 .roster li span:last-child{color:var(--ash);font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
@@ -302,6 +320,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-gang" aria-label="Crew notoriety" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-rank" aria-label="Rank"><span id="rk-gain"></span><i><u id="rk-fill"></u></i><b id="rk-n">1</b></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
+    <div id="h-net" class="sh" hidden></div>
     <div id="h-race" class="sh" hidden></div>
     <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>
@@ -341,6 +360,14 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="te-what">Drag a control to move it</div>
     <div class="r"><button type="button" class="btn sm" id="te-ctx">Showing: on foot</button><button type="button" class="btn sm" id="te-reset">Reset layout</button><button type="button" class="btn sm" id="te-done">Done</button></div>
     <div class="r"><label>Size <input type="range" id="te-size" min="0.06" max="0.5" step="0.01" value="0.14"></label><label>See-through <input type="range" id="te-alpha" min="0.15" max="1" step="0.05" value="0.6"></label></div>
+    <div class="r"><label>Does <select id="te-act" aria-label="What this button does"></select></label><button type="button" class="btn sm" id="te-hide">Hide</button><button type="button" class="btn sm" id="te-add">Add a button</button></div>
+  </div>
+  <div id="ctl" hidden role="dialog" aria-label="Controls">
+    <div class="ch"><b>Controls</b><span class="tabs"><button type="button" class="btn sm" data-dev="kb">Keyboard &amp; mouse</button><button type="button" class="btn sm" data-dev="pad">Controller</button></span><button type="button" id="ctl-x" aria-label="Close">×</button></div>
+    <div class="r"><label>ADS <select id="ctl-ads"><option value="hold">Hold</option><option value="toggle">Toggle</option></select></label><span class="r" id="ctl-kbopts"><label>Mouse speed <input type="range" id="ctl-ms" min="0.3" max="3.6" step="0.05" value="1"></label></span><span class="r" id="ctl-padopts" hidden><label>Look speed <input type="range" id="ctl-ps" min="0.3" max="3" step="0.1" value="1"></label><label>Invert look <select id="ctl-pi"><option value="0">No</option><option value="1">Yes</option></select></label><label>Aim help <select id="ctl-pa"><option value="1">On</option><option value="0">Off</option></select></label></span></div>
+    <div id="ctl-note"></div>
+    <div id="ctl-list"></div>
+    <div class="r"><button type="button" class="btn sm" id="ctl-reset">Reset these to defaults</button><button type="button" class="btn sm" id="ctl-done">Done</button></div>
   </div>
   <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
@@ -367,9 +394,9 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
         <div><dt>B · T</dt><dd>Call a drive-by (4-kill streak) · phone: homies, mechanic, fixer, work</dd></div>
         <div><dt>Helicopter</dt><dd>W A S D fly · Space up · Shift down · mouse turns · click guns · right-click or G rockets</dd></div>
       </dl>
-      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work.</p>
-      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
-      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
+      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. ADS aims down the sights (tap on, tap off, or hold: your pick below). USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work. Move buttons also changes what any button does, hides the ones you never use and adds buttons of your own. A controller works too.</p>
+      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><label for="set-tads">ADS button</label><select id="set-tads"><option value="toggle">Tap on, tap off</option><option value="hold">Hold</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
+      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
       <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns, rank, businesses, your car and your turf are saved as you play, and your turf and businesses keep earning while you are away. A player's headshot kills in one shot. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. On Claude, multiplayer reaches signed-in people this page has been shared with.</p>
     </div>

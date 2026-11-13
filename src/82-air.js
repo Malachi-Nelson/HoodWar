@@ -135,11 +135,11 @@ const _up0 = new T.Vector3(0, 1, 0), _cv0 = new T.Vector3();
 function copLight(c) { let best = null, bd = 90; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.x - c.x, h.z - c.z); if (d < bd) { bd = d; best = h; } }); return best; }
 // --- at the controls: keys or the stick across the ground, Space and Shift (or the UP and DOWN buttons) for height, the mouse turns it
 function heliControls(c, dt) {
-  const inp = c.inp; let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = clamp(-TOUCH.fy * 1.25, -1, 1); side = clamp(TOUCH.fx * 1.25, -1, 1); }
-  inp.fwd = fwd; inp.side = side; inp.up = (keys.Space ? 1 : 0) - (keys.ShiftLeft || keys.ShiftRight || keys.KeyC ? 1 : 0); inp.yaw = P.cyaw;
+  const inp = c.inp; let fwd = (isHeld('afwd') ? 1 : 0) - (isHeld('aback') ? 1 : 0), side = (isHeld('aright') ? 1 : 0) - (isHeld('aleft') ? 1 : 0);
+  { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = clamp(-sy * 1.25, -1, 1); side = clamp(sx * 1.25, -1, 1); } }
+  inp.fwd = fwd; inp.side = side; inp.up = heldAmt('up') - heldAmt('down'); inp.yaw = P.cyaw;
   stepHeli(c, dt, inp);
-  if (c.spec.air === 'gun' && !c.sunk) { if (mouse.down) heliGun(c); if (mouse.right || keys.KeyG) heliRocket(c); }
+  if (c.spec.air === 'gun' && !c.sunk) { if (mouse.down) heliGun(c); if (isHeld('rockets')) heliRocket(c); }
   c.rk = Math.min(8, (c.rk === undefined ? 8 : c.rk) + dt / 1.2);
   if (c.oob && !P.airWarn) { P.airWarn = true; banner('Restricted airspace', 'Turn back toward the city', 2); } if (!c.oob) P.airWarn = false;
 }

@@ -74,6 +74,7 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
+#h-net{top:70px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
 #h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
 /* top-left: the jobs going on in the city */
 #evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
@@ -141,8 +142,10 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 .tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .tc-stick.down{border-style:solid}
 #touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c],#touch.air .tc[data-ctx=f],#touch.air .tc[data-ctx=c],#touch.car .tc[data-ctx=a],#touch.foot .tc[data-ctx=a]{display:none}
-#touch.air:not(.gun):not(.edit) .tc-rocket{display:none}
-#touch:not(.call) .tc-call{display:none}
+#touch.air:not(.gun):not(.edit) .tc-rocket:not(.rm){display:none}
+#touch:not(.call) .tc-call:not(.rm){display:none}
+#touch:not(.edit) .tc.off{display:none}#touch.edit .tc.off{opacity:.32!important;border-style:dotted}
+.tc-x{border-color:rgba(182,132,255,.9)}
 .tc-call{border-color:var(--gold);color:var(--gold)}
 #touch.dead .tc:not(.tc-pause){display:none}
 #touch.edit{background:rgba(14,16,20,.35)}
@@ -153,6 +156,20 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 #tedit label{display:flex;gap:8px;align-items:center;flex:1;min-width:150px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--ash)}
 #tedit input[type=range]{flex:1;accent-color:var(--gold)}
 #te-what{color:var(--gold);font-weight:700;letter-spacing:.04em}
+#tedit select{flex:1;min-width:0;font:inherit;font-size:14px;background:#0e1014;color:var(--chalk);border:1px solid var(--line);padding:4px}
+#ctl{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(96vw,660px);max-height:94vh;display:flex;flex-direction:column;gap:8px;padding:12px 14px;background:rgba(18,20,26,.97);border:1px solid var(--gold);font-size:15px;touch-action:auto}
+#ctl .ch{display:flex;gap:8px;align-items:center;flex-wrap:wrap}#ctl .ch b{font-size:19px;letter-spacing:.1em;text-transform:uppercase;margin-right:auto;color:var(--gold)}
+#ctl .tabs{display:flex;gap:6px}#ctl .tabs .btn.on{background:var(--chalk);color:#111}#ctl-x{font-size:24px;line-height:1;background:none;border:0;color:var(--chalk);cursor:pointer;padding:0 4px}
+#ctl .r{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}#ctl label{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ash)}
+#ctl select,#ctl input[type=range]{font:inherit;font-size:14px;background:#0e1014;color:var(--chalk);border:1px solid var(--line);padding:3px;accent-color:var(--gold)}
+#ctl-note{font-size:14px;color:var(--ash);min-height:1.2em}
+#ctl-list{overflow-y:auto;flex:1;min-height:120px;padding-right:4px;overscroll-behavior:contain}
+#ctl-list h4{margin:10px 0 3px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+#ctl-list .cr{display:grid;grid-template-columns:1fr minmax(84px,128px) minmax(84px,128px);gap:6px;align-items:center;padding:3px 0;border-top:1px solid var(--line)}
+#ctl-list .cr button{font:inherit;font-size:14px;padding:5px 6px;min-height:32px;background:rgba(242,239,230,.07);color:var(--chalk);border:1px solid rgba(242,239,230,.22);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctl-list .cr button:hover{border-color:var(--chalk)}#ctl-list .cr button.cap{border-color:var(--gold);color:var(--gold);background:rgba(255,200,61,.12)}
+#ctl-list .cr small{grid-column:1/-1;font-size:12px;color:var(--ash)}#ctl-list .cr small.bad{color:#ff8a7a}
+#shop li.hi{outline:2px solid var(--gold);outline-offset:1px}
 #rotate{position:absolute;inset:0;z-index:9;background:var(--asphalt);display:none;place-items:center;text-align:center;font-family:var(--font-display);font-size:30px;padding:24px}
 #rotate small{display:block;font-family:var(--font-ui);font-size:16px;color:var(--ash);margin-top:8px}
 @media (orientation:portrait){body.touch #rotate{display:grid}}
@@ -176,6 +193,7 @@ body.touch #turf{top:6px}
 body.touch #turf .zs{gap:2px}
 body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
 body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
+body.touch #h-net{top:calc(5.2vmin + 26px);font-size:11px}
 body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
 body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
 body.touch #feed div{white-space:normal;text-align:right}
@@ -265,7 +283,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 .col input[type=text],.col select{font:600 17px var(--font-ui);color:var(--chalk);background:rgba(0,0,0,.4);border:1px solid var(--ash);padding:7px 9px;min-width:0}
 .col input[type=text]{width:150px}
 .status{font-size:16px;color:var(--ash);min-height:1.3em}
-.status.ok{color:var(--cash)}
+.status.ok{color:var(--cash)}.status.warn{color:var(--gold)}#co-ver .btn{margin-left:6px}
 .roster{list-style:none;margin:0;padding:0;display:grid;gap:3px;max-width:440px}
 .roster li{display:flex;justify-content:space-between;gap:12px;font-size:17px;font-weight:600;border-left:4px solid var(--ash);padding:4px 10px;background:rgba(0,0,0,.34)}
 .roster li span:last-child{color:var(--ash);font-size:13px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
@@ -302,6 +320,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-gang" aria-label="Crew notoriety" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-rank" aria-label="Rank"><span id="rk-gain"></span><i><u id="rk-fill"></u></i><b id="rk-n">1</b></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
+    <div id="h-net" class="sh" hidden></div>
     <div id="h-race" class="sh" hidden></div>
     <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>
@@ -341,6 +360,14 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="te-what">Drag a control to move it</div>
     <div class="r"><button type="button" class="btn sm" id="te-ctx">Showing: on foot</button><button type="button" class="btn sm" id="te-reset">Reset layout</button><button type="button" class="btn sm" id="te-done">Done</button></div>
     <div class="r"><label>Size <input type="range" id="te-size" min="0.06" max="0.5" step="0.01" value="0.14"></label><label>See-through <input type="range" id="te-alpha" min="0.15" max="1" step="0.05" value="0.6"></label></div>
+    <div class="r"><label>Does <select id="te-act" aria-label="What this button does"></select></label><button type="button" class="btn sm" id="te-hide">Hide</button><button type="button" class="btn sm" id="te-add">Add a button</button></div>
+  </div>
+  <div id="ctl" hidden role="dialog" aria-label="Controls">
+    <div class="ch"><b>Controls</b><span class="tabs"><button type="button" class="btn sm" data-dev="kb">Keyboard &amp; mouse</button><button type="button" class="btn sm" data-dev="pad">Controller</button></span><button type="button" id="ctl-x" aria-label="Close">×</button></div>
+    <div class="r"><label>ADS <select id="ctl-ads"><option value="hold">Hold</option><option value="toggle">Toggle</option></select></label><span class="r" id="ctl-kbopts"><label>Mouse speed <input type="range" id="ctl-ms" min="0.3" max="3.6" step="0.05" value="1"></label></span><span class="r" id="ctl-padopts" hidden><label>Look speed <input type="range" id="ctl-ps" min="0.3" max="3" step="0.1" value="1"></label><label>Invert look <select id="ctl-pi"><option value="0">No</option><option value="1">Yes</option></select></label><label>Aim help <select id="ctl-pa"><option value="1">On</option><option value="0">Off</option></select></label></span></div>
+    <div id="ctl-note"></div>
+    <div id="ctl-list"></div>
+    <div class="r"><button type="button" class="btn sm" id="ctl-reset">Reset these to defaults</button><button type="button" class="btn sm" id="ctl-done">Done</button></div>
   </div>
   <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
@@ -367,9 +394,9 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
         <div><dt>B · T</dt><dd>Call a drive-by (4-kill streak) · phone: homies, mechanic, fixer, work</dd></div>
         <div><dt>Helicopter</dt><dd>W A S D fly · Space up · Shift down · mouse turns · click guns · right-click or G rockets</dd></div>
       </dl>
-      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work.</p>
-      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
-      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
+      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. ADS aims down the sights (tap on, tap off, or hold: your pick below). USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work. Move buttons also changes what any button does, hides the ones you never use and adds buttons of your own. A controller works too.</p>
+      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><label for="set-tads">ADS button</label><select id="set-tads"><option value="toggle">Tap on, tap off</option><option value="hold">Hold</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
+      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
       <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns, rank, businesses, your car and your turf are saved as you play, and your turf and businesses keep earning while you are away. A player's headshot kills in one shot. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
     </div>
@@ -379,79 +406,107 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 <script src="mqtt.min.js"></script>
 <script>
 /* Online play outside Claude.
-   Every player keeps one ordinary outbound connection to a public message relay and posts their own state to it; the relay
-   passes it to everyone else in the same room. Nothing connects browser-to-browser, so home routers and shared wifi are not
-   in the way, and nobody "holds the room open": anyone can come and go.
+   Every player keeps ordinary outbound connections to two public message relays at once and posts their own state to both;
+   each relay passes it to everyone else in the same room, and a copy that arrives twice is dropped. Either relay can fail,
+   or be blocked on someone's network, and the game carries on through the other one. Nothing connects browser-to-browser,
+   so home routers and shared wifi are not in the way, and nobody "holds the room open": anyone can come and go.
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
+   Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 17:14 UTC';
+  const BUILD = 'build 13 Nov 21:12 UTC', PROTO = 'v9';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
-  const STALE = 7000;   // a player the relay has not heard from for this long has gone
+  const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
+  const STALE = 7000;                          // a player no relay has heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v8/' + code + '/';
-  const table = {}, seen = {}, subs = [];
-  let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/' + PROTO + '/' + code + '/', vbase = 'hoodwar/ver/' + code + '/';
+  const table = {}, seen = {}, lastQ = {}, goneVia = {}, vers = {}, subs = [], links = [];
+  let mine = {}, q = 0, started = false, lastT = 0, verT = 0, note = '';
+  const isUp = () => links.some(L => L.up);
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
+  const pnum = p => parseInt(String(p).replace(/\D/g, ''), 10) || 0;
   const show = () => {
     const el = document.getElementById('co-link-status'); if (!el) return;
-    const n = Object.keys(table).length - (up ? 1 : 0);
-    el.textContent = (up ? 'Online · ' + where + ' · ' + (n === 0 ? 'nobody else here yet' : n === 1 ? '1 other player here' : n + ' other players here') + ' · server ' + (si + 1) : note || 'Connecting…') + ' · ' + BUILD;
-    el.className = up ? 'status ok' : 'status';
+    const n = Object.keys(table).length - 1, up = links.filter(L => L.up), rtt = room.rtt;
+    el.textContent = (up.length ? 'Online · ' + where + ' · ' + (n <= 0 ? 'nobody else here yet' : n === 1 ? '1 other player here' : n + ' other players here') + ' · ' + (up.length > 1 ? 'two relays' : 'one relay') + (rtt ? ' · ' + rtt + ' ms' : '') : note || 'Connecting…') + ' · ' + BUILD;
+    el.className = up.length ? 'status ok' : 'status';
+    const vn = document.getElementById('co-ver'); if (!vn) return; const now = Date.now(), newer = Object.keys(vers).filter(k => now - vers[k].t < 30000 && pnum(vers[k].p) > pnum(PROTO)), older = Object.keys(vers).filter(k => now - vers[k].t < 30000 && pnum(vers[k].p) < pnum(PROTO));
+    vn.hidden = !newer.length && !older.length;
+    vn.querySelector('span').textContent = newer.length ? 'A newer version of the game is out and someone in this room is on it. Reload to play with them.' : older.length ? (older.length === 1 ? 'A player' : older.length + ' players') + ' in this room ' + (older.length === 1 ? 'is' : 'are') + ' on an older version of the game. They need to reload the page to play with you.' : '';
+    vn.querySelector('button').hidden = !newer.length;
   };
-  const publish = () => { if (!up || !cl) return; lastT = Date.now(); try { cl.publish(base + me, JSON.stringify(mine), { qos: 0 }); } catch (e) {} };
-  const drop = id => { if (!(id in table) || id === me) return; delete table[id]; delete seen[id]; fire(); show(); };
-  function connect() {
+  const say = (L, topic, msg) => { try { L.c.publish(topic, msg, { qos: 0 }); return true; } catch (e) { return false; } };
+  const publish = () => {
+    if (!isUp()) return; lastT = Date.now(); q++; const msg = JSON.stringify(Object.assign({ _q: q }, mine)), t = performance.now();
+    links.forEach(L => { if (L.up && L.c && say(L, base + me, msg)) { L.pend[q] = t; if (q % 32 === 0) for (const k in L.pend) if (t - L.pend[k] > 8000) delete L.pend[k]; } });
+  };
+  const beacon = () => { verT = Date.now(); const msg = JSON.stringify({ p: PROTO, b: BUILD }); links.forEach(L => { if (L.up && L.c) say(L, vbase + me, msg); }); };
+  const drop = id => { if (!(id in table) || id === me) return; delete table[id]; delete seen[id]; delete goneVia[id]; fire(); show(); };
+  // which server a link should try next: one the other link is not on
+  const nextServer = L => { for (let k = 1; k <= SERVERS.length; k++) { const i = (L.i + k) % SERVERS.length; if (!links.some(o => o !== L && o.i === i)) return i; } return L.i; };
+  function connect(L) {
     if (typeof mqtt === 'undefined') { note = 'The online library did not load. Reload the page. Solo still works.'; return show(); }
-    note = 'Connecting to server ' + (si + 1) + '…'; show();
+    if (!isUp()) { note = 'Connecting…'; show(); }
     let ok = false, dead = false, c;
     const lost = why => {
-      if (dead) return; dead = true; if (cl === c) cl = null; up = false; try { c.end(true); } catch (e) {}
-      for (const k in table) { delete table[k]; delete seen[k]; } fire();
-      if (!ok) { fails++; si = (si + 1) % SERVERS.length; }
-      note = (ok ? 'Connection lost. Reconnecting…' : 'Server did not answer (' + why + '). Trying server ' + (si + 1) + '…'); show();
-      setTimeout(connect, ok ? 800 : Math.min(4000, 600 * fails));
+      if (dead) return; dead = true; L.up = false; if (L.c === c) L.c = null; try { c.end(true); } catch (e) {}
+      if (!ok) { L.fails++; L.i = nextServer(L); }
+      if (!isUp()) note = ok ? 'Connection lost. Reconnecting…' : 'No relay answered (' + why + '). Trying again…';
+      show(); fire();
+      setTimeout(() => connect(L), ok ? 800 : Math.min(5000, 700 * L.fails));
     };
-    try { c = cl = mqtt.connect(SERVERS[si], { clientId: 'hw_' + me, clean: true, keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, will: { topic: base + me, payload: '', qos: 0, retain: false } }); }
+    try { c = L.c = mqtt.connect(SERVERS[L.i], { clientId: 'hw_' + me + '_' + L.k, clean: true, keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, will: { topic: base + me, payload: '', qos: 0, retain: false } }); }
     catch (e) { c = { end() {} }; return lost('could not start'); }
-    c.on('connect', () => { if (dead) return; ok = true; up = true; fails = 0; c.subscribe(base + '+', { qos: 0 }, () => { table[me] = mine; publish(); show(); fire(); }); });
+    c.on('connect', () => { if (dead) return; ok = true; L.fails = 0; c.subscribe([base + '+', vbase + '+'], { qos: 0 }, () => { if (dead) return; const first = !isUp(); L.up = true; table[me] = mine; publish(); beacon(); show(); if (first) fire(); }); });
     c.on('message', (topic, payload) => {
-      if (dead || topic.slice(0, base.length) !== base) return; const id = topic.slice(base.length); if (id === me || !id) return;
-      const txt = payload.toString(); if (!txt) return drop(id);
+      if (dead) return; const txt = payload.toString();
+      if (topic.slice(0, vbase.length) === vbase) { const id = topic.slice(vbase.length); if (id === me || !txt) return; try { const v = JSON.parse(txt); if (v && v.p && v.p !== PROTO) { vers[id] = { p: String(v.p).slice(0, 8), t: Date.now() }; show(); } } catch (e) {} return; }
+      if (topic.slice(0, base.length) !== base) return; const id = topic.slice(base.length); if (!id) return;
+      if (id === me) { const m = /^\{"_q":(\d+)/.exec(txt.slice(0, 24)); if (m && L.pend[m[1]]) { const d = performance.now() - L.pend[m[1]]; delete L.pend[m[1]]; L.rtt = L.rtt ? L.rtt * .8 + d * .2 : d; } return; }   // our own message back: how long the round trip took
+      if (!txt) { (goneVia[id] || (goneVia[id] = {}))[L.k] = 1; if (links.every(o => !o.up || goneVia[id][o.k])) drop(id); return; }   // gone, as far as this relay knows; gone for good once every relay says so
       let pres; try { pres = JSON.parse(txt); } catch (e) { return; } if (!pres || typeof pres !== 'object') return;
-      const isNew = !(id in table); seen[id] = Date.now(); table[id] = pres; if (isNew) { publish(); show(); }   // someone new: tell them we are here straight away
+      const qq = +pres._q || 0; seen[id] = Date.now(); delete goneVia[id];
+      if (qq && id in table && qq <= (lastQ[id] || 0)) return;   // the other relay's copy, or one that arrived late
+      lastQ[id] = qq; const isNew = !(id in table); table[id] = pres; if (isNew) { publish(); show(); }   // someone new: tell them we are here straight away
       fire();
     });
     c.on('close', () => lost('closed')); c.on('error', e => lost(e && e.message ? String(e.message).slice(0, 40) : 'error')); c.on('offline', () => lost('offline'));
   }
   setInterval(() => {
-    if (!up) return; const now = Date.now();
-    if (now - lastT >= 2000) publish();                                   // heartbeat, so newcomers and the stale check always have something recent
+    const now = Date.now();
+    if (isUp() && now - lastT >= 2000) publish();                       // heartbeat, so newcomers and the stale check always have something recent
+    if (isUp() && now - verT >= 10000) beacon();
     for (const id in seen) if (now - seen[id] > STALE) drop(id);
+    show();
   }, 1000);
-  window.addEventListener('pagehide', () => { try { if (up && cl) cl.publish(base + me, '', { qos: 0 }); } catch (e) {} });
+  window.addEventListener('pagehide', () => { links.forEach(L => { if (L.up && L.c) say(L, base + me, ''); }); });
   const room = {
     peers: () => Object.keys(table).map(k => ({ peer: k, presence: table[k], isMe: k === me, sameTab: k === me, kind: 'viewer', guest: false, by: null })),
     presence: patch => {
       const o = Object.assign({}, mine); for (const k in patch) { if (patch[k] === null) delete o[k]; else o[k] = patch[k]; }
-      mine = o; if (up) { table[me] = mine; publish(); }
+      mine = o; if (started) { table[me] = mine; publish(); }
       return Promise.resolve();
     },
     onPeers: fn => { subs.push(fn); return () => {}; },
     join: () => Promise.reject(new Error('one room per link')),
+    get up() { return isUp(); },                                            // the game asks before deciding the host has left: maybe it is us that has
+    get rtt() { let r = 0; links.forEach(L => { if (L.up && L.rtt && (!r || L.rtt < r)) r = L.rtt; }); return Math.round(r); },
+    get relays() { return links.filter(L => L.up).length; },
   };
-  window.claude = { use: async name => { if (name !== 'room') return null; if (!started) { started = true; connect(); } return room; } };
+  window.claude = { use: async name => { if (name !== 'room') return null; if (!started) { started = true; table[me] = mine; for (let k = 0; k < LINKS; k++) { links[k] = { k, i: k, c: null, up: false, fails: 0, rtt: 0, pend: {} }; connect(links[k]); } } return room; } };
   window.addEventListener('hashchange', () => location.reload());
-  // under the lobby: whether the relay is up, and the link to hand to friends
+  // under the lobby: whether the relays are up, the link to hand to friends, and a word when versions do not match
   const anchor = document.getElementById('co-status');
   if (anchor) {
     const st = document.createElement('div'); st.className = 'status'; st.id = 'co-link-status'; st.textContent = 'Connecting…';
     const row = document.createElement('div'); row.className = 'row'; row.id = 'row-link';
     row.innerHTML = '<input id="co-link" type="text" readonly aria-label="Link to this room"><button type="button" class="btn sm" id="co-copy">Copy link</button><button type="button" class="btn sm" id="co-priv"></button>';
-    anchor.after(st); st.after(row);
+    const vn = document.createElement('div'); vn.className = 'status warn'; vn.id = 'co-ver'; vn.hidden = true; vn.innerHTML = '<span></span> <button type="button" class="btn sm">Reload now</button>';
+    anchor.after(st); st.after(row); row.after(vn);
+    vn.querySelector('button').addEventListener('click', () => { location.replace(location.pathname + '?v=' + Date.now().toString(36) + location.hash); });
     const input = document.getElementById('co-link'), btn = document.getElementById('co-copy'), pv = document.getElementById('co-priv');
-    input.value = location.href.split('#')[0] + (priv ? '#' + code : '');
+    input.value = location.href.split('#')[0].split('?')[0] + (priv ? '#' + code : '');
     input.addEventListener('keydown', e => e.stopPropagation());
     pv.textContent = priv ? 'Back to public room' : 'Make a private room';
     pv.addEventListener('click', () => { if (priv) { location.hash = ''; location.reload(); } else location.hash = Math.random().toString(36).slice(2, 8); });
@@ -2594,6 +2649,238 @@ function addPickup(type, x, y, z, team, id) {
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }
 
 /* =====================================================================
+   11b. CONTROLS — every action starts from its keys, mouse buttons and controller buttons, and any of them can be changed on the
+        Controls page (kept in this browser). Touch buttons start actions directly, so a key moved elsewhere never strands a
+        button, and any touch button can be given another action. A controller works as soon as one is connected: the left
+        stick moves, drives and flies, the right stick looks, the triggers aim and fire (and drive, in a car).
+   ===================================================================== */
+// id, its name on the Controls page, the label a touch button shows, where it works (f on foot, c in a car or riding along in anything,
+// a at the controls of an aircraft), 1 when it is held rather than pressed once, keyboard and mouse defaults, controller defaults
+const ACTS = [
+  ['fwd', 'Forward', 'FWD', 'f', 1, ['KeyW'], []], ['back', 'Back', 'BACK', 'f', 1, ['KeyS'], []], ['left', 'Left', 'LEFT', 'f', 1, ['KeyA'], []], ['right', 'Right', 'RIGHT', 'f', 1, ['KeyD'], []],
+  ['sprint', 'Sprint', 'SPRINT', 'f', 1, ['ShiftLeft', 'ShiftRight'], ['Pad10']], ['jump', 'Jump', 'JUMP', 'f', 1, ['Space'], ['Pad0']],
+  ['fire', 'Fire', 'FIRE', 'f', 1, ['Mouse0'], ['Pad7']], ['ads', 'Aim down sights (ADS)', 'ADS', 'f', 1, ['Mouse2'], ['Pad6']],
+  ['nade', 'Throw a grenade', 'NADE', 'f', 0, ['KeyG'], ['Pad1']],
+  ['next', 'Next gun', 'NEXT', 'f', 0, ['KeyQ', 'WheelDown'], ['Pad5']], ['prev', 'Previous gun', 'PREV', 'f', 0, ['WheelUp'], ['Pad4']],
+  ['gas', 'Accelerate', 'GAS', 'c', 1, ['KeyW'], ['Pad7']], ['brake', 'Brake · reverse', 'BRAKE', 'c', 1, ['KeyS'], ['Pad6']],
+  ['steerL', 'Steer left', 'LEFT', 'c', 1, ['KeyA'], []], ['steerR', 'Steer right', 'RIGHT', 'c', 1, ['KeyD'], []],
+  ['hb', 'Handbrake · drift', 'DRIFT', 'c', 1, ['Space'], ['Pad0']], ['nos', 'Nitrous', 'NOS', 'c', 1, ['ShiftLeft', 'ShiftRight'], ['Pad1']],
+  ['horn', 'Horn · siren', 'HORN', 'c', 1, ['KeyH'], ['Pad10']], ['behind', 'Look behind', 'BEHIND', 'c', 1, ['KeyC'], ['Pad11']],
+  ['radio', 'Next radio station', 'RADIO', 'ca', 0, ['KeyQ'], ['Pad15']], ['cfire', 'Shoot from a car', 'FIRE', 'c', 1, ['Mouse0'], ['Pad5']], ['cnext', 'Next gun (in a car)', 'NEXT', 'c', 0, ['WheelDown', 'WheelUp'], ['Pad4']],
+  ['afwd', 'Fly forward · nose down', 'FWD', 'a', 1, ['KeyW'], []], ['aback', 'Fly back · nose up', 'BACK', 'a', 1, ['KeyS'], []], ['aleft', 'Fly left · roll left', 'LEFT', 'a', 1, ['KeyA'], []], ['aright', 'Fly right · roll right', 'RIGHT', 'a', 1, ['KeyD'], []],
+  ['up', 'Climb · throttle up', 'UP', 'a', 1, ['Space'], ['Pad7']], ['down', 'Descend · throttle down', 'DOWN', 'a', 1, ['ShiftLeft', 'ShiftRight', 'KeyC'], ['Pad6']],
+  ['guns', 'Guns (gunship)', 'GUNS', 'a', 1, ['Mouse0'], ['Pad5']], ['rockets', 'Rockets (gunship)', 'ROCKETS', 'a', 1, ['Mouse2', 'KeyG'], ['Pad4']],
+  ['use', 'Use · get in or out', 'USE', 'fca', 0, ['KeyF', 'KeyE'], ['Pad3']], ['reload', 'Reload', 'RELOAD', 'fca', 0, ['KeyR'], ['Pad2']],
+  ['view', 'Camera', 'CAM', 'fca', 0, ['KeyV'], ['Pad13']], ['phone', 'Phone', 'PHONE', 'fca', 0, ['KeyT', 'ArrowUp'], ['Pad12']],
+  ['driveby', 'Call a drive-by', 'CALL', 'fca', 0, ['KeyB'], ['Pad14']],
+  ['map', 'Map (hold)', 'MAP', 'fca', 1, ['KeyM'], ['Pad8']], ['board', 'Players and turf (hold)', 'TURF', 'fca', 1, ['Tab'], []], ['pause', 'Pause', 'PAUSE', 'fca', 0, ['KeyP'], ['Pad9']],
+];
+const ACT_BY = {}; ACTS.forEach(a => { ACT_BY[a[0]] = a; });
+const BK = {}, BP = {}, BIND = {}, BYIN = {}, TACT = {}, ADS = { on: false };
+const CTL = { ads: 'hold', tads: 'toggle', ps: 1, pi: 0, pa: 1 };   // ADS held or toggled (keys and controller; touch), controller look speed, inverted look, aim help
+const RESERVED = /^(Escape|Backquote|Digit[0-9]|Minus|Equal|F5|F11|F12|MetaLeft|MetaRight)$/;
+const STICKY = /^(fwd|back|left|right|steerL|steerR|afwd|aback|aleft|aright)$/;     // on a controller the left stick does these
+function ctlLoad() {
+  let s = null; try { s = JSON.parse(localStorage.getItem('pc-ctl') || 'null'); } catch (e) {}
+  const pick = (t, a, d) => (s && s[t] && Array.isArray(s[t][a]) ? s[t][a] : d).filter(c => typeof c === 'string' && c.length < 24).slice(0, 3);
+  ACTS.forEach(a => { BK[a[0]] = pick('kb', a[0], a[5]); BP[a[0]] = pick('pad', a[0], a[6]); });
+  if (s) { CTL.ads = s.ads === 'toggle' ? 'toggle' : 'hold'; CTL.tads = s.tads === 'hold' ? 'hold' : 'toggle'; CTL.ps = clamp(+s.ps || 1, .3, 3); CTL.pi = s.pi ? 1 : 0; CTL.pa = s.pa === 0 ? 0 : 1; }
+  ctlIndex();
+}
+function ctlSave() { try { localStorage.setItem('pc-ctl', JSON.stringify({ v: 1, kb: BK, pad: BP, ads: CTL.ads, tads: CTL.tads, ps: CTL.ps, pi: CTL.pi, pa: CTL.pa })); } catch (e) {} }
+function ctlIndex() { for (const k in BYIN) delete BYIN[k]; ACTS.forEach(a => { BIND[a[0]] = BK[a[0]].concat(BP[a[0]]); BIND[a[0]].forEach(c => (BYIN[c] || (BYIN[c] = [])).push(a)); }); }
+ctlLoad();
+// --- names for keys and buttons
+const KEYNAME = { Space: 'Space', ShiftLeft: 'Shift', ShiftRight: 'R-Shift', ControlLeft: 'Ctrl', ControlRight: 'R-Ctrl', AltLeft: 'Alt', AltRight: 'R-Alt', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Enter: 'Enter', NumpadEnter: 'Num Enter', Tab: 'Tab', Backspace: 'Backspace', CapsLock: 'Caps Lock',
+  Mouse0: 'Left click', Mouse1: 'Middle click', Mouse2: 'Right click', Mouse3: 'Mouse 4', Mouse4: 'Mouse 5', WheelUp: 'Wheel up', WheelDown: 'Wheel down', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\', BracketLeft: '[', BracketRight: ']', IntlBackslash: '\\' };
+const PADNAME = ['A', 'B', 'X', 'Y', 'LB', 'RB', 'LT', 'RT', 'View', 'Menu', 'Left stick', 'Right stick', 'D-pad up', 'D-pad down', 'D-pad left', 'D-pad right', 'Home'];
+const PADSONY = ['Cross', 'Circle', 'Square', 'Triangle', 'L1', 'R1', 'L2', 'R2', 'Share', 'Options', 'L3', 'R3', 'D-pad up', 'D-pad down', 'D-pad left', 'D-pad right', 'PS'];
+function keyName(c) {
+  if (!c) return '—'; if (c.startsWith('Pad')) { const i = +c.slice(3); return (PAD.sony ? PADSONY : PADNAME)[i] || 'Button ' + (i + 1); }
+  if (KEYNAME[c]) return KEYNAME[c]; if (c.startsWith('Key')) return c.slice(3); if (c.startsWith('Digit')) return c.slice(5); if (c.startsWith('Numpad')) return 'Num ' + c.slice(6); return c;
+}
+const padRecent = () => PAD.on && PAD.used && performance.now() - PAD.t < 30000;
+// the key cap to show for an action in prompts and hints: what this player is actually using
+function capOf(id) {
+  const a = ACT_BY[id]; if (!a) return '?';
+  if (typeof TOUCH !== 'undefined' && TOUCH.on) return a[2];
+  if (padRecent() && BP[id].length) return keyName(BP[id][0]);
+  return BK[id].length ? keyName(BK[id][0]) : '—';
+}
+const capText = s => s.indexOf('<b>F</b>') < 0 ? s : s.replace('<b>F</b>', '<b>' + capOf('use') + '</b>');
+// --- what the player is doing right now decides which actions a key can start
+const ctxNow = () => !P.car ? 'f' : P.car.spec.air && P.seat === 0 ? 'a' : 'c';
+const FIRES = ['fire', 'cfire', 'guns'];
+function isHeld(id) { if (TACT[id]) return true; const b = BIND[id]; if (b) for (let i = 0; i < b.length; i++) if (keys[b[i]]) return true; return false; }
+function heldAmt(id) {   // 0 to 1: a key is all or nothing, a trigger can be half pressed
+  if (TACT[id]) return 1; const b = BIND[id]; let v = 0; if (!b) return 0;
+  for (let i = 0; i < b.length; i++) { const c = b[i]; if (c.charCodeAt(0) === 80 && c.charCodeAt(1) === 97) { const p = PAD.val[c] || 0; if (keys[c] || p > .08) v = Math.max(v, keys[c] ? Math.max(p, .5) : p); } else if (keys[c]) return 1; }
+  return Math.min(1, v);
+}
+// a key, mouse button, wheel notch or controller button went down. Where two actions share it, the one made for this situation wins:
+// Q is the radio in a car and the next gun on foot.
+function inputDown(code, fresh) {   // fresh: the browser says this is a new press (keys and mouse buttons; a controller is polled, so it checks)
+  if (keys[code] && !fresh) return; keys[code] = true; if (G.state !== 'playing') return;
+  const rows = BYIN[code]; if (!rows) return; const cx = ctxNow(); let best = 9;
+  for (let i = 0; i < rows.length; i++) if (rows[i][3].indexOf(cx) >= 0 && rows[i][3].length < best) best = rows[i][3].length;
+  for (let i = 0; i < rows.length; i++) if (rows[i][3].indexOf(cx) >= 0 && rows[i][3].length === best) actDown(rows[i][0], 'in');
+}
+function inputUp(code) { if (!keys[code]) return; keys[code] = false; const rows = BYIN[code]; if (rows) for (let i = 0; i < rows.length; i++) actUp(rows[i][0], 'in'); }
+function setAds(on) { ADS.on = on; mouse.right = on; if (typeof TOUCH !== 'undefined') TOUCH.aim = on; markAds(); }
+function markAds() { if (typeof TOUCH === 'undefined') return; for (const id in TOUCH.el) if (tHow(id) === 'act:ads') TOUCH.el[id].classList.toggle('on', mouse.right); }
+function actDown(id, src) {
+  if (G.state !== 'playing') return;
+  if (id === 'map') { const m = $('bigmap'); if (src === 'touch' && !m.hidden) { m.hidden = true; return; } m.hidden = false; $('board').hidden = true; drawBigMap(); return; }
+  if (id === 'board') { const b = $('board'); if (src === 'touch' && !b.hidden) { b.hidden = true; return; } drawBoard(); b.hidden = false; $('bigmap').hidden = true; return; }
+  if (id === 'pause') { if (shopOpen) closeShop(); else if (locked()) document.exitPointerLock(); else pause(); return; }
+  if (P.dead) return;
+  switch (id) {
+    case 'fire': case 'cfire': case 'guns': mouse.down = true; mouse.fresh = true; initAudio(); return;
+    case 'ads': if ((src === 'touch' ? CTL.tads : CTL.ads) === 'toggle') setAds(!mouse.right); else { mouse.right = true; markAds(); } return;
+    case 'use': if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); return;
+    case 'reload': startReload(); return;
+    case 'nade': throwGrenade(); return;
+    case 'next': case 'cnext': cycleWeapon(1); return;
+    case 'prev': cycleWeapon(-1); return;
+    case 'radio': nextRadio(); return;
+    case 'view': if (P.car) camFar = camFar ? 0 : 1; else { P.view = P.view === 1 ? 3 : 1; $('set-view').value = String(P.view); try { localStorage.setItem('pc-view', String(P.view)); } catch (x) {} } return;
+    case 'driveby': callDriveBy(); return;
+    case 'phone': if (shopOpen && shopOpen.kind === 'phone') closeShop(); else if (!shopOpen) openPhone(); return;
+  }
+}
+function actUp(id, src) {
+  if (FIRES.indexOf(id) >= 0) { if (!FIRES.some(isHeld)) mouse.down = false; }
+  else if (id === 'ads') { if ((src === 'touch' ? CTL.tads : CTL.ads) !== 'toggle' && !isHeld('ads')) { mouse.right = false; markAds(); } }
+  else if (id === 'map') { if (src !== 'touch' && !isHeld('map')) $('bigmap').hidden = true; }
+  else if (id === 'board') { if (src !== 'touch' && !isHeld('board')) $('board').hidden = true; }
+}
+// an ADS left on goes off when it can no longer apply
+function inputTick() { if (mouse.right && (P.car || P.dead) && !isHeld('ads')) setAds(false); }
+// --- a controller: polled every frame
+const PAD = { on: false, used: false, id: '', sony: false, lx: 0, ly: 0, rx: 0, ry: 0, val: {}, t: -1e9 };
+const padDz = v => { v = +v || 0; const a = Math.abs(v); return a < .17 ? 0 : Math.sign(v) * Math.min(1, (a - .17) / .78); };
+function pollPad(dt) {
+  if (!navigator.getGamepads) return; let gp = null; let all = []; try { all = navigator.getGamepads() || []; } catch (e) {}
+  for (let i = 0; i < all.length; i++) if (all[i] && all[i].connected !== false && all[i].buttons && all[i].buttons.length) { gp = all[i]; break; }
+  if (!gp) { if (PAD.on) { PAD.on = false; PAD.lx = PAD.ly = PAD.rx = PAD.ry = 0; for (let i = 0; i < 17; i++) { PAD.val['Pad' + i] = 0; inputUp('Pad' + i); } } return; }
+  if (!PAD.on || PAD.id !== gp.id) { PAD.on = true; PAD.id = gp.id; PAD.sony = /054c|playstation|dualshock|dualsense|^wireless controller/i.test(gp.id); if (!$('ctl').hidden) ctlRender(); }
+  for (let i = 0; i < 17 && i < gp.buttons.length; i++) { const b = gp.buttons[i], v = typeof b === 'number' ? b : (b.value || (b.pressed ? 1 : 0)), c = 'Pad' + i, on = v > .3 || (typeof b === 'object' && b.pressed && i !== 6 && i !== 7); PAD.val[c] = v;
+    if (on && !keys[c]) padDown(c); else if (!on && keys[c]) inputUp(c); }
+  const ax = gp.axes || []; PAD.lx = padDz(ax[0]); PAD.ly = padDz(ax[1]); PAD.rx = padDz(ax[2]); PAD.ry = padDz(ax[3]);
+  if (PAD.lx || PAD.ly || PAD.rx || PAD.ry) padUsed();
+  if (G.state === 'playing' && (PAD.rx || PAD.ry)) {   // the right stick looks; the curve keeps small pushes fine for aiming
+    const k = CTL.ps * 3.1 * dt * (firstPerson() || P.ads > .5 ? camera.fov / 72 : 1);
+    P.cyaw -= PAD.rx * Math.abs(PAD.rx) * k; P.cpitch = clamp(P.cpitch - PAD.ry * Math.abs(PAD.ry) * k * .72 * (CTL.pi ? -1 : 1), -1.25, 1.35); P.idleCam = 0;
+  }
+}
+function padUsed() {
+  PAD.t = performance.now(); if (!PAD.used) { PAD.used = true; if (G.state === 'playing') banner('Controller on', 'Change its buttons on the Controls page', 2.2); }
+  if (typeof TOUCH !== 'undefined' && TOUCH.on && TOUCH.cfg.mode === 'auto' && !TOUCH.edit) { TOUCH.coarse = false; setTouch(false); }   // a thumb on the screen brings them back
+}
+function padDown(c) {
+  padUsed();
+  if (CAP.on) { keys[c] = true; if (CAP.dev === 'pad') capSet(c); return; }
+  if (G.state === 'paused' && c === 'Pad9' && $('ctl').hidden) { keys[c] = true; $('deploy').click(); return; }
+  if (G.state === 'menu' && c === 'Pad9' && !NET.lob && $('ctl').hidden) { keys[c] = true; $('deploy').click(); return; }
+  if (G.state === 'playing' && shopOpen) {   // menus: the d-pad picks, A takes it, B closes
+    if (c === 'Pad12' || c === 'Pad13') { keys[c] = true; shopNav(c === 'Pad13' ? 1 : -1); return; }
+    if (c === 'Pad0') { keys[c] = true; shopNav(0); return; }
+    if (c === 'Pad1') { keys[c] = true; closeShop(); return; }
+  }
+  inputDown(c);
+}
+window.addEventListener('gamepadconnected', () => { PAD.t = performance.now(); });
+// the stick that moves you: the touch stick when a thumb is on it, otherwise a controller's left stick
+const stickX = () => typeof TOUCH !== 'undefined' && TOUCH.on && (TOUCH.fx || TOUCH.fy) ? TOUCH.fx : PAD.on ? PAD.lx : 0;
+const stickY = () => typeof TOUCH !== 'undefined' && TOUCH.on && (TOUCH.fx || TOUCH.fy) ? TOUCH.fy : PAD.on ? PAD.ly : 0;
+function shopNav(d) {
+  if (!shopOpen) return; const list = shopOpen.list || []; if (!list.length) return;
+  if (d === 0) { const it = list[clamp(shopOpen.hi | 0, 0, list.length - 1)]; if (it) buy(it.key); return; }
+  shopOpen.hi = ((shopOpen.hi | 0) + d + list.length) % list.length; markShop(); SFX.tick();
+}
+function markShop() { const lis = $('shop-list').children, hi = shopOpen ? clamp(shopOpen.hi | 0, 0, lis.length - 1) : -1; for (let i = 0; i < lis.length; i++) lis[i].classList.toggle('hi', padRecent() && i === hi); }
+// --- the Controls page
+const CAP = { on: false, a: null, s: 0, dev: 'kb', el: null };
+let ctlDev = 'kb';
+const CTX_NAME = { f: 'on foot', c: 'in a car', a: 'flying' };
+const grpOf = a => a[3] === 'fca' ? 'b' : a[3] === 'ca' ? 'c' : a[3][0];
+function ctlNotes(a, T) {   // [clashes, shadowed]: other actions that share an input with this one where both can happen
+  const bad = [], hid = [];
+  ACTS.forEach(o => { if (o === a) return; const shared = T[a[0]].filter(c => T[o[0]].indexOf(c) >= 0); if (!shared.length) return;
+    const both = [...a[3]].filter(ch => o[3].indexOf(ch) >= 0); if (!both.length) return;
+    if (o[3].length === a[3].length) bad.push(o[1]); else if (o[3].length < a[3].length) hid.push(keyName(shared[0]) + ' ' + both.map(ch => CTX_NAME[ch]).join(' and ') + ' is ' + o[1]); });
+  return [bad, hid];
+}
+function ctlRender() {
+  const box = $('ctl-list'); if (!box) return; const T = ctlDev === 'pad' ? BP : BK, keep = box.scrollTop; box.textContent = ''; CAP.el = null;
+  [['f', 'On foot'], ['c', 'In a car'], ['a', 'Flying'], ['b', 'Anywhere']].forEach(g => {
+    const h = document.createElement('h4'); h.textContent = g[1]; box.appendChild(h);
+    ACTS.forEach(a => {
+      if (grpOf(a) !== g[0] || (ctlDev === 'pad' && STICKY.test(a[0]))) return;
+      const row = document.createElement('div'); row.className = 'cr'; const nm = document.createElement('span'); nm.textContent = a[1] + (a[3] === 'ca' ? ' (and flying)' : ''); row.appendChild(nm);
+      for (let s = 0; s < 2; s++) { const b = document.createElement('button'); b.type = 'button'; b.dataset.a = a[0]; b.dataset.s = String(s); b.textContent = T[a[0]][s] ? keyName(T[a[0]][s]) : '—';
+        if (CAP.on && CAP.a === a[0] && CAP.s === s && CAP.dev === ctlDev) { b.className = 'cap'; b.textContent = ctlDev === 'pad' ? 'Press a button' : 'Press a key'; CAP.el = b; } row.appendChild(b); }
+      const n = ctlNotes(a, T); if (n[0].length) { const sm = document.createElement('small'); sm.className = 'bad'; sm.textContent = 'Also starts: ' + n[0].join(', '); row.appendChild(sm); }
+      if (n[1].length) { const sm = document.createElement('small'); sm.textContent = n[1].join(' · '); row.appendChild(sm); }
+      box.appendChild(row); });
+  });
+  box.scrollTop = keep;
+  document.querySelectorAll('#ctl .tabs button').forEach(b => b.classList.toggle('on', b.dataset.dev === ctlDev));
+  $('ctl-ads').value = CTL.ads; $('ctl-ps').value = String(CTL.ps); $('ctl-pi').value = CTL.pi ? '1' : '0'; $('ctl-pa').value = CTL.pa ? '1' : '0'; $('ctl-ms').value = String(Math.round(SENS / .0022 * 100) / 100);
+  $('ctl-padopts').hidden = ctlDev !== 'pad'; $('ctl-kbopts').hidden = ctlDev === 'pad';
+  if (!CAP.on) $('ctl-note').textContent = ctlDev === 'pad' ? (PAD.on ? 'Controller: ' + PAD.id.replace(/\s*\(.*\)\s*$/, '').slice(0, 48) + '. Left stick moves, drives and flies; right stick looks. Tap a box, then press the button you want.' : 'No controller yet. Plug one in or pair it, then press any button on it. Left stick moves, right stick looks.')
+    : 'Tap a box, then press the key, mouse button or wheel you want. Esc, `, 1–0, - and = stay as they are.';
+}
+function capStart(a, s, el) { CAP.on = true; CAP.a = a; CAP.s = s; CAP.dev = ctlDev; ctlRender(); $('ctl-note').textContent = ctlDev === 'pad' ? 'Press a controller button. Esc cancels, Backspace clears the box.' : 'Press a key, a mouse button (click this box again for the left button) or turn the wheel. Esc cancels, Backspace clears the box.'; }
+function capEnd() { if (!CAP.on) return; CAP.on = false; ctlRender(); }
+function capSet(code) {
+  if (!CAP.on) return; const T = CAP.dev === 'pad' ? BP : BK, L = T[CAP.a].filter(c => c !== code);
+  if (code === null) L.splice(CAP.s, 1); else if (CAP.s < L.length) L[CAP.s] = code; else L.push(code);
+  T[CAP.a] = L.slice(0, 3); CAP.on = false; ctlIndex(); ctlSave(); ctlRender(); keysHelp(); SFX.tick();
+}
+function ctlOpen() { ctlDev = padRecent() ? 'pad' : 'kb'; $('ctl').hidden = false; ctlRender(); }
+function ctlClose() { CAP.on = false; $('ctl').hidden = true; keysHelp(); }
+$('ctl-open').addEventListener('click', ctlOpen); $('ctl-x').addEventListener('click', ctlClose); $('ctl-done').addEventListener('click', ctlClose);
+$('ctl-list').addEventListener('click', e => { const b = e.target.closest('button[data-a]'); if (!b) return; if (CAP.on && CAP.el === b) return; capStart(b.dataset.a, +b.dataset.s, b); });
+document.querySelectorAll('#ctl .tabs button').forEach(b => b.addEventListener('click', () => { CAP.on = false; ctlDev = b.dataset.dev; ctlRender(); }));
+$('ctl-reset').addEventListener('click', () => { const pad = ctlDev === 'pad'; ACTS.forEach(a => { if (pad) BP[a[0]] = a[6].slice(); else BK[a[0]] = a[5].slice(); }); CAP.on = false; ctlIndex(); ctlSave(); ctlRender(); keysHelp(); });
+$('ctl-ads').addEventListener('change', e => { CTL.ads = e.target.value === 'toggle' ? 'toggle' : 'hold'; ctlSave(); });
+$('ctl-ps').addEventListener('input', e => { CTL.ps = clamp(+e.target.value || 1, .3, 3); ctlSave(); });
+$('ctl-pi').addEventListener('change', e => { CTL.pi = e.target.value === '1' ? 1 : 0; ctlSave(); });
+$('ctl-pa').addEventListener('change', e => { CTL.pa = e.target.value === '1' ? 1 : 0; ctlSave(); });
+$('ctl-ms').addEventListener('input', e => { SENS = clamp(.0022 * (+e.target.value || 1), .0006, .008); try { localStorage.setItem('pc-sens', String(SENS)); } catch (x) {} });
+['pointerdown', 'pointermove', 'pointerup', 'touchmove'].forEach(t => $('ctl').addEventListener(t, e => e.stopPropagation()));
+// while a box is listening, the next key, mouse button or wheel notch is for it, and for nothing else
+document.addEventListener('keydown', e => {
+  if (!CAP.on) { if (e.code === 'Escape' && !$('ctl').hidden) { e.preventDefault(); ctlClose(); } return; }
+  e.preventDefault(); e.stopImmediatePropagation();
+  if (e.code === 'Escape') return capEnd();
+  if (CAP.dev !== 'kb') return;
+  if (e.code === 'Backspace' || e.code === 'Delete') return capSet(null);
+  if (RESERVED.test(e.code)) { $('ctl-note').textContent = keyName(e.code) + ' is kept for ' + (/^Digit/.test(e.code) ? 'picking guns' : e.code === 'Backquote' ? 'the dev menu' : /Minus|Equal/.test(e.code) ? 'mouse speed' : 'the browser') + '. Pick another key.'; return; }
+  capSet(e.code);
+}, true);
+document.addEventListener('mousedown', e => {
+  if (!CAP.on || CAP.dev !== 'kb') return;
+  if (e.button === 0 && e.target !== CAP.el) { capEnd(); return; }   // a click anywhere else: stop listening and let the click do its job
+  e.preventDefault(); e.stopImmediatePropagation(); capSet('Mouse' + e.button);
+}, true);
+document.addEventListener('wheel', e => { if (!CAP.on || CAP.dev !== 'kb') return; e.preventDefault(); e.stopImmediatePropagation(); capSet(e.deltaY > 0 ? 'WheelDown' : 'WheelUp'); }, { capture: true, passive: false });
+document.addEventListener('contextmenu', e => { if (!$('ctl').hidden) e.preventDefault(); }, true);
+// the key list on the menu follows the bindings
+function keysHelp() {
+  const dl = document.querySelector('.keys'); if (!dl) return; const k = (...ids) => ids.map(id => BK[id].length ? keyName(BK[id][0]) : '—').join(' ');
+  const rows = [[k('fwd', 'left', 'back', 'right'), 'Move · drive'], ['Mouse', 'Look · ' + k('fire') + ' fires · ' + k('ads') + ' aims down sights'], [k('use'), 'Get in or out · carjack · shop · rob a till'],
+    [k('sprint') + ' · ' + k('jump'), 'Sprint · jump / handbrake'], ['1–0 · ' + k('next'), 'Weapons (7 Glocks · 8 M60 · 9 launcher · 0 bazooka)'], [k('reload') + ' · ' + k('nade'), 'Reload · grenade'],
+    [k('view') + ' · ' + k('behind'), 'Camera · look behind'], [k('radio') + ' · ' + k('horn'), 'Radio · horn, or siren in a police car'], [k('board') + ' · ' + k('map'), 'Players and turf · map'],
+    [k('driveby') + ' · ' + k('phone'), 'Call a drive-by (4-kill streak) · phone'],
+    ['Flying', k('afwd', 'aleft', 'aback', 'aright') + ' fly · ' + k('up') + ' up · ' + k('down') + ' down · mouse turns · ' + k('guns') + ' guns · ' + k('rockets') + ' rockets'],
+    ['Controller', 'Works when connected · Controls changes any key or button']];
+  dl.textContent = ''; rows.forEach(r => { const d = document.createElement('div'), t = document.createElement('dt'), v = document.createElement('dd'); t.textContent = r[0]; v.textContent = r[1]; d.append(t, v); dl.appendChild(d); });
+}
+keysHelp();
+
+/* =====================================================================
    7b. AIRCRAFT — a helicopter is a car with a rotor: seats, damage, wrecks, the wire and jacking one are the cars' own, and only
        how it is drawn, how it flies and what it shoots are here. Also the airport's lights, the airliner that lands and leaves
        again, the police helicopter that joins a big chase, the guards on the gunship, a parachute for whoever jumps, and the
@@ -2730,11 +3017,11 @@ const _up0 = new T.Vector3(0, 1, 0), _cv0 = new T.Vector3();
 function copLight(c) { let best = null, bd = 90; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.x - c.x, h.z - c.z); if (d < bd) { bd = d; best = h; } }); return best; }
 // --- at the controls: keys or the stick across the ground, Space and Shift (or the UP and DOWN buttons) for height, the mouse turns it
 function heliControls(c, dt) {
-  const inp = c.inp; let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), side = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
-  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = clamp(-TOUCH.fy * 1.25, -1, 1); side = clamp(TOUCH.fx * 1.25, -1, 1); }
-  inp.fwd = fwd; inp.side = side; inp.up = (keys.Space ? 1 : 0) - (keys.ShiftLeft || keys.ShiftRight || keys.KeyC ? 1 : 0); inp.yaw = P.cyaw;
+  const inp = c.inp; let fwd = (isHeld('afwd') ? 1 : 0) - (isHeld('aback') ? 1 : 0), side = (isHeld('aright') ? 1 : 0) - (isHeld('aleft') ? 1 : 0);
+  { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = clamp(-sy * 1.25, -1, 1); side = clamp(sx * 1.25, -1, 1); } }
+  inp.fwd = fwd; inp.side = side; inp.up = heldAmt('up') - heldAmt('down'); inp.yaw = P.cyaw;
   stepHeli(c, dt, inp);
-  if (c.spec.air === 'gun' && !c.sunk) { if (mouse.down) heliGun(c); if (mouse.right || keys.KeyG) heliRocket(c); }
+  if (c.spec.air === 'gun' && !c.sunk) { if (mouse.down) heliGun(c); if (isHeld('rockets')) heliRocket(c); }
   c.rk = Math.min(8, (c.rk === undefined ? 8 : c.rk) + dt / 1.2);
   if (c.oob && !P.airWarn) { P.airWarn = true; banner('Restricted airspace', 'Turn back toward the city', 2); } if (!c.oob) P.airWarn = false;
 }
@@ -2978,7 +3265,7 @@ function updateRob(dt) {
 }
 // one panel for every menu: the gun shop, the car shop and the phone. Each brings its own items:
 // { label, sub, cost, off (cannot be had right now), own (already yours), act }. An item can open a page of its own (shopOpen.page).
-function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · F or Esc closes' }); }
+function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · ' + capOf('use') + ' or Esc closes' }); }
 function openMenu(m) { shopOpen = m; $('shop-title').textContent = m.title; $('shop').className = 'pane menu-' + m.kind; $('shop-foot').textContent = m.foot || ''; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
 const page = (label, id) => ({ label: label + ' ›', act: () => { shopOpen.page = id; renderShop(); } }), back = () => ({ label: '‹ Back', act: () => { shopOpen.page = null; renderShop(); } });
@@ -2986,6 +3273,7 @@ function renderShop() {
   if (!shopOpen) return; const ol = $('shop-list'); ol.textContent = '';
   const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key === '10' ? '0' : key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
   shopOpen.list = shopOpen.items(shopOpen.page || null).slice(0, 10); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); });
+  markShop();
 }
 function buy(key) {
   if (!shopOpen) return;
@@ -3010,7 +3298,7 @@ function gunItems(pg) {
   return [
     { label: 'Ammo for every gun', sub: 'Full magazines and spares, rockets included', cost: ammoCost(), act: () => { if (payCash(ammoCost())) { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } SFX.buy(); } } },
     P.armor >= 100 ? { label: 'Body armor', sub: 'Full', off: true, own: true } : { label: 'Body armor', sub: 'Soaks up most of what hits you', cost: 500, act: () => { if (payCash(500)) { P.armor = 100; SFX.buy(); } } },
-    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · G throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
+    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · ' + capOf('nade') + ' throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
     P.hp >= maxHp() ? { label: 'Medkit', sub: 'Not hurt', off: true } : { label: 'Medkit', sub: 'Back to full health', cost: 250, act: () => { if (payCash(250)) { P.hp = maxHp(); SFX.buy(); } } },
     page('Handguns & SMGs', 'hand'), page('Shotguns & rifles', 'long'), page('Heavy weapons', 'heavy')];
 }
@@ -3021,14 +3309,14 @@ function collectPickups() {
 }
 // --- on foot
 function updateOnFoot(dt) {
-  let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
-  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = -TOUCH.fy; str = TOUCH.fx; push = Math.min(1, hyp(fwd, str)); }   // the stick: a little push walks, all the way runs, pinned forward sprints
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
+  let fwd = (isHeld('fwd') ? 1 : 0) - (isHeld('back') ? 1 : 0), str = (isHeld('right') ? 1 : 0) - (isHeld('left') ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
+  { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = -sy; str = sx; push = Math.min(1, hyp(fwd, str)); } }   // a stick: a little push walks, all the way runs; on a touch screen, pinned forward sprints
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
   let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   if (P.chute) { const k = 6.5 / (sp || 1); wx *= k; wz *= k; P.vy = Math.max(P.vy, -4.6); }   // under a canopy: a slow drift down, steered
   const acc = Math.min(1, dt * (P.onGround ? 11 : P.chute ? 1.6 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
-  if (keys.Space && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!keys.Space) P.jumpHeld = false;
+  const jmp = isHeld('jump'); if (jmp && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!jmp) P.jumpHeld = false;
   const wasAir = !P.onGround;
   moveEntity(P, P.vx * dt, P.vz * dt, dt, CFG.player.r, 'p', CFG.player.h); carBlock(P, CFG.player.r);
   if (wasAir && P.onGround) { if (P.fell < -15) hurtPlayer((-P.fell - 15) * 8, null, 'fall'); if (P.fell < -5) SFX.land(); }
@@ -3055,10 +3343,10 @@ function updateInCar(dt) {
   if (c.spec.air && (c.sunk || (c.wreck && c.y < 1.2 && !onLand(c.x, c.z)))) { GAME.leaveCar(true); swimAshore(); return; }
   if (c.spec.air && P.seat === 0 && c.mine !== false) heliControls(c, dt);
   else if (P.seat === 0 && c.mine !== false) {
-    const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
-    if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
-    nitrous(c, dt, !!(keys.ShiftLeft || keys.ShiftRight)); stepCar(c, dt, inp);
-    if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
+    const inp = c.inp; inp.thr = heldAmt('gas') - heldAmt('brake'); inp.steer = (isHeld('steerR') ? 1 : 0) - (isHeld('steerL') ? 1 : 0); inp.hb = isHeld('hb');
+    { const sx = stickX(), sy = stickY(); if (sx) inp.steer = clamp(inp.steer + sx * 1.15, -1, 1); if (TOUCH.on && !isHeld('gas') && !isHeld('brake') && Math.abs(sy) > .3) inp.thr = clamp(-sy * 1.3, -1, 1); }   // a stick steers; on a touch screen up or down on it drives when GAS and BRAKE are not held
+    nitrous(c, dt, isHeld('nos')); stepCar(c, dt, inp);
+    const hk = isHeld('horn'); if (c.cop) { if (hk && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = hk ? 1 : 0; setHorn(hk); } P.hornHeld = hk;
     GAME.roadkill(c, P);
     garageCheck(c);   // stop in a garage and the car shop opens: repairs, resprays that lose the police, armor, engine, and keeping the car
   }
@@ -3084,8 +3372,8 @@ function updateCamera(dt) {
   if (P.dead) { P.orbit = (P.orbit || 0) + dt * .25; px = P.x; py = P.y + .8; pz = P.z; const a = P.cyaw + P.orbit; want = 5; camDist = lerp(camDist, want, Math.min(1, dt * 3)); const t = Math.min(camDist, rayWorld(px, py, pz, Math.sin(a) * .9, .42, Math.cos(a) * .9, 's', camDist + .3) - .3); camera.position.set(px + Math.sin(a) * .9 * t, py + .42 * t, pz + Math.cos(a) * .9 * t); camera.rotation.set(-.44, a, 0); }
   else if (P.car) {
     const c = P.car, sp = carSpeed(c), air = !!c.spec.air; P.idleCam += dt;
-    if (!air && P.idleCam > 1.1 && sp > 2.5 && !keys.KeyC) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
-    const yaw = P.cyaw + (keys.KeyC && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
+    const lb = isHeld('behind'); if (!air && P.idleCam > 1.1 && sp > 2.5 && !lb) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
+    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
     camDist = lerp(camDist, want, Math.min(1, dt * 5)); const t = Math.max(1.2, Math.min(camDist, rayWorld(px, py, pz, -bx, -fy + .12, -bz, 's', camDist + .4) - .4));
     camera.position.set(px - bx * t + sx, py + (-fy + .12) * t + .5 + sy, pz - bz * t); camera.rotation.set(P.cpitch - .04 + sy * .3, yaw + sx * .3, clamp(c.yawRate * .02, -.05, .05)); fov = 72 + Math.min(16, sp * .32);
   } else if (firstPerson()) {
@@ -3811,7 +4099,7 @@ GAME.ev = (...a) => { const e = [++evSeq].concat(a); EVQ.push(e); if (EVQ.length
 function onEvent(e, mine) {
   const k = e[1];
   if (k === 'k') { const a = GAME.unref(e[2]), v = GAME.unref(e[3]), you = q => !!q && (q === P || q.kind === 'rp' || q.team === P.team);
-    if (you(a) || you(v) || (v && hyp(v.x - P.x, v.z - P.z) < 140)) feed(a, v, e[4], e[5]);   /* a fight across town between two other crews does not need reporting */ if (a === P && v && v !== P && isCrew(v.team)) { P.streak++; SFX.kill(!!e[5]); hitMarker(!!e[5], true); if (P.streak === CFG.streak) { P.driveby = true; SFX.streak(); banner('Drive-by ready', 'Press B to send the crew through', 3, 'gold'); } } }
+    if (you(a) || you(v) || (v && hyp(v.x - P.x, v.z - P.z) < 140)) feed(a, v, e[4], e[5]);   /* a fight across town between two other crews does not need reporting */ if (a === P && v && v !== P && isCrew(v.team)) { P.streak++; SFX.kill(!!e[5]); hitMarker(!!e[5], true); if (P.streak === CFG.streak) { P.driveby = true; SFX.streak(); banner('Drive-by ready', 'Press ' + capOf('driveby') + ' to send the crew through', 3, 'gold'); } } }
   else if (k === 'z') { const z = ZONES[e[2]], t = e[3]; if (t === P.team) { banner(z.name, 'Your crew holds it', 2.6, 't' + t); SFX.cap(true); } else if (hyp(z.x - P.x, z.z - P.z) < 220) note(CREWS[t].name + ' took ' + z.name, 'k' + t); }   // the city is full of this; only your own crew's news fills the screen
   else if (k === 'zn') { const z = ZONES[e[2]], t = e[3]; if (e[4] === P.team) { banner(z.name, CREWS[t].name + ' broke your hold', 2.6, 't' + t); SFX.cap(false); } }
   else if (k === 'x') { if (mine) return; const x = e[2], y = e[3], z = e[4], pw = e[5] / 10, c = e[6] ? carById(e[6]) : null, o = GAME.unref(e[7]);
@@ -4110,15 +4398,36 @@ function resetWorld() {
   if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
   [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
 }
-// only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
-function startWorld(at) {
-  G.crew = P.team; resetWorld(); at = at || SPAWNS[P.team][0]; P.x = at.x; P.z = at.z;
-  const sv = loadSave(); if (sv && Array.isArray(sv.z) && sv.z.length === ZS.length) sv.z.forEach((q, i) => { const s = ZS[i], o = q[0] | 0; if (o < -1 || o >= NCREW) return; s.owner = o; s.ctrl = o >= 0 ? clamp(+q[1] || 50, 10, 100) : 0; });   // the city as this player left it
-  const r = rng32((Math.random() * 1e9) | 0), street = PARK.filter(s => !s.lot), lots = PARK.filter(s => s.lot && !s.truck), used = [];
+// where cars stand parked: some street spots and car park bays, each crew's cars at its yard, the airport's helicopters on their pads
+function planHomes() {
+  const r = rng32((Math.random() * 1e9) | 0), street = PARK.filter(s => !s.lot), lots = PARK.filter(s => s.lot && !s.truck), used = []; G.homes = [];
   const take = (list, n) => { for (let k = 0, guard = 0; k < n && guard < 400; guard++) { const s = list[(r() * list.length) | 0]; if (used.some(u => hyp(u.x - s.x, u.z - s.z) < 9)) continue; used.push(s); k++; G.homes.push({ spot: s, type: pick(r, STREET_CARS), team: -1, car: null, t: 0 }); } };
   take(street, 10); take(lots, 5);
   for (let t = 0; t < NCREW; t++) BASECARS[t].forEach((s, k) => G.homes.push({ spot: s, type: k === 3 ? 'coupe' : CREW_CARS[k % 3], team: t, car: null, t: 0 }));
   AIRPORT.pads.forEach((s, k) => s.kind !== 'free' && G.homes.push({ spot: s, type: s.kind === 'gun' ? 'heli' : 'chopper', team: -1, car: null, t: 0, color: s.kind === 'gun' ? 0x1d6b45 : [0xf2efe6, 0x1f4e8c][k % 2] }));   // the airport's helicopters
+  return r;
+}
+// a joined player taking over from a host that has gone: the turf, the time of day and every car with a player in it stay as they
+// were; the people, the traffic and the jobs start afresh around the players, out of their sight where it can be managed.
+function takeOverWorld() {
+  const human = o => o && (o === P || o.kind === 'rp');
+  for (let i = bots.length - 1; i >= 0; i--) removeBot(bots[i]);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (!c.occ.some(human)) { if (P.car === c) P.car = null; removeCar(c); continue; }
+    const dr = c.occ[0]; c.kin = !!(dr && dr.kind === 'rp'); c.ai = null; c.vbufOf = null; c.buf.length = 0; c.lastV = null; if (dr === P) c.mine = true; }
+  while (pickups.length) removePickup(pickups[0]); pickSeq += 500; botSeq += 50;
+  resetEvents(); POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
+  Object.assign(G, { phase: 'play', respawnQ: CREWS.map(() => []), popT: 0, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 70 + t * 30 + rand() * 40), hour: Math.floor(G.tod), polT: 0, gangT: 0, beatT: G.time + 12, streetT: 0, robT: [], evT: G.time + 25 });
+  ZS.forEach(z => { z.n.fill(0); z.by = -1; z.prog = 0; z.hot = false; });
+  planHomes();
+  for (let k = 0; k < G.traffic; k++) spawnTraffic();
+  for (let t = 0; t < NCREW; t++) for (let k = crewSize(t); k > 0; k--) spawnCrewBot(t, .75);
+  staffPosts(false); for (let k = walkersWanted(); k > 0; k--) spawnPed(false);
+}
+// only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
+function startWorld(at) {
+  G.crew = P.team; resetWorld(); at = at || SPAWNS[P.team][0]; P.x = at.x; P.z = at.z;
+  const sv = loadSave(); if (sv && Array.isArray(sv.z) && sv.z.length === ZS.length) sv.z.forEach((q, i) => { const s = ZS[i], o = q[0] | 0; if (o < -1 || o >= NCREW) return; s.owner = o; s.ctrl = o >= 0 ? clamp(+q[1] || 50, 10, 100) : 0; });   // the city as this player left it
+  const r = planHomes();
   G.homes.forEach(h => { h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : { color: PAINTS[(r() * PAINTS.length) | 0] }); });
   for (let k = 0; k < G.traffic; k++) spawnTraffic();
   for (let t = 0; t < NCREW; t++) for (let k = crewSize(t); k > 0; k--) spawnCrewBot(t, .75);      // most of each crew starts out on its turf
@@ -4644,7 +4953,7 @@ function afterMod(c) { if (c.pv === P) P.pv = specOf(c); addRP(CFG.rp.mod); save
 const garageName = g => g.team !== undefined ? CREWS[g.team].name + ' garage' : 'Gas & Auto Row car shop';
 function garageCheck(c) {   // called while driving: stop in a garage and its menu opens; drive off and it closes
   let g = null; for (let i = 0; i < GARAGES.length; i++) { const q = GARAGES[i]; if ((q.team !== undefined && q.team !== P.team) || hyp(q.x - c.x, q.z - c.z) > 3.4) continue; g = q; break; }
-  if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · F or Esc to drive on' }); } }
+  if (g && carSpeed(c) < 3 && c.burn <= 0 && P.seat === 0) { if (P.garage !== g) { P.garage = g; if (!shopOpen) openMenu({ kind: 'mod', title: garageName(g), items: modItems, foot: 'A number or a tap to buy · ' + capOf('use') + ' or Esc to drive on' }); } }
   else if (P.garage && (!g || carSpeed(c) > 4)) { P.garage = null; if (shopOpen && shopOpen.kind === 'mod') closeShop(); }
 }
 // nitrous: held down, a few seconds of push that comes back while you drive
@@ -4849,19 +5158,24 @@ function heistNews(e) {
        A player's own body and the car they are driving are theirs to simulate; the host fits them into its world.
        By default every player is in the host's crew and players cannot hurt each other. With rival sides on, each keeps the crew
        they picked, or the police, and anyone on another side is fair game.
+       When the host goes, the session does not: the next player in line takes over the city where it stands (turf, time of day,
+       everyone's cars), and the others carry on with them. A host that comes back, or two hosts after a split, settle it by who
+       has more players with them. A player who loses their own connection keeps playing and rejoins when it comes back.
    ===================================================================== */
-Object.assign(NET, { hostPeer: null, seq: 0, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, slots: {}, dmgOut: {}, lob: null, bytes: 0, myBoom: -9, knSeen: 0, joinT: 0 });
+Object.assign(NET, { hostPeer: null, hostEp: 0, ep: 1, jit: {}, seq: 0, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, slots: {}, dmgOut: {}, lob: null, bytes: 0, myBoom: -9, knSeen: 0, joinT: 0 });
 const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT]);
 const B36 = (n, w) => { n = Math.max(0, Math.round(n)); let s = n.toString(36); while (s.length < w) s = '0' + s; return s.length > w ? 'z'.repeat(w) : s; };
 const U36 = (s, o, w) => parseInt(s.substr(o, w), 36);
 const r2 = v => Math.round(v * 100) / 100;
 const cleanName = n => String(n || '').replace(/[^\w \-]/g, '').trim().slice(0, 14) || 'Player';
 const myName = () => cleanName($('co-name').value);
-const SNAP = .13;   // everything from another machine is drawn this far in the past, so there are always two positions to glide between
+const SNAP = .13;   // everything from another machine is drawn at least this far in the past, so there are always two positions to glide between
+// how far back to draw someone: enough to cover the gaps between their updates as they actually arrive, wider on a jittery connection
+function arrive(j) { const t = performance.now() / 1000; if (j.t) { const iv = Math.min(1, t - j.t); j.iv = j.iv ? j.iv * .9 + iv * .1 : iv; j.dv = (j.dv === undefined ? .02 : j.dv) * .9 + Math.abs(iv - j.iv) * .1; j.d = clamp(j.iv + 2.2 * j.dv + .03, SNAP, .45); } j.t = t; }
 const crewOf = sideOf;   // a side from the wire: a crew, or the police
 function snapPush(buf, s) { s.t = performance.now() / 1000; const L = buf[buf.length - 1]; if (L && s.t - L.t < .02) { buf[buf.length - 1] = s; return; } buf.push(s); if (buf.length > 8) buf.shift(); }
-function snapAt(buf, o) {   // o gets x, y, z, yaw (and pitch, vf when the snapshots carry them)
-  if (!buf.length) return false; const rt = performance.now() / 1000 - SNAP; let a = buf[0], b = buf[buf.length - 1];
+function snapAt(buf, o, delay) {   // o gets x, y, z, yaw (and pitch, vf when the snapshots carry them)
+  if (!buf.length) return false; const rt = performance.now() / 1000 - (delay || SNAP); let a = buf[0], b = buf[buf.length - 1];
   for (let q = buf.length - 1; q > 0; q--) if (buf[q - 1].t <= rt) { a = buf[q - 1]; b = buf[q]; break; }
   if (a === b && buf.length > 1) a = buf[buf.length - 2];
   const span = Math.max(.001, b.t - a.t), far = hyp(b.x - a.x, b.z - a.z) > 14 || Math.abs(b.y - a.y) > 5, f = a === b || far ? 1 : clamp((rt - a.t) / span, 0, 1 + Math.min(.15, span) / span), g = Math.min(1, f);
@@ -4886,21 +5200,24 @@ NET.hurt = (r, dmg, src, wid) => { if (r.slot === undefined || r.slot < 0) retur
 const widOf = n => n === 20 ? 'car' : n === 21 ? 'boom' : n === 22 ? 'fall' : WID[n] || 'pistol';
 // --- other players: read where each one is, draw them, forget the ones who left
 const _so = { x: 0, y: 0, z: 0, yaw: 0, pitch: 0 };
+// which of two hosts everyone follows: the one with more players, then the later takeover, then the lower id
+const hostRank = (a, b) => (((b.presence.pl || []).length - (a.presence.pl || []).length) || ((+b.presence.ep || 0) - (+a.presence.ep || 0)) || (a.peer < b.peer ? -1 : a.peer > b.peer ? 1 : 0));
+const followsMe = s => s.t === 'c' && (!s.fw || s.fw === NET.me);   // fw: the host a joined player is following
 function netPeers(dt, each) {
-  const seen = {}; let host = null;
+  const seen = {}, hosts = []; let old = null;
   for (const pr of NET.room.peers()) {
     if (pr.isMe && pr.sameTab) { NET.me = pr.peer; continue; }
     const s = pr.presence; if (!s) continue;
-    if (s.t !== 'h' && s.t !== 'c') { if (pr.peer === NET.hostPeer) host = pr; continue; }
-    if (s.t === 'h' && (!host || host.presence.t !== 'h')) host = pr;
+    if (s.t !== 'h' && s.t !== 'c') { if (pr.peer === NET.hostPeer) old = pr; continue; }
+    if (s.t === 'h') hosts.push(pr);
     if (!Array.isArray(s.p)) continue;
     seen[pr.peer] = 1; let r = NET.remotes[pr.peer];
     if (!r) { const team = G.rivals ? sideOf(s.cr) : G.crew, ch = makeChar(makeLook(hashStr(pr.peer), team)); if (!ch) continue;
-      r = NET.remotes[pr.peer] = { kind: 'rp', peer: pr.peer, slot: -1, team, name: cleanName(s.n), x: s.p[0], y: s.p[1], z: s.p[2], yaw: s.p[3], pitch: 0, dead: false, deadT: 0, car: null, seat: 0, wpn: 'pistol', ch, buf: [], shots: s.a ? s.a[0] : 0, spd: 0, hs: 0, qs: 0, kdSeen: s.kd ? s.kd[0] : 0, hpSeen: (s.hp || []).reduce((m, h) => Math.max(m, h[0]), 0), kills: 0, deaths: 0, earn: 0, aim: 0, knock: 0, tag: null, safe: false, vbuf: [], heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: s.p[0], lky: s.p[1], lkz: s.p[2] };
+      r = NET.remotes[pr.peer] = { kind: 'rp', peer: pr.peer, slot: -1, jit: {}, team, name: cleanName(s.n), x: s.p[0], y: s.p[1], z: s.p[2], yaw: s.p[3], pitch: 0, dead: false, deadT: 0, car: null, seat: 0, wpn: 'pistol', ch, buf: [], shots: s.a ? s.a[0] : 0, spd: 0, hs: 0, qs: 0, kdSeen: s.kd ? s.kd[0] : 0, hpSeen: (s.hp || []).reduce((m, h) => Math.max(m, h[0]), 0), kills: 0, deaths: 0, earn: 0, aim: 0, knock: 0, tag: null, safe: false, vbuf: [], heat: 0, wp: 0, evade: false, seenT: -99, crimeT: -99, lkx: s.p[0], lky: s.p[1], lkz: s.p[2] };
       (s.h || []).forEach(h => { if (h[0] > r.hs) r.hs = h[0]; }); (s.q || []).forEach(q => { if (q[0] > r.qs) r.qs = q[0]; });
-      if (NET.mode === 'host') { let k = 1; const used = Object.keys(NET.slots).map(p => NET.slots[p]); while (used.includes(k)) k++; NET.slots[pr.peer] = k; r.slot = k; note(r.name + ' joined the session', 'g'); } }
+      if (NET.mode === 'host' && followsMe(s)) { slotFor(r); note(r.name + ' joined the session', 'g'); } }
     const p = s.p, A = s.a || [0, 1, 0, 0], ox = r.x, oz = r.z;
-    if (s !== r.lastS) { r.lastS = s; snapPush(r.buf, { x: p[0], y: p[1], z: p[2], yaw: p[3], pitch: p[4] || 0 }); } if (snapAt(r.buf, _so)) { r.x = _so.x; r.y = _so.y; r.z = _so.z; r.yaw = _so.yaw; r.pitch = _so.pitch; }
+    if (s !== r.lastS) { r.lastS = s; arrive(r.jit); snapPush(r.buf, { x: p[0], y: p[1], z: p[2], yaw: p[3], pitch: p[4] || 0 }); } if (snapAt(r.buf, _so, r.jit.d)) { r.x = _so.x; r.y = _so.y; r.z = _so.z; r.yaw = _so.yaw; r.pitch = _so.pitch; }
     r.spd = lerp(r.spd, hyp(r.x - ox, r.z - oz) / Math.max(dt, .001), .3); r.wpn = WID[A[1]] || 'pistol'; r.ayaw = A[3];
     const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128);
     { const hf = Array.isArray(s.hf) ? s.hf : [0, 0]; if (r.hg === undefined) { r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if ((hf[0] | 0) > r.hg) fxHeli(r, 'gun', (hf[0] | 0) - r.hg); if ((hf[1] | 0) > r.hr) fxHeli(r, 'pod', (hf[1] | 0) - r.hr); r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
@@ -4911,9 +5228,10 @@ function netPeers(dt, each) {
     (s.hp || []).forEach(h => { if (h[0] <= r.hpSeen) return; r.hpSeen = h[0]; if (h[1] !== NET.slot || r.team === P.team) return; const wid = widOf(h[4]); hurtPlayer(+h[2] || 0, r, wid, !!h[3]); if (wid === 'car' && !P.dead && !P.car) { P.knock = 1; P.knockT = 1; } });
     if (each) each(pr, s, r);
   }
-  for (const k in NET.remotes) if (!seen[k]) { const r = NET.remotes[k]; if (NET.mode === 'host') { note(r.name + ' left', 'g'); cars.forEach(c => { for (let q = 0; q < 4; q++) if (c.occ[q] === r) { c.occ[q] = null; if (!q) c.kin = false; } }); delete NET.slots[k]; delete NET.dmgOut[r.slot]; } freeChar(r.ch); killTag(r.tag); if (r.chm) scene.remove(r.chm); r.gone = true; delete NET.remotes[k]; }
-  return host;
+  for (const k in NET.remotes) if (!seen[k]) { const r = NET.remotes[k]; if (NET.mode === 'host' && NET.slots[k] !== undefined) { note(r.name + ' left', 'g'); cars.forEach(c => { for (let q = 0; q < 4; q++) if (c.occ[q] === r) { c.occ[q] = null; if (!q) c.kin = false; } }); delete NET.slots[k]; delete NET.dmgOut[r.slot]; } freeChar(r.ch); killTag(r.tag); if (r.chm) scene.remove(r.chm); r.gone = true; delete NET.remotes[k]; }
+  hosts.sort(hostRank); return hosts[0] || old;
 }
+function slotFor(r) { if (NET.slots[r.peer] !== undefined) return r.slot = NET.slots[r.peer]; const used = Object.keys(NET.slots).map(p => NET.slots[p]); let k = r.slot > 0 && !used.includes(r.slot) ? r.slot : 1; while (used.includes(k)) k++; NET.slots[r.peer] = k; r.slot = k; return k; }
 const hashStr = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) % 100000; };
 function remoteVisual(r, dt) {
   let seat = null, twist = 0, x = r.x, y = r.y, z = r.z, yaw = r.yaw;
@@ -4992,8 +5310,8 @@ function decPicks(s) {
 }
 // ---- the host: applies what the others report, then tells everyone the state of the world
 NET.host = dt => {
-  netPeers(dt, (pr, s, r) => {
-    if (s.t !== 'c') return;
+  const rival = netPeers(dt, (pr, s, r) => {
+    if (!followsMe(s)) return; if (NET.slots[pr.peer] === undefined) slotFor(r);
     (s.h || []).forEach(h => { if (h[0] <= r.hs) return; r.hs = h[0]; if (h[1] === 'b') { const b = botById(h[2]); if (b && !b.dead) damageBot(b, Math.min(+h[3] || 0, 400), !!h[4], r, widOf(h[5])); } else { const c = carById(h[2]); if (c) damageCar(c, Math.min(+h[3] || 0, 400), r); } });
     (s.q || []).forEach(q => { if (q[0] <= r.qs) return; r.qs = q[0]; const k = q[1], c = k === 'en' || k === 'cj' || k === 'ex' || k === 'cd' || k === 'fx' ? carById(q[2]) : null;
       if (k === 'en' && c && !c.wreck) { const st = q[3] | 0; if (!c.occ[st] && !r.car && st < c.spec.seats) { c.occ[st] = r; r.car = c; r.seat = st; if (st === 0) { c.kin = true; c.ai = null; c.team = r.team; c.asleep = false; c.buf.length = 0; GAME.boarded(c, r); } } }
@@ -5023,14 +5341,16 @@ NET.host = dt => {
     // the car this player is driving goes where they say it is
     if (r.car && r.seat === 0 && r.v && r.v[0] === r.car.id && r.v !== r.car.lastV) { const c = r.car, v = r.v; c.lastV = v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4], pitch: +v[8] || 0, roll: +v[9] || 0 }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; }
   });
-  cars.forEach(c => { if (c.kin && snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; c.landed = c.y - groundAt(c.x, c.z, c.y + .3, 's', .6) < .35; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
+  if (rival && rival.presence.t === 'h') { let followers = 0; for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.lastS && followsMe(r.lastS)) followers++; } const mine = { peer: NET.me || '', presence: { pl: { length: 1 + followers }, ep: NET.ep } };
+    if (hostRank(rival, mine) < 0) { demote(rival); return; } }   // another host has more players, or took over later: this city gives way to theirs
+  cars.forEach(c => { const dr = c.occ[0]; if (c.kin && snapAt(c.buf, _so, dr && dr.jit ? dr.jit.d : SNAP)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; c.landed = c.y - groundAt(c.x, c.z, c.y + .3, 's', .6) < .35; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
   NET.sendT -= dt; if (NET.sendT > 0) return; NET.sendT = 1 / 10;
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
-  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
+  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; if (NET.slots[k] === undefined || !(r.lastS && followsMe(r.lastS))) continue; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
   const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
   let bb = encBots(null); const cc = encCars();
-  const msg = Object.assign(myBody(), { t: 'h', W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
+  const msg = Object.assign(myBody(), { t: 'h', ep: NET.ep, fw: null, W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
   if (NET.bytes > NET_MAX) {   // still too much to say at once: leave out the people farthest from every player, who nobody can see from there anyway
     const far = bots.filter(q => !q.car && q.team === TEAM_CIV && !(q.dead && q.deadT > 7)).map(q => [nearHuman(q.x, q.z), q]).sort((p, q) => q[0] - p[0]).slice(0, Math.ceil((NET.bytes - NET_MAX) / CIV_W) + 1), skip = new Set(far.map(q => q[1]));
@@ -5058,31 +5378,70 @@ function applyHost(s) {
 function updateReplicas(dt) {
   for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.dead) { b.deadT += dt; b.spd = 0; continue; } const ox = b.x, oz = b.z;
     if (b.car) { seatPos(b.car, b.seat, _sp); b.x = _sp.x; b.z = _sp.z; b.y = b.car.y; b.spd = 0; }                                    // someone in a seat is wherever the car is
-    else { if (snapAt(b.buf, _so)) { b.x = _so.x; b.y = _so.y; b.z = _so.z; b.yaw = _so.yaw; b.pitch = _so.pitch; } b.spd = lerp(b.spd, hyp(b.x - ox, b.z - oz) / Math.max(dt, .001), .3); if (b.spd < .25) b.spd = 0; }
+    else { if (snapAt(b.buf, _so, NET.jit.d)) { b.x = _so.x; b.y = _so.y; b.z = _so.z; b.yaw = _so.yaw; b.pitch = _so.pitch; } b.spd = lerp(b.spd, hyp(b.x - ox, b.z - oz) / Math.max(dt, .001), .3); if (b.spd < .25) b.spd = 0; }
     if (b.pend) { b.pend = 0; b.ayaw = b.yaw; fxShot(b, b.wpn); } }
   for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.mine) { c.kin = false; continue; } c.kin = true; if (c.wreck) c.wreckT += dt;
     const dr = c.occ[0]; if (dr && dr.kind === 'rp' && dr.v && dr.v[0] === c.id) { if (c.vbufOf !== dr) { c.vbufOf = dr; c.buf.length = 0; c.lastV = null; } if (dr.v !== c.lastV) { const v = c.lastV = dr.v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4], pitch: +v[8] || 0, roll: +v[9] || 0 }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; } } else if (c.vbufOf) { c.vbufOf = null; c.buf.length = 0; }
-    if (snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } c.crash = 0; }
+    if (snapAt(c.buf, _so, c.vbufOf && c.vbufOf.jit ? c.vbufOf.jit.d : NET.jit.d)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } c.crash = 0; }
   carsCollide(); if (P.car && P.seat === 0) carAfterStep(P.car);
   for (let i = pickups.length - 1; i >= 0; i--) pickups[i].g.rotation.y += dt * 2;
 }
 NET.client = dt => {
   const host = netPeers(dt);
-  if (!host || host.presence.t !== 'h') { NET.lost += dt; if ((host && NET.lost > .6) || NET.lost > 6) { saveGame(); NET.stop(); G.state = 'menu'; if (document.pointerLockElement) document.exitPointerLock(); ownCrew(); showOverlay('lost'); startAttract(); } }
-  else { NET.lost = 0; NET.hostPeer = host.peer; if (host.presence !== NET.lastS) { NET.lastS = host.presence; applyHost(host.presence); } }
+  if (!host || host.presence.t !== 'h') {
+    NET.lost += dt; const online = NET.online();
+    if (NET.lost > 1.5 && !NET.lostSaid) { NET.lostSaid = true; banner(online ? 'The host has gone' : 'Connection lost', online ? 'Someone takes over the city in a moment' : 'Reconnecting · keep playing', 3); }
+    if (online ? NET.lost > NET.waitTurn() : NET.lost > 45) promote(online ? 'left' : 'offline');   // offline for good: carry on alone, and rejoin whoever is there once it comes back
+  } else {
+    if (host.peer !== NET.hostPeer) hostChanged(host);
+    if (NET.lostSaid) { NET.lostSaid = false; if (NET.lost > 1.5) banner('Back online', '', 1.4); }
+    NET.lost = 0; if (host.presence !== NET.lastS) { NET.lastS = host.presence; arrive(NET.jit); applyHost(host.presence); }
+  }
   updateReplicas(dt);
   NET.sendT -= dt; if (NET.sendT > 0) return; NET.sendT = 1 / 15;
-  const msg = Object.assign(myBody(), { t: 'c', h: prune(NET.hits, 30), hp: prune(NET.hp, 24), q: prune(NET.reqs, 12), kd: NET.kd, W: null, bs: null, bv: null, bc: null, cs: null, cp: null, pk: null, pl: null, d: null, ev: null, kn: null, ld: null, rd: null });
+  const msg = Object.assign(myBody(), { t: 'c', fw: NET.hostPeer || null, ep: null, h: prune(NET.hits, 30), hp: prune(NET.hp, 24), q: prune(NET.reqs, 12), kd: NET.kd, W: null, bs: null, bv: null, bc: null, cs: null, cp: null, pk: null, pl: null, d: null, ev: null, kn: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.room.presence(msg).catch(() => {});
 };
+// is this machine still reaching the room? The public relay says so; Claude's own room is there or the session would have closed.
+NET.online = () => !!NET.room && NET.room.up !== false;
+// how long to wait for someone else to take over: the players still here, in id order, each give the one before them a few seconds
+NET.waitTurn = () => { const ids = NET.room.peers().filter(p => p.presence && p.presence.t === 'c' && !(p.isMe && p.sameTab)).map(p => p.peer); ids.push(NET.me || ''); ids.sort(); return 2.5 + Math.max(0, ids.indexOf(NET.me || '')) * 3.5; };
+function hostChanged(h) {
+  const first = !NET.hostPeer; NET.hostPeer = h.peer; NET.hostEp = +h.presence.ep || 0; NET.jit = {};
+  if (first) return;
+  NET.evSeen = -1; NET.lastDmg = -1; NET.paid = 0; NET.xpSeen = 0; NET.lastS = null;   // counts start again with each host
+  note(cleanName(h.presence.n) + ' is running the city now', 'g');
+}
+// the host has gone and this player is next in line: the city as this machine last saw it carries on, run from here
+function promote(why) {
+  const n = Object.keys(NET.remotes).length;
+  NET.mode = 'host'; NET.ep = (NET.hostEp | 0) + 1; NET.hostPeer = null; NET.slot = 0; P.slot = 0; NET.sendT = 0; NET.lost = 0; NET.lostSaid = false; NET.slots = {}; NET.dmgOut = {}; NET.jit = {};
+  NET.hits.length = 0; NET.reqs.length = 0; NET.hp.length = 0; NET.kd = null;
+  for (const k in NET.remotes) { const r = NET.remotes[k], s = r.lastS || {}; slotFor(r);
+    r.hs = (s.h || []).reduce((m, h) => Math.max(m, h[0]), r.hs | 0); r.qs = (s.q || []).reduce((m, x) => Math.max(m, x[0]), r.qs | 0); r.kdSeen = s.kd ? s.kd[0] : r.kdSeen | 0; r.earn = 0; r.xp = 0; }
+  takeOverWorld();
+  if (why === 'offline') banner('Playing on alone', 'The connection is still down · you will rejoin when it is back', 3.5);
+  else banner('You run the city now', n ? 'The host left · the session carries on with you' : 'The host left · anyone who joins comes to you', 3.5);
+}
+// another host has the session: this machine's city gives way to theirs
+function demote(h) {
+  if (P.car) GAME.leaveCar(true);
+  NET.mode = 'client'; NET.slots = {}; NET.dmgOut = {}; NET.hits.length = 0; NET.reqs.length = 0; NET.hp.length = 0; NET.kd = null; NET.slot = -1; P.slot = -1; NET.lost = 0;
+  for (let i = bots.length - 1; i >= 0; i--) removeBot(bots[i]);
+  for (let i = cars.length - 1; i >= 0; i--) removeCar(cars[i]);
+  while (pickups.length) removePickup(pickups[0]);
+  resetEvents(); for (const k in NET.remotes) NET.remotes[k].car = null;
+  NET.hostPeer = null; hostChanged(h); NET.evSeen = -1; NET.lastDmg = -1; NET.paid = 0; NET.xpSeen = 0;
+  banner('Joined ' + cleanName(h.presence.n) + '’s city', 'They have more players with them', 3);
+}
 NET.start = mode => {
   for (const k in NET.remotes) { freeChar(NET.remotes[k].ch); killTag(NET.remotes[k].tag); }
-  Object.assign(NET, { mode, remotes: {}, slots: {}, dmgOut: {}, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, hostPeer: null, slot: mode === 'host' ? 0 : -1, paid: 0, xpSeen: 0 });
+  Object.assign(NET, { mode, remotes: {}, slots: {}, dmgOut: {}, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lostSaid: false, lastS: null, pkGone: {}, hostPeer: null, hostEp: 0, ep: 1, jit: {}, slot: mode === 'host' ? 0 : -1, paid: 0, xpSeen: 0 });
   P.slot = NET.slot;
 };
 NET.stop = () => {
   const was = NET.mode; NET.mode = null; for (const k in NET.remotes) { freeChar(NET.remotes[k].ch); killTag(NET.remotes[k].tag); } NET.remotes = {}; NET.slot = 0; P.slot = 0;
-  if (NET.room && was) { NET.room.presence({ t: 'm', n: myName(), cr: P.team, p: null, a: null, v: null, W: null, bs: null, bv: null, bc: null, cs: null, cp: null, pk: null, pl: null, d: null, ev: null, kn: null, h: null, hp: null, q: null, kd: null }).catch(() => {}); setTimeout(NET.lobby, 0); }
+  if (NET.room && was) { NET.room.presence({ t: 'm', n: myName(), cr: P.team, fw: null, ep: null, hf: null, p: null, a: null, v: null, W: null, bs: null, bv: null, bc: null, cs: null, cp: null, pk: null, pl: null, d: null, ev: null, kn: null, h: null, hp: null, q: null, kd: null }).catch(() => {}); setTimeout(NET.lobby, 0); }
 };
 // ---- the lobby: players gather on the menu and ready up, the leader picks the crew and starts the session for everyone at once.
 //      Anyone who turns up later joins the session where it stands.
@@ -5124,9 +5483,9 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-8'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-9'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
-  rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
+  rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { if (NET.mode === 'client') takeOverWorld(); NET.mode = null; G.solo = true; for (const k in NET.remotes) { freeChar(NET.remotes[k].ch); killTag(NET.remotes[k].tag); } NET.remotes = {}; NET.slot = 0; P.slot = 0; banner('Lost the online room', 'Carrying on solo · your progress is saved', 3.5); } });
   NET.lobby();
 };
 
@@ -5255,9 +5614,14 @@ function updateHud(dt) {
   setHud('h-weapon', d.name + (P.reloadT > 0 ? ' · reloading' : ''));
   setHud('h-ammo', d.melee ? '' : `${w.mag}<small> / ${w.res}</small>`, true);
   setHud('h-nades', 'GRENADES ' + '●'.repeat(P.nades) + '○'.repeat(Math.max(0, 4 - P.nades)));
-  { const v = P.driveby ? 1 : 0; if (hudCache.streak !== v) { hudCache.streak = v; $('h-streak').hidden = !v; } }
+  { const v = P.driveby ? 1 : 0; if (hudCache.streak !== v) { hudCache.streak = v; $('h-streak').hidden = !v; if (v) $('h-streak').textContent = 'DRIVE-BY READY · ' + capOf('driveby'); } }
   { const hp = Math.round(clamp(P.hp / maxHp(), 0, 1) * 50), ar = Math.round(clamp(P.armor / CFG.player.armor, 0, 1) * 50); if (hudCache.hp !== hp) { hudCache.hp = hp; $('hp-fill').style.transform = `scaleX(${hp / 50})`; $('hp-fill').className = hp < 15 ? 'low' : ''; } if (hudCache.ar !== ar) { hudCache.ar = ar; $('ar-fill').style.transform = `scaleX(${ar / 50})`; } }
   setHud('t-time', Math.floor(G.tod) + ':' + String(Math.floor(G.tod % 1 * 60)).padStart(2, '0'));
+  { let txt = '', cls = '';   // the connection, when online: who runs the city, how many are in it, and how quick the relay is
+    if (NET.mode && NET.room) { const n = 1 + Object.keys(NET.remotes).length, rtt = NET.room.rtt | 0;
+      if (!NET.online()) { txt = 'Reconnecting…'; cls = 'bad'; } else if (NET.mode === 'client' && NET.lost > 1) { txt = 'Waiting for the host…'; cls = 'bad'; }
+      else { txt = (NET.mode === 'host' ? 'Hosting' : 'Online') + ' · ' + n + (n === 1 ? ' player' : ' players') + (rtt ? ' · ' + rtt + ' ms' : ''); cls = rtt > 400 || (NET.mode === 'client' && NET.jit.dv > .1) ? 'meh' : ''; } }
+    if (hudCache.net !== txt + cls) { hudCache.net = txt + cls; const el = $('h-net'); el.hidden = !txt; el.textContent = txt; el.className = 'sh' + (cls ? ' ' + cls : ''); } }
   { const h = P.heat | 0, key = h * 2 + (P.evade && h ? 1 : 0); if (hudCache.heat !== key) { const was = (hudCache.heat | 0) >> 1; hudCache.heat = key; const e = $('h-stars'); e.hidden = !h; e.textContent = '★'.repeat(h) + '☆'.repeat(5 - h); e.className = P.evade && h ? 'evade' : '';
       if (h > was) { SFX.star(); if (!was) note('Wanted: the police are on their way', 'p'); } else if (!h && was && !P.dead) { SFX.clear(); note('The police have lost you', 'g'); } } }
   hereZone = -1; ZONES.forEach((z, i) => { const s = ZS[i], here = !P.dead && hyp(P.x - z.x, P.z - z.z) < z.r, c = (s.owner >= 0 ? 't' + s.owner : '') + (s.hot ? ' hot' : '') + (here ? ' here' : ''); if (here) hereZone = i; if (hudCache['z' + i] !== c) { hudCache['z' + i] = c; $('t-z' + i).className = c; } });
@@ -5268,7 +5632,7 @@ function updateHud(dt) {
     else if (show) { const s = ZS[hereZone], mine = s.owner === P.team, work = s.prog > .005 && s.by >= 0, f = $('cap-fill'), tr = $('cap-track');   // the bar fills in the colour of the crew at work on it, over the colour of whoever holds it
       setHud('cap-label', (work && s.by === P.team ? (s.owner >= 0 ? 'Breaking their hold · ' : 'Taking · ') : work && mine ? 'Losing · ' : s.hot ? 'Contested · ' : mine ? 'Holding · ' : s.owner >= 0 ? CREWS[s.owner].name + ' turf · ' : 'Nobody holds · ') + ZONES[hereZone].name);
       const c = work ? Math.round(s.prog * 100) : 0, key = c + (s.by + 1) * 1000 + (s.owner + 1) * 10000; if (hudCache.capv !== key) { hudCache.capv = key; f.style.width = c + '%'; f.style.background = work ? lite(s.by) : 'transparent'; tr.style.background = s.owner >= 0 ? 'rgba(' + CREWS[s.owner].rgb + ',.45)' : 'rgba(10,12,16,.75)'; } } }
-  setHud('h-prompt', prompt && !shopOpen ? prompt.text : P.enter ? '' : '', true);
+  setHud('h-prompt', prompt && !shopOpen ? capText(prompt.text) : P.enter ? '' : '', true);
   { const c = P.car, show = !!c; if (hudCache.spd !== show) { hudCache.spd = show; $('h-speed').hidden = !show; } if (c) { setHud('spd-n', String(Math.round(carSpeed(c) * 2.237))); setHud('h-car', (c.cop ? 'Police ' : '') + c.spec.name + (P.seat ? ' · passenger' : '') + (c.cop && !P.seat && !c.spec.air ? ' · H siren' : '')); setHud('h-air', c.spec.air ? 'ALT ' + Math.max(0, Math.round((c.y - groundAt(c.x, c.z, c.y + .2, 's', 0)) * 3.28)) + ' FT' + (c.spec.air === 'gun' && !P.seat ? ' · ROCKETS ' + Math.floor(c.rk === undefined ? 8 : c.rk) + '/8' : '') : ''); const h = Math.round(clamp(c.hp / c.spec.hp, 0, 1) * 40); if (hudCache.chp !== h) { hudCache.chp = h; $('car-fill').style.transform = `scaleX(${h / 40})`; $('car-fill').style.background = h < 12 ? 'var(--blood)' : 'var(--gold)'; }
     const nq = c.nos > 0 && P.seat === 0 ? Math.round((c.nosQ === undefined ? 1 : c.nosQ) * 30) : -1; if (hudCache.nos !== nq) { hudCache.nos = nq; $('car-nos').hidden = nq < 0; if (nq >= 0) $('nos-fill').style.transform = `scaleX(${nq / 30})`; } } }
   { const fp = firstPerson(), sc = (1 + P.kick * 3 + Math.min(1, P.spd / 5) * .35).toFixed(2), op = P.dead || scoped() || d.melee && !fp ? '0' : (P.car ? .6 : fp ? .85 * (1 - P.ads) : .85).toFixed(1); if (hudCache.cs !== sc) { hudCache.cs = sc; $('cross').style.transform = `scale(${sc})`; } if (hudCache.co !== op) { hudCache.co = op; $('cross').style.opacity = op; } }
@@ -5298,37 +5662,53 @@ function updateHud(dt) {
         whole set made more or less see-through, and the layout is kept in this browser.
         In Auto, the controls appear on a touch screen and step aside as soon as a mouse is used.
    ===================================================================== */
-// id, label, when it shows (f on foot, c in a car, a flying a helicopter, b everywhere), what it does, and where it sits by default: anchored to the left (0), right (1)
-// or middle (.5) of the screen and the top (0) or bottom (1), offset and sized in units of the screen's shorter side (capped for tablets)
+// id, label, when it shows (f on foot, c in a car, a flying, b everywhere), what it does (an action from the Controls table, or one of the
+// stick, fire and pause), and where it sits by default: anchored to the left (0), right (1) or middle (.5) of the screen and the top (0)
+// or bottom (1), offset and sized in units of the screen's shorter side (capped for tablets). Any button but those three can be given
+// another action, hidden, or joined by buttons of the player's own (Move buttons).
 const TC_DEF = [
   ['stick', '', 'b', 'stick', 0, .3, 1, .28, .38],
   ['fire', 'FIRE', 'b', 'fire', 1, .27, 1, .38, .23],
-  ['aim', 'AIM', 'f', 'aim', 1, .47, 1, .14, .15],
-  ['jump', 'JUMP', 'f', 'key:Space', 1, .1, 1, .14, .14],
-  ['use', 'USE', 'b', 'tap:KeyF', 1, .5, 1, .45, .14],
-  ['reload', 'RELOAD', 'b', 'tap:KeyR', 1, .09, 1, .42, .12],
-  ['swap', 'SWAP', 'b', 'swap', 1, .09, 1, .63, .12],
-  ['nade', 'NADE', 'f', 'tap:KeyG', 1, .64, 1, .3, .12],
-  ['gas', 'GAS', 'c', 'key:KeyW', 1, .12, 1, .16, .2],
-  ['brake', 'BRAKE', 'c', 'key:KeyS', 1, .34, 1, .14, .17],
-  ['drift', 'DRIFT', 'c', 'key:Space', 1, .53, 1, .14, .14],
-  ['horn', 'HORN', 'c', 'key:KeyH', 1, .66, 1, .3, .12],
-  ['radio', 'RADIO', 'c', 'tap:KeyQ', 1, .66, 1, .52, .11],
+  ['aim', 'ADS', 'f', 'act:ads', 1, .47, 1, .14, .15],
+  ['jump', 'JUMP', 'f', 'act:jump', 1, .1, 1, .14, .14],
+  ['use', 'USE', 'b', 'act:use', 1, .5, 1, .45, .14],
+  ['reload', 'RELOAD', 'b', 'act:reload', 1, .09, 1, .42, .12],
+  ['swap', 'SWAP', 'b', 'act:next', 1, .09, 1, .63, .12],
+  ['nade', 'NADE', 'f', 'act:nade', 1, .64, 1, .3, .12],
+  ['gas', 'GAS', 'c', 'act:gas', 1, .12, 1, .16, .2],
+  ['brake', 'BRAKE', 'c', 'act:brake', 1, .34, 1, .14, .17],
+  ['drift', 'DRIFT', 'c', 'act:hb', 1, .53, 1, .14, .14],
+  ['horn', 'HORN', 'c', 'act:horn', 1, .66, 1, .3, .12],
+  ['radio', 'RADIO', 'c', 'act:radio', 1, .66, 1, .52, .11],
   ['pause', '❚❚', 'b', 'pause', 0, .33, 0, .07, .1],
-  ['map', 'MAP', 'b', 'map', 0, .44, 0, .07, .1],
-  ['turf', 'TURF', 'b', 'board', 0, .55, 0, .07, .1],
-  ['cam', 'CAM', 'b', 'tap:KeyV', 1, .5, 0, .07, .1],
-  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'key:ShiftLeft', 1, .5, 1, .68, .13],
-  ['up', 'UP', 'a', 'key:Space', 1, .12, 1, .16, .2], ['down', 'DOWN', 'a', 'key:ShiftLeft', 1, .34, 1, .14, .17], ['rocket', 'ROCKETS', 'a', 'key:KeyG', 1, .53, 1, .14, .15],
+  ['map', 'MAP', 'b', 'act:map', 0, .44, 0, .07, .1],
+  ['turf', 'TURF', 'b', 'act:board', 0, .55, 0, .07, .1],
+  ['cam', 'CAM', 'b', 'act:view', 1, .5, 0, .07, .1],
+  ['call', 'CALL', 'b', 'act:driveby', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'act:phone', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'act:nos', 1, .5, 1, .68, .13],
+  ['up', 'UP', 'a', 'act:up', 1, .12, 1, .16, .2], ['down', 'DOWN', 'a', 'act:down', 1, .34, 1, .14, .17], ['rocket', 'ROCKETS', 'a', 'act:rockets', 1, .53, 1, .14, .15],
 ];
+const TC_FIXED = { stick: 1, fire: 1, pause: 1 }, TC_BASE = {}; TC_DEF.forEach(d => { TC_BASE[d[0]] = 1; });
 const TCD = {}; TC_DEF.forEach(d => { TCD[d[0]] = d; });
 const TOUCH = { on: false, fx: 0, fy: 0, ptr: {}, edit: false, sel: null, aim: false, ectx: 'f', el: {}, cfg: null, coarse: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) };
-const TC_CFG0 = { mode: 'auto', sens: 1, alpha: .6, assist: true, float: true, lay: {} };
+const TC_CFG0 = { mode: 'auto', sens: 1, alpha: .6, assist: true, float: true, lay: {}, act: {}, hide: {}, extra: [] };
 try { TOUCH.cfg = Object.assign({}, TC_CFG0, JSON.parse(localStorage.getItem('pc-touch') || '{}')); } catch (e) { TOUCH.cfg = Object.assign({}, TC_CFG0); }
-if (!TOUCH.cfg.lay || typeof TOUCH.cfg.lay !== 'object') TOUCH.cfg.lay = {};
+['lay', 'act', 'hide'].forEach(k => { if (!TOUCH.cfg[k] || typeof TOUCH.cfg[k] !== 'object' || Array.isArray(TOUCH.cfg[k])) TOUCH.cfg[k] = {}; });
+if (!Array.isArray(TOUCH.cfg.extra)) TOUCH.cfg.extra = []; TOUCH.cfg.extra = TOUCH.cfg.extra.filter(x => Array.isArray(x) && /^x[a-z0-9]{1,8}$/.test(x[0]) && /^[fca]$/.test(x[1]) && ACT_BY[x[2]]).slice(0, 8);
+for (const k in TOUCH.cfg.act) if (!ACT_BY[TOUCH.cfg.act[k]]) delete TOUCH.cfg.act[k];
 const saveTouch = () => { try { localStorage.setItem('pc-touch', JSON.stringify(TOUCH.cfg)); } catch (e) {} };
 const tLayer = document.createElement('div'); tLayer.id = 'touch'; tLayer.hidden = true; $('game').insertBefore(tLayer, $('hud'));
 TC_DEF.forEach(d => { const el = document.createElement('div'); el.className = 'tc tc-' + d[0]; el.dataset.tc = d[0]; el.dataset.ctx = d[2]; if (d[0] === 'stick') el.appendChild(document.createElement('i')); else el.textContent = d[1]; tLayer.appendChild(el); TOUCH.el[d[0]] = el; });
+// what a button does now, and what it says
+function tHow(id) { const d = TCD[id]; if (!d) return ''; const o = TOUCH.cfg.act[id]; return o && !TC_FIXED[id] && ACT_BY[o] ? 'act:' + o : d[3]; }
+function tLabel(id) { const d = TCD[id], h = tHow(id); return (TOUCH.cfg.act[id] || !d[1]) && h.startsWith('act:') ? ACT_BY[h.slice(4)][2] : d[1]; }
+// the player's own buttons, and every button's label, hidden flag and changed action
+function tBuild() {
+  for (const id in TOUCH.el) if (!TC_BASE[id]) { TOUCH.el[id].remove(); delete TOUCH.el[id]; delete TCD[id]; }
+  TOUCH.cfg.extra.forEach((x, k) => { TCD[x[0]] = [x[0], '', x[1], 'act:' + x[2], .5, -.33 + (k % 4) * .16, 1, .64 + Math.floor(k / 4) * .16, .13];
+    const el = document.createElement('div'); el.className = 'tc tc-x'; el.dataset.tc = x[0]; el.dataset.ctx = x[1]; tLayer.appendChild(el); TOUCH.el[x[0]] = el; });
+  for (const id in TOUCH.el) { const el = TOUCH.el[id]; if (id !== 'stick') el.textContent = tLabel(id); el.classList.toggle('off', !!TOUCH.cfg.hide[id]); el.classList.toggle('rm', !!TOUCH.cfg.act[id]); }
+  if (typeof layoutTouch === 'function') layoutTouch();
+}
 // where a control's centre is and how big it is, in pixels
 const tUnit = () => Math.min(window.innerWidth, window.innerHeight, 480);
 function tPlace(id) {
@@ -5337,7 +5717,7 @@ function tPlace(id) {
   return [clamp(cx, size / 2, W - size / 2), clamp(cy, size / 2, H - size / 2), size];
 }
 function layoutTouch() {
-  TC_DEF.forEach(d => { const el = TOUCH.el[d[0]], q = tPlace(d[0]); el.style.left = (q[0] - q[2] / 2) + 'px'; el.style.top = (q[1] - q[2] / 2) + 'px'; el.style.width = el.style.height = q[2] + 'px'; el.style.fontSize = Math.max(10, q[2] * (d[0] === 'pause' ? .34 : .22)) + 'px'; });
+  Object.keys(TOUCH.el).forEach(id => { const d = TCD[id], el = TOUCH.el[id], q = tPlace(id); el.style.left = (q[0] - q[2] / 2) + 'px'; el.style.top = (q[1] - q[2] / 2) + 'px'; el.style.width = el.style.height = q[2] + 'px'; el.style.fontSize = Math.max(10, q[2] * (d[0] === 'pause' ? .34 : .22)) + 'px'; });
   tLayer.style.setProperty('--ta', TOUCH.cfg.alpha);
 }
 window.addEventListener('resize', layoutTouch); window.addEventListener('orientationchange', () => setTimeout(layoutTouch, 300));
@@ -5354,21 +5734,16 @@ window.addEventListener('pointerdown', e => { if (TOUCH.cfg.mode !== 'auto' || T
 function releaseAll() { for (const id in TOUCH.ptr) release(TOUCH.ptr[id]); TOUCH.ptr = {}; TOUCH.fx = TOUCH.fy = 0; }
 function tKey(code) { window.dispatchEvent(new KeyboardEvent('keydown', { code })); window.dispatchEvent(new KeyboardEvent('keyup', { code })); }
 function press(id, e) {
-  const how = TCD[id][3]; TOUCH.ptr[e.pointerId] = { k: how === 'fire' ? 'fire' : 'btn', id, x: e.clientX, y: e.clientY }; TOUCH.el[id].classList.add('down');
+  const how = tHow(id); TOUCH.ptr[e.pointerId] = { k: how === 'fire' ? 'fire' : 'btn', id, x: e.clientX, y: e.clientY }; TOUCH.el[id].classList.add('down');
   if (how === 'fire') { mouse.down = true; mouse.fresh = true; initAudio(); }
-  else if (how === 'aim') { TOUCH.aim = !TOUCH.aim; mouse.right = TOUCH.aim; TOUCH.el.aim.classList.toggle('on', TOUCH.aim); }
-  else if (how.startsWith('key:')) keys[how.slice(4)] = true;
-  else if (how.startsWith('tap:')) tKey(how.slice(4));
-  else if (how === 'swap') cycleWeapon(1);
-  else if (how === 'map') { const m = $('bigmap'); m.hidden = !m.hidden; if (!m.hidden) { $('board').hidden = true; drawBigMap(); } }
-  else if (how === 'board') { const b = $('board'); b.hidden = !b.hidden; if (!b.hidden) { $('bigmap').hidden = true; drawBoard(); } }
   else if (how === 'pause') { releaseAll(); pause(); }
+  else if (how.startsWith('act:')) { const a = how.slice(4), row = ACT_BY[a]; if (!row) return; if (row[4]) TACT[a] = true; actDown(a, 'touch'); }
 }
 function release(p) {
   if (!p) return;
   if (p.k === 'stick') { TOUCH.fx = TOUCH.fy = 0; const el = TOUCH.el.stick; el.classList.remove('down'); el.firstChild.style.transform = ''; if (p.float) layoutTouch(); return; }
   if (p.k === 'fire') mouse.down = false;
-  if (p.id) { const how = TCD[p.id][3]; if (how.startsWith('key:')) keys[how.slice(4)] = false; if (p.id !== 'aim') TOUCH.el[p.id].classList.remove('down'); else TOUCH.el.aim.classList.remove('down'); }
+  if (p.id) { const how = tHow(p.id); if (how.startsWith('act:')) { const a = how.slice(4); TACT[a] = false; actUp(a, 'touch'); } if (TOUCH.el[p.id]) TOUCH.el[p.id].classList.remove('down'); }
 }
 function stickStart(e, at) {
   const el = TOUCH.el.stick, r = el.getBoundingClientRect(), cx = at ? at[0] : r.left + r.width / 2, cy = at ? at[1] : r.top + r.height / 2;
@@ -5405,9 +5780,9 @@ const tUp = e => { const p = TOUCH.ptr[e.pointerId]; if (!p) return; delete TOUC
 tLayer.addEventListener('pointerup', tUp); tLayer.addEventListener('pointercancel', tUp); tLayer.addEventListener('lostpointercapture', tUp);
 tLayer.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('touchmove', e => { if (TOUCH.on && G.state === 'playing') e.preventDefault(); }, { passive: false });   // no page scroll or pinch zoom mid-game
-// a little help with aim on a touch screen: while firing or aiming, the view leans toward the nearest enemy close to the crosshair
+// a little help with aim on a touch screen or a controller: while firing or aiming, the view leans toward the nearest enemy close to the crosshair
 function touchAssist(dt) {
-  if (!TOUCH.on || !TOUCH.cfg.assist || G.state !== 'playing' || P.dead || !(mouse.down || mouse.right)) return;
+  if (!((TOUCH.on && TOUCH.cfg.assist) || (padRecent() && CTL.pa)) || G.state !== 'playing' || P.dead || !(mouse.down || mouse.right)) return;
   const d = WEAPONS[P.wpn]; if (d.melee) return;
   const ox = camera.position.x, oy = camera.position.y, oz = camera.position.z, cp = Math.cos(P.cpitch), fx = -Math.sin(P.cyaw) * cp, fy = Math.sin(P.cpitch), fz = -Math.cos(P.cyaw) * cp;
   let best = null, ba = 1e9;
@@ -5424,34 +5799,53 @@ function updateTouchUi() {
   const show = TOUCH.on && (G.state === 'playing' || TOUCH.edit); if (tLayer.hidden === show) tLayer.hidden = !show; if (!show) return;
   const air = TOUCH.edit ? TOUCH.ectx === 'a' : !!P.car && !!P.car.spec.air && P.seat === 0, car = TOUCH.edit ? TOUCH.ectx === 'c' : !!P.car && !air, cls = (air ? 'air' : car ? 'car' : 'foot') + (P.car && P.car.spec.air === 'gun' && !TOUCH.edit ? ' gun' : '') + (TOUCH.edit ? ' edit' : '') + (P.driveby || TOUCH.edit ? ' call' : '') + (P.dead && !TOUCH.edit ? ' dead' : '');
   if (tLayer.className !== cls) tLayer.className = cls;
-  if ((P.car || P.dead) && TOUCH.aim) { TOUCH.aim = false; mouse.right = false; TOUCH.el.aim.classList.remove('on'); }
-  const go = !TOUCH.edit && (!!P.car || shopOpen || (prompt && !!prompt.act)); TOUCH.el.use.classList.toggle('go', go); TOUCH.el.use.textContent = P.car && !TOUCH.edit ? 'EXIT' : 'USE';
+  const go = !TOUCH.edit && (!!P.car || shopOpen || (prompt && !!prompt.act)), lab = P.car && !TOUCH.edit ? 'EXIT' : 'USE';
+  for (const id in TOUCH.el) if (tHow(id) === 'act:use') { const el = TOUCH.el[id]; el.classList.toggle('go', go); if (el.textContent !== lab) el.textContent = lab; }
 }
 // --- moving and resizing the controls
-function tSelect(id) { TOUCH.sel = id; TC_DEF.forEach(d => TOUCH.el[d[0]].classList.toggle('sel', d[0] === id)); const q = tPlace(id); $('te-size').value = String((q[2] / tUnit()).toFixed(2)); $('te-what').textContent = (TCD[id][1] || 'Stick') + ' · drag to move · slider to resize'; }
+function tSelect(id) {
+  if (!TOUCH.el[id]) id = 'fire'; TOUCH.sel = id; for (const k in TOUCH.el) TOUCH.el[k].classList.toggle('sel', k === id); const q = tPlace(id); $('te-size').value = String((q[2] / tUnit()).toFixed(2));
+  $('te-what').textContent = (id === 'stick' ? 'Stick' : tLabel(id)) + ' · drag to move · slider to resize';
+  const sel = $('te-act'), d = TCD[id], ctx = d[2], how = tHow(id); sel.textContent = '';
+  if (TC_FIXED[id]) { sel.add(new Option(id === 'stick' ? 'Move · steer · fly' : id === 'fire' ? 'Fire (drag it to aim)' : 'Pause', '')); sel.disabled = true; }
+  else { sel.disabled = false; ACTS.filter(a => ctx === 'b' ? a[3] === 'fca' : a[3].indexOf(ctx) >= 0).forEach(a => sel.add(new Option(a[1], a[0]))); sel.value = how.slice(4); }
+  const own = !TC_BASE[id]; $('te-hide').textContent = own ? 'Remove' : TOUCH.cfg.hide[id] ? 'Show' : 'Hide'; $('te-hide').disabled = id === 'stick' || id === 'pause';
+}
 function tKeep(id, cx, cy, s) { TOUCH.cfg.lay[id] = [+(cx / window.innerWidth).toFixed(4), +(cy / window.innerHeight).toFixed(4), +s.toFixed(3)]; }
 function tDrag(id, dx, dy) { const q = tPlace(id); tKeep(id, q[0] + dx, q[1] + dy, q[2] / tUnit()); layoutTouch(); }
 function touchEdit(on) {
   TOUCH.edit = on; $('tedit').hidden = !on; releaseAll();
   if (on) { TOUCH.wasState = G.state; $('overlay').hidden = true; TOUCH.ectx = 'f'; $('te-alpha').value = String(TOUCH.cfg.alpha); $('te-ctx').textContent = 'Showing: on foot'; tSelect('fire'); layoutTouch(); }
-  else { TC_DEF.forEach(d => TOUCH.el[d[0]].classList.remove('sel')); saveTouch(); $('overlay').hidden = false; }
+  else { for (const k in TOUCH.el) TOUCH.el[k].classList.remove('sel'); saveTouch(); $('overlay').hidden = false; }
   updateTouchUi();
 }
 $('te-size').addEventListener('input', e => { const id = TOUCH.sel; if (!id) return; const q = tPlace(id); tKeep(id, q[0], q[1], clamp(+e.target.value, .06, .5)); layoutTouch(); });
 $('te-alpha').addEventListener('input', e => { TOUCH.cfg.alpha = clamp(+e.target.value, .15, 1); layoutTouch(); });
 $('te-ctx').addEventListener('click', () => { TOUCH.ectx = TOUCH.ectx === 'f' ? 'c' : TOUCH.ectx === 'c' ? 'a' : 'f'; $('te-ctx').textContent = TOUCH.ectx === 'f' ? 'Showing: on foot' : TOUCH.ectx === 'c' ? 'Showing: in a car' : 'Showing: flying'; updateTouchUi(); });
-$('te-reset').addEventListener('click', () => { TOUCH.cfg.lay = {}; TOUCH.cfg.alpha = TC_CFG0.alpha; $('te-alpha').value = String(TOUCH.cfg.alpha); layoutTouch(); if (TOUCH.sel) tSelect(TOUCH.sel); saveTouch(); });
+$('te-reset').addEventListener('click', () => { TOUCH.cfg.lay = {}; TOUCH.cfg.act = {}; TOUCH.cfg.hide = {}; TOUCH.cfg.extra = []; TOUCH.cfg.alpha = TC_CFG0.alpha; $('te-alpha').value = String(TOUCH.cfg.alpha); tBuild(); tSelect(TC_BASE[TOUCH.sel] ? TOUCH.sel : 'fire'); saveTouch(); });
+$('te-act').addEventListener('change', e => { const id = TOUCH.sel, v = e.target.value; if (!id || TC_FIXED[id] || !ACT_BY[v]) return;
+  if (TC_BASE[id]) { if (TCD[id][3] === 'act:' + v) delete TOUCH.cfg.act[id]; else TOUCH.cfg.act[id] = v; } else { const x = TOUCH.cfg.extra.find(q => q[0] === id); if (x) x[2] = v; }
+  tBuild(); tSelect(id); saveTouch(); });
+$('te-hide').addEventListener('click', () => { const id = TOUCH.sel; if (!id || id === 'stick' || id === 'pause') return;
+  if (!TC_BASE[id]) { TOUCH.cfg.extra = TOUCH.cfg.extra.filter(q => q[0] !== id); delete TOUCH.cfg.lay[id]; tBuild(); tSelect('fire'); }
+  else { if (TOUCH.cfg.hide[id]) delete TOUCH.cfg.hide[id]; else TOUCH.cfg.hide[id] = 1; tBuild(); tSelect(id); }
+  saveTouch(); });
+$('te-add').addEventListener('click', () => { if (TOUCH.cfg.extra.length >= 8) { $('te-what').textContent = 'Eight of your own buttons is the most'; return; }
+  const ctx = TOUCH.ectx, used = {}; for (const id in TOUCH.el) if (TCD[id][2] === ctx || TCD[id][2] === 'b') used[tHow(id).slice(4)] = 1;
+  const fits = ACTS.filter(q => q[3].indexOf(ctx) >= 0 && !STICKY.test(q[0])), a = fits.find(q => !used[q[0]]) || fits[0], id = 'x' + (Date.now() % 1e7).toString(36);
+  TOUCH.cfg.extra.push([id, ctx, a[0]]); tBuild(); tSelect(id); saveTouch(); });
 $('te-done').addEventListener('click', () => touchEdit(false));
 ['pointerdown', 'pointermove', 'pointerup'].forEach(t => $('tedit').addEventListener(t, e => e.stopPropagation()));
 // --- the touch part of the menu
 function touchMenu() {
-  const c = TOUCH.cfg; $('row-touch').hidden = !(TOUCH.on || TOUCH.coarse || c.mode === 'on'); $('set-touch').value = c.mode; $('set-tsens').value = String(c.sens); $('set-assist').value = c.assist ? '1' : '0'; $('set-float').value = c.float ? '1' : '0';
+  const c = TOUCH.cfg; $('row-touch').hidden = !(TOUCH.on || TOUCH.coarse || c.mode === 'on'); $('set-touch').value = c.mode; $('set-tsens').value = String(c.sens); $('set-assist').value = c.assist ? '1' : '0'; $('set-float').value = c.float ? '1' : '0'; $('set-tads').value = CTL.tads;
   $('touch-help').hidden = !TOUCH.on; document.querySelector('.keys').hidden = TOUCH.on; $('fs-btn').hidden = !TOUCH.on || !document.documentElement.requestFullscreen;
 }
 $('set-touch').addEventListener('change', e => { TOUCH.cfg.mode = e.target.value; saveTouch(); setTouch(wantTouch()); touchMenu(); });
 $('set-tsens').addEventListener('input', e => { TOUCH.cfg.sens = clamp(+e.target.value, .3, 3); saveTouch(); });
 $('set-assist').addEventListener('change', e => { TOUCH.cfg.assist = e.target.value === '1'; saveTouch(); });
 $('set-float').addEventListener('change', e => { TOUCH.cfg.float = e.target.value === '1'; saveTouch(); });
+$('set-tads').addEventListener('change', e => { CTL.tads = e.target.value === 'hold' ? 'hold' : 'toggle'; ctlSave(); if (CTL.tads === 'hold' && mouse.right && !isHeld('ads')) setAds(false); });
 $('te-open').addEventListener('click', () => { if (!TOUCH.on) setTouch(true); touchEdit(true); });
 $('fs-btn').addEventListener('click', () => { const d = document.documentElement; if (!d.requestFullscreen) return; d.requestFullscreen({ navigationUI: 'hide' }).then(() => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (x) {} }, () => {}); });
 // tapping a prompt does what it says; a tap anywhere on the map or the turf board closes it; shop items are bought with a tap
@@ -5459,7 +5853,7 @@ $('h-prompt').addEventListener('click', () => { if (TOUCH.on && prompt && prompt
 $('bigmap').addEventListener('click', () => { if (TOUCH.on) $('bigmap').hidden = true; }); $('board').addEventListener('click', () => { if (TOUCH.on) $('board').hidden = true; });
 $('shop-list').addEventListener('click', e => { const li = e.target.closest('li'); if (!li || !li.dataset.key) return; buy(li.dataset.key); });
 $('shop-x').addEventListener('click', () => closeShop());
-setTouch(wantTouch()); touchMenu(); layoutTouch();
+tBuild(); setTouch(wantTouch()); touchMenu(); layoutTouch();
 
 /* =====================================================================
    14. INPUT, MENUS, LOOP
@@ -5548,12 +5942,12 @@ function beginPlay() {
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
   banner('Port Calder', P.team === TEAM_COP ? 'You are on the force · Port Calder PD' : 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
   P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
-    : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
-  if (!sv) P.hints.push([31, 'T opens your phone: call homies, the mechanic, the fixer, or line up work']);
+    : [[5, capOf('use') + ' takes any car · ' + capOf('board') + ' shows turf · ' + capOf('map') + ' opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
+  if (!sv) P.hints.push([31, capOf('phone') + ' opens your phone: call homies, the mechanic, the fixer, or line up work']);
   SAVE.live = true; if (away > 0) { P.hints.unshift([3.6, 'While you were away your turf made $' + away.toLocaleString('en-US')]); gain(away); } saveGame(); P.hp = maxHp();
 }
 function startAttract() { readSettings(); startWorld({ x: ZONES[1].x + 18, z: ZONES[1].z }); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }   // the menu looks out over The Corner, so that is where the city gathers
-function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; saveGame(); showOverlay('paused'); }
+function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; saveGame(); showOverlay('paused'); }
 function leaveSession() { saveGame(); SAVE.live = false; if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
 $('deploy').addEventListener('click', () => {
   initAudio();
@@ -5576,36 +5970,30 @@ $('co-name').addEventListener('change', () => { try { localStorage.setItem('pc-n
 $('co-name').addEventListener('keydown', e => e.stopPropagation());
 document.addEventListener('pointerlockchange', () => { if (locked()) wasLocked = true; else if (wasLocked && G.state === 'playing') pause(); });
 canvas.addEventListener('mousedown', e => {
-  if (G.state !== 'playing') return; if (!locked()) requestLock();
-  if (e.button === 0) { mouse.down = true; mouse.fresh = true; } else if (e.button === 2) mouse.right = true;
+  if (G.state !== 'playing') return; if (!locked()) requestLock(); if (e.button > 2) e.preventDefault();
+  inputDown('Mouse' + e.button, true);
 });
-window.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; else if (e.button === 2) mouse.right = false; });
+window.addEventListener('mouseup', e => { if (e.button > 2 && G.state === 'playing') e.preventDefault(); inputUp('Mouse' + e.button); });
+canvas.addEventListener('auxclick', e => e.preventDefault());
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('mousemove', e => {
   if (G.state !== 'playing' || (!locked() && !TEST)) return;
   const s = SENS * (firstPerson() || P.ads > .5 ? camera.fov / 72 : 1); P.cyaw -= (e.movementX || 0) * s; P.cpitch = clamp(P.cpitch - (e.movementY || 0) * s, -1.25, 1.35); P.idleCam = 0;
 });
-canvas.addEventListener('wheel', e => { if (G.state === 'playing') { e.preventDefault(); cycleWeapon(e.deltaY > 0 ? 1 : -1); } }, { passive: false });
+canvas.addEventListener('wheel', e => { if (G.state === 'playing') { e.preventDefault(); const c = e.deltaY > 0 ? 'WheelDown' : 'WheelUp'; inputDown(c, true); inputUp(c); } }, { passive: false });
 window.addEventListener('keydown', e => {
   if (G.state !== 'playing') { if (e.code === 'Escape' && G.state === 'paused' && TEST) $('deploy').click(); return; }
-  if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code)) e.preventDefault();
-  if (e.repeat) return; keys[e.code] = true;
+  if (['Space', 'Tab', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Quote', 'Slash'].includes(e.code) || BYIN[e.code]) e.preventDefault();
+  if (e.repeat) return;
   if (shopOpen && /^Digit[0-9]$/.test(e.code)) { const n = e.code.slice(5); buy(n === '0' ? '10' : n); return; }
-  if (e.code === 'Tab') { drawBoard(); $('board').hidden = false; } else if (e.code === 'KeyM') { $('bigmap').hidden = false; drawBigMap(); }
-  else if (e.code === 'Escape' || e.code === 'KeyP') { if (shopOpen) closeShop(); else if (!locked()) pause(); }
-  else if (e.code === 'Backquote') devOpen();
-  else if (P.dead) return;
-  else if (e.code === 'KeyF' || e.code === 'KeyE') { if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); }
-  else if (e.code === 'KeyR') startReload(); else if (e.code === 'KeyG') throwGrenade();
-  else if (/^Digit[0-9]$/.test(e.code)) { const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
-  else if (e.code === 'KeyV') { if (P.car) camFar = camFar ? 0 : 1; else { P.view = P.view === 1 ? 3 : 1; $('set-view').value = String(P.view); try { localStorage.setItem('pc-view', String(P.view)); } catch (x) {} } }
-  else if (e.code === 'KeyQ') { if (P.car) nextRadio(); else cycleWeapon(1); }
-  else if (e.code === 'KeyB') callDriveBy();
-  else if (e.code === 'KeyT' || e.code === 'ArrowUp') { if (shopOpen && shopOpen.kind === 'phone') closeShop(); else if (!shopOpen) openPhone(); }
-  else if (e.code === 'Minus' || e.code === 'Equal') { SENS = clamp(SENS * (e.code === 'Minus' ? .88 : 1.14), .0006, .008); try { localStorage.setItem('pc-sens', String(SENS)); } catch (x) {} banner('Mouse speed ' + Math.round(SENS / .0022 * 100) + '%', '', 1); }
+  if (e.code === 'Escape') { if (shopOpen) closeShop(); else if (!locked()) pause(); return; }
+  if (e.code === 'Backquote') { devOpen(); return; }
+  if (/^Digit[0-9]$/.test(e.code)) { if (P.dead) return; const n = +e.code.slice(5), id = WID.find(k => WEAPONS[k].slot === (n === 0 ? 9 : n - 1)); if (id) setWeapon(id); return; }   // 1 fists … 6 marksman, 7 Glocks, 8 M60, 9 launcher, 0 bazooka
+  if (e.code === 'Minus' || e.code === 'Equal') { SENS = clamp(SENS * (e.code === 'Minus' ? .88 : 1.14), .0006, .008); try { localStorage.setItem('pc-sens', String(SENS)); } catch (x) {} banner('Mouse speed ' + Math.round(SENS / .0022 * 100) + '%', '', 1); return; }
+  inputDown(e.code, true);   // everything else goes through the bindings on the Controls page
 });
-window.addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Tab') $('board').hidden = true; if (e.code === 'KeyM') $('bigmap').hidden = true; });
-window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouse.down = mouse.right = false; setHorn(false); $('board').hidden = true; $('bigmap').hidden = true; });
+window.addEventListener('keyup', e => inputUp(e.code));
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; mouse.down = false; if (!ADS.on) mouse.right = false; setHorn(false); $('board').hidden = true; $('bigmap').hidden = true; });
 function resize() { const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1; renderer.setSize(w, h, false); camera.aspect = vmCam.aspect = w / h; camera.updateProjectionMatrix(); vmCam.updateProjectionMatrix(); }
 window.addEventListener('resize', resize);
 
@@ -5616,7 +6004,7 @@ function devSet(k, v) {
   DBG[k] = v; const el = $(DEV_FLAGS[k]); if (el) el.checked = v;
   if (k === 'nav') { if (v && !navLines) { const pts = []; NAV.forEach(n => n.e.forEach(e => { if (e[0] > n.i) { const m = NAV[e[0]]; pts.push(new T.Vector3(n.x, n.y + .4, n.z), new T.Vector3(m.x, m.y + .4, m.z)); } })); navLines = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: 0x8fe36b })); scene.add(navLines); } if (navLines) navLines.visible = v; }
 }
-function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); }
+function devOpen() { if (G.state !== 'playing') return; G.state = 'dev'; mouse.down = mouse.right = false; ADS.on = false; for (const k in keys) keys[k] = false; for (const k in TACT) TACT[k] = false; if (locked()) document.exitPointerLock(); $('dev').hidden = false; $('dv-tod').value = String(G.tod); }
 function devClose() { if (G.state !== 'dev') return; $('dev').hidden = true; G.state = 'playing'; wasLocked = false; requestLock(); }
 Object.keys(DEV_FLAGS).forEach(k => $(DEV_FLAGS[k]).addEventListener('change', e => devSet(k, e.target.checked)));
 CID.forEach(id => $('dv-car').add(new Option(CARS[id].name + ' (' + id + ')', id)));
@@ -5643,7 +6031,7 @@ window.addEventListener('keydown', e => { if (e.code === 'Backquote' && G.state 
 /* ---- the loop ---- */
 function step(dt) {
   G.time += dt;
-  if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
+  if (G.state !== 'menu') { inputTick(); updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
   updateGrenades(dt); updateProj(dt);
 }
@@ -5670,6 +6058,7 @@ function frame(now) {
   const raw = (now - last) / 1000, dt = Math.min(.05, raw) * DBG.scale; last = now; DBG.fps = lerp(DBG.fps, 1 / Math.max(raw, .001), .05);
   if (canvas.width !== Math.floor(canvas.clientWidth * renderer.getPixelRatio())) resize();
   const live = G.state === 'playing' || G.state === 'menu' || (NET.mode && (G.state === 'paused' || G.state === 'dev'));
+  pollPad(raw > .2 ? 0 : Math.min(.05, raw));
   if (live) step(dt);
   visuals(live ? dt : 0, now);
   if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash), rp = Math.round(P.rp || 0); if (c !== SAVE.lastC || rp !== SAVE.lastR) { SAVE.lastC = c; SAVE.lastR = rp; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
@@ -5684,7 +6073,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

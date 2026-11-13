@@ -1,79 +1,107 @@
 <script src="mqtt.min.js"></script>
 <script>
 /* Online play outside Claude.
-   Every player keeps one ordinary outbound connection to a public message relay and posts their own state to it; the relay
-   passes it to everyone else in the same room. Nothing connects browser-to-browser, so home routers and shared wifi are not
-   in the way, and nobody "holds the room open": anyone can come and go.
+   Every player keeps ordinary outbound connections to two public message relays at once and posts their own state to both;
+   each relay passes it to everyone else in the same room, and a copy that arrives twice is dropped. Either relay can fail,
+   or be blocked on someone's network, and the game carries on through the other one. Nothing connects browser-to-browser,
+   so home routers and shared wifi are not in the way, and nobody "holds the room open": anyone can come and go.
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
+   Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = '@BUILD@';
+  const BUILD = '@BUILD@', PROTO = '@PROTO@';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
-  const STALE = 7000;   // a player the relay has not heard from for this long has gone
+  const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
+  const STALE = 7000;                          // a player no relay has heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/@PROTO@/' + code + '/';
-  const table = {}, seen = {}, subs = [];
-  let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/' + PROTO + '/' + code + '/', vbase = 'hoodwar/ver/' + code + '/';
+  const table = {}, seen = {}, lastQ = {}, goneVia = {}, vers = {}, subs = [], links = [];
+  let mine = {}, q = 0, started = false, lastT = 0, verT = 0, note = '';
+  const isUp = () => links.some(L => L.up);
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
+  const pnum = p => parseInt(String(p).replace(/\D/g, ''), 10) || 0;
   const show = () => {
     const el = document.getElementById('co-link-status'); if (!el) return;
-    const n = Object.keys(table).length - (up ? 1 : 0);
-    el.textContent = (up ? 'Online · ' + where + ' · ' + (n === 0 ? 'nobody else here yet' : n === 1 ? '1 other player here' : n + ' other players here') + ' · server ' + (si + 1) : note || 'Connecting…') + ' · ' + BUILD;
-    el.className = up ? 'status ok' : 'status';
+    const n = Object.keys(table).length - 1, up = links.filter(L => L.up), rtt = room.rtt;
+    el.textContent = (up.length ? 'Online · ' + where + ' · ' + (n <= 0 ? 'nobody else here yet' : n === 1 ? '1 other player here' : n + ' other players here') + ' · ' + (up.length > 1 ? 'two relays' : 'one relay') + (rtt ? ' · ' + rtt + ' ms' : '') : note || 'Connecting…') + ' · ' + BUILD;
+    el.className = up.length ? 'status ok' : 'status';
+    const vn = document.getElementById('co-ver'); if (!vn) return; const now = Date.now(), newer = Object.keys(vers).filter(k => now - vers[k].t < 30000 && pnum(vers[k].p) > pnum(PROTO)), older = Object.keys(vers).filter(k => now - vers[k].t < 30000 && pnum(vers[k].p) < pnum(PROTO));
+    vn.hidden = !newer.length && !older.length;
+    vn.querySelector('span').textContent = newer.length ? 'A newer version of the game is out and someone in this room is on it. Reload to play with them.' : older.length ? (older.length === 1 ? 'A player' : older.length + ' players') + ' in this room ' + (older.length === 1 ? 'is' : 'are') + ' on an older version of the game. They need to reload the page to play with you.' : '';
+    vn.querySelector('button').hidden = !newer.length;
   };
-  const publish = () => { if (!up || !cl) return; lastT = Date.now(); try { cl.publish(base + me, JSON.stringify(mine), { qos: 0 }); } catch (e) {} };
-  const drop = id => { if (!(id in table) || id === me) return; delete table[id]; delete seen[id]; fire(); show(); };
-  function connect() {
+  const say = (L, topic, msg) => { try { L.c.publish(topic, msg, { qos: 0 }); return true; } catch (e) { return false; } };
+  const publish = () => {
+    if (!isUp()) return; lastT = Date.now(); q++; const msg = JSON.stringify(Object.assign({ _q: q }, mine)), t = performance.now();
+    links.forEach(L => { if (L.up && L.c && say(L, base + me, msg)) { L.pend[q] = t; if (q % 32 === 0) for (const k in L.pend) if (t - L.pend[k] > 8000) delete L.pend[k]; } });
+  };
+  const beacon = () => { verT = Date.now(); const msg = JSON.stringify({ p: PROTO, b: BUILD }); links.forEach(L => { if (L.up && L.c) say(L, vbase + me, msg); }); };
+  const drop = id => { if (!(id in table) || id === me) return; delete table[id]; delete seen[id]; delete goneVia[id]; fire(); show(); };
+  // which server a link should try next: one the other link is not on
+  const nextServer = L => { for (let k = 1; k <= SERVERS.length; k++) { const i = (L.i + k) % SERVERS.length; if (!links.some(o => o !== L && o.i === i)) return i; } return L.i; };
+  function connect(L) {
     if (typeof mqtt === 'undefined') { note = 'The online library did not load. Reload the page. Solo still works.'; return show(); }
-    note = 'Connecting to server ' + (si + 1) + '…'; show();
+    if (!isUp()) { note = 'Connecting…'; show(); }
     let ok = false, dead = false, c;
     const lost = why => {
-      if (dead) return; dead = true; if (cl === c) cl = null; up = false; try { c.end(true); } catch (e) {}
-      for (const k in table) { delete table[k]; delete seen[k]; } fire();
-      if (!ok) { fails++; si = (si + 1) % SERVERS.length; }
-      note = (ok ? 'Connection lost. Reconnecting…' : 'Server did not answer (' + why + '). Trying server ' + (si + 1) + '…'); show();
-      setTimeout(connect, ok ? 800 : Math.min(4000, 600 * fails));
+      if (dead) return; dead = true; L.up = false; if (L.c === c) L.c = null; try { c.end(true); } catch (e) {}
+      if (!ok) { L.fails++; L.i = nextServer(L); }
+      if (!isUp()) note = ok ? 'Connection lost. Reconnecting…' : 'No relay answered (' + why + '). Trying again…';
+      show(); fire();
+      setTimeout(() => connect(L), ok ? 800 : Math.min(5000, 700 * L.fails));
     };
-    try { c = cl = mqtt.connect(SERVERS[si], { clientId: 'hw_' + me, clean: true, keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, will: { topic: base + me, payload: '', qos: 0, retain: false } }); }
+    try { c = L.c = mqtt.connect(SERVERS[L.i], { clientId: 'hw_' + me + '_' + L.k, clean: true, keepalive: 20, reconnectPeriod: 0, connectTimeout: 8000, will: { topic: base + me, payload: '', qos: 0, retain: false } }); }
     catch (e) { c = { end() {} }; return lost('could not start'); }
-    c.on('connect', () => { if (dead) return; ok = true; up = true; fails = 0; c.subscribe(base + '+', { qos: 0 }, () => { table[me] = mine; publish(); show(); fire(); }); });
+    c.on('connect', () => { if (dead) return; ok = true; L.fails = 0; c.subscribe([base + '+', vbase + '+'], { qos: 0 }, () => { if (dead) return; const first = !isUp(); L.up = true; table[me] = mine; publish(); beacon(); show(); if (first) fire(); }); });
     c.on('message', (topic, payload) => {
-      if (dead || topic.slice(0, base.length) !== base) return; const id = topic.slice(base.length); if (id === me || !id) return;
-      const txt = payload.toString(); if (!txt) return drop(id);
+      if (dead) return; const txt = payload.toString();
+      if (topic.slice(0, vbase.length) === vbase) { const id = topic.slice(vbase.length); if (id === me || !txt) return; try { const v = JSON.parse(txt); if (v && v.p && v.p !== PROTO) { vers[id] = { p: String(v.p).slice(0, 8), t: Date.now() }; show(); } } catch (e) {} return; }
+      if (topic.slice(0, base.length) !== base) return; const id = topic.slice(base.length); if (!id) return;
+      if (id === me) { const m = /^\{"_q":(\d+)/.exec(txt.slice(0, 24)); if (m && L.pend[m[1]]) { const d = performance.now() - L.pend[m[1]]; delete L.pend[m[1]]; L.rtt = L.rtt ? L.rtt * .8 + d * .2 : d; } return; }   // our own message back: how long the round trip took
+      if (!txt) { (goneVia[id] || (goneVia[id] = {}))[L.k] = 1; if (links.every(o => !o.up || goneVia[id][o.k])) drop(id); return; }   // gone, as far as this relay knows; gone for good once every relay says so
       let pres; try { pres = JSON.parse(txt); } catch (e) { return; } if (!pres || typeof pres !== 'object') return;
-      const isNew = !(id in table); seen[id] = Date.now(); table[id] = pres; if (isNew) { publish(); show(); }   // someone new: tell them we are here straight away
+      const qq = +pres._q || 0; seen[id] = Date.now(); delete goneVia[id];
+      if (qq && id in table && qq <= (lastQ[id] || 0)) return;   // the other relay's copy, or one that arrived late
+      lastQ[id] = qq; const isNew = !(id in table); table[id] = pres; if (isNew) { publish(); show(); }   // someone new: tell them we are here straight away
       fire();
     });
     c.on('close', () => lost('closed')); c.on('error', e => lost(e && e.message ? String(e.message).slice(0, 40) : 'error')); c.on('offline', () => lost('offline'));
   }
   setInterval(() => {
-    if (!up) return; const now = Date.now();
-    if (now - lastT >= 2000) publish();                                   // heartbeat, so newcomers and the stale check always have something recent
+    const now = Date.now();
+    if (isUp() && now - lastT >= 2000) publish();                       // heartbeat, so newcomers and the stale check always have something recent
+    if (isUp() && now - verT >= 10000) beacon();
     for (const id in seen) if (now - seen[id] > STALE) drop(id);
+    show();
   }, 1000);
-  window.addEventListener('pagehide', () => { try { if (up && cl) cl.publish(base + me, '', { qos: 0 }); } catch (e) {} });
+  window.addEventListener('pagehide', () => { links.forEach(L => { if (L.up && L.c) say(L, base + me, ''); }); });
   const room = {
     peers: () => Object.keys(table).map(k => ({ peer: k, presence: table[k], isMe: k === me, sameTab: k === me, kind: 'viewer', guest: false, by: null })),
     presence: patch => {
       const o = Object.assign({}, mine); for (const k in patch) { if (patch[k] === null) delete o[k]; else o[k] = patch[k]; }
-      mine = o; if (up) { table[me] = mine; publish(); }
+      mine = o; if (started) { table[me] = mine; publish(); }
       return Promise.resolve();
     },
     onPeers: fn => { subs.push(fn); return () => {}; },
     join: () => Promise.reject(new Error('one room per link')),
+    get up() { return isUp(); },                                            // the game asks before deciding the host has left: maybe it is us that has
+    get rtt() { let r = 0; links.forEach(L => { if (L.up && L.rtt && (!r || L.rtt < r)) r = L.rtt; }); return Math.round(r); },
+    get relays() { return links.filter(L => L.up).length; },
   };
-  window.claude = { use: async name => { if (name !== 'room') return null; if (!started) { started = true; connect(); } return room; } };
+  window.claude = { use: async name => { if (name !== 'room') return null; if (!started) { started = true; table[me] = mine; for (let k = 0; k < LINKS; k++) { links[k] = { k, i: k, c: null, up: false, fails: 0, rtt: 0, pend: {} }; connect(links[k]); } } return room; } };
   window.addEventListener('hashchange', () => location.reload());
-  // under the lobby: whether the relay is up, and the link to hand to friends
+  // under the lobby: whether the relays are up, the link to hand to friends, and a word when versions do not match
   const anchor = document.getElementById('co-status');
   if (anchor) {
     const st = document.createElement('div'); st.className = 'status'; st.id = 'co-link-status'; st.textContent = 'Connecting…';
     const row = document.createElement('div'); row.className = 'row'; row.id = 'row-link';
     row.innerHTML = '<input id="co-link" type="text" readonly aria-label="Link to this room"><button type="button" class="btn sm" id="co-copy">Copy link</button><button type="button" class="btn sm" id="co-priv"></button>';
-    anchor.after(st); st.after(row);
+    const vn = document.createElement('div'); vn.className = 'status warn'; vn.id = 'co-ver'; vn.hidden = true; vn.innerHTML = '<span></span> <button type="button" class="btn sm">Reload now</button>';
+    anchor.after(st); st.after(row); row.after(vn);
+    vn.querySelector('button').addEventListener('click', () => { location.replace(location.pathname + '?v=' + Date.now().toString(36) + location.hash); });
     const input = document.getElementById('co-link'), btn = document.getElementById('co-copy'), pv = document.getElementById('co-priv');
-    input.value = location.href.split('#')[0] + (priv ? '#' + code : '');
+    input.value = location.href.split('#')[0].split('?')[0] + (priv ? '#' + code : '');
     input.addEventListener('keydown', e => e.stopPropagation());
     pv.textContent = priv ? 'Back to public room' : 'Make a private room';
     pv.addEventListener('click', () => { if (priv) { location.hash = ''; location.reload(); } else location.hash = Math.random().toString(36).slice(2, 8); });

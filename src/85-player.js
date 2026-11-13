@@ -136,7 +136,7 @@ function updateRob(dt) {
 }
 // one panel for every menu: the gun shop, the car shop and the phone. Each brings its own items:
 // { label, sub, cost, off (cannot be had right now), own (already yours), act }. An item can open a page of its own (shopOpen.page).
-function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · F or Esc closes' }); }
+function openShop(s) { openMenu({ kind: 'gun', x: s.x, z: s.z, title: s.name, items: gunItems, foot: 'A number, a click or a tap to buy · ' + capOf('use') + ' or Esc closes' }); }
 function openMenu(m) { shopOpen = m; $('shop-title').textContent = m.title; $('shop').className = 'pane menu-' + m.kind; $('shop-foot').textContent = m.foot || ''; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
 const page = (label, id) => ({ label: label + ' ›', act: () => { shopOpen.page = id; renderShop(); } }), back = () => ({ label: '‹ Back', act: () => { shopOpen.page = null; renderShop(); } });
@@ -144,6 +144,7 @@ function renderShop() {
   if (!shopOpen) return; const ol = $('shop-list'); ol.textContent = '';
   const row = (key, label, sub, right, cls) => { const li = document.createElement('li'), b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); li.className = cls; li.dataset.key = key; b.textContent = key === '10' ? '0' : key; a.textContent = label; if (sub) { const s = document.createElement('small'); s.textContent = sub; a.appendChild(s); } c.textContent = right; li.append(b, a, c); ol.appendChild(li); };
   shopOpen.list = shopOpen.items(shopOpen.page || null).slice(0, 10); shopOpen.list.forEach((it, i) => { it.key = String(i + 1); row(it.key, it.label, it.sub, it.cost > 0 ? '$' + it.cost.toLocaleString('en-US') : it.own ? 'Yours' : '', it.own ? 'own' : it.off || it.cost > P.cash ? 'no' : ''); });
+  markShop();
 }
 function buy(key) {
   if (!shopOpen) return;
@@ -168,7 +169,7 @@ function gunItems(pg) {
   return [
     { label: 'Ammo for every gun', sub: 'Full magazines and spares, rockets included', cost: ammoCost(), act: () => { if (payCash(ammoCost())) { for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = d.res; } } SFX.buy(); } } },
     P.armor >= 100 ? { label: 'Body armor', sub: 'Full', off: true, own: true } : { label: 'Body armor', sub: 'Soaks up most of what hits you', cost: 500, act: () => { if (payCash(500)) { P.armor = 100; SFX.buy(); } } },
-    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · G throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
+    P.nades >= 6 ? { label: 'Grenade', sub: 'Carrying all you can (6)', off: true, own: true } : { label: 'Grenade', sub: P.nades + ' of 6 · ' + capOf('nade') + ' throws one', cost: 200, act: () => { if (payCash(200)) { P.nades++; SFX.buy(); } } },
     P.hp >= maxHp() ? { label: 'Medkit', sub: 'Not hurt', off: true } : { label: 'Medkit', sub: 'Back to full health', cost: 250, act: () => { if (payCash(250)) { P.hp = maxHp(); SFX.buy(); } } },
     page('Handguns & SMGs', 'hand'), page('Shotguns & rifles', 'long'), page('Heavy weapons', 'heavy')];
 }
@@ -179,14 +180,14 @@ function collectPickups() {
 }
 // --- on foot
 function updateOnFoot(dt) {
-  let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
-  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = -TOUCH.fy; str = TOUCH.fx; push = Math.min(1, hyp(fwd, str)); }   // the stick: a little push walks, all the way runs, pinned forward sprints
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
+  let fwd = (isHeld('fwd') ? 1 : 0) - (isHeld('back') ? 1 : 0), str = (isHeld('right') ? 1 : 0) - (isHeld('left') ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
+  { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = -sy; str = sx; push = Math.min(1, hyp(fwd, str)); } }   // a stick: a little push walks, all the way runs; on a touch screen, pinned forward sprints
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
   let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   if (P.chute) { const k = 6.5 / (sp || 1); wx *= k; wz *= k; P.vy = Math.max(P.vy, -4.6); }   // under a canopy: a slow drift down, steered
   const acc = Math.min(1, dt * (P.onGround ? 11 : P.chute ? 1.6 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
-  if (keys.Space && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!keys.Space) P.jumpHeld = false;
+  const jmp = isHeld('jump'); if (jmp && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!jmp) P.jumpHeld = false;
   const wasAir = !P.onGround;
   moveEntity(P, P.vx * dt, P.vz * dt, dt, CFG.player.r, 'p', CFG.player.h); carBlock(P, CFG.player.r);
   if (wasAir && P.onGround) { if (P.fell < -15) hurtPlayer((-P.fell - 15) * 8, null, 'fall'); if (P.fell < -5) SFX.land(); }
@@ -213,10 +214,10 @@ function updateInCar(dt) {
   if (c.spec.air && (c.sunk || (c.wreck && c.y < 1.2 && !onLand(c.x, c.z)))) { GAME.leaveCar(true); swimAshore(); return; }
   if (c.spec.air && P.seat === 0 && c.mine !== false) heliControls(c, dt);
   else if (P.seat === 0 && c.mine !== false) {
-    const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
-    if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
-    nitrous(c, dt, !!(keys.ShiftLeft || keys.ShiftRight)); stepCar(c, dt, inp);
-    if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
+    const inp = c.inp; inp.thr = heldAmt('gas') - heldAmt('brake'); inp.steer = (isHeld('steerR') ? 1 : 0) - (isHeld('steerL') ? 1 : 0); inp.hb = isHeld('hb');
+    { const sx = stickX(), sy = stickY(); if (sx) inp.steer = clamp(inp.steer + sx * 1.15, -1, 1); if (TOUCH.on && !isHeld('gas') && !isHeld('brake') && Math.abs(sy) > .3) inp.thr = clamp(-sy * 1.3, -1, 1); }   // a stick steers; on a touch screen up or down on it drives when GAS and BRAKE are not held
+    nitrous(c, dt, isHeld('nos')); stepCar(c, dt, inp);
+    const hk = isHeld('horn'); if (c.cop) { if (hk && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = hk ? 1 : 0; setHorn(hk); } P.hornHeld = hk;
     GAME.roadkill(c, P);
     garageCheck(c);   // stop in a garage and the car shop opens: repairs, resprays that lose the police, armor, engine, and keeping the car
   }
@@ -242,8 +243,8 @@ function updateCamera(dt) {
   if (P.dead) { P.orbit = (P.orbit || 0) + dt * .25; px = P.x; py = P.y + .8; pz = P.z; const a = P.cyaw + P.orbit; want = 5; camDist = lerp(camDist, want, Math.min(1, dt * 3)); const t = Math.min(camDist, rayWorld(px, py, pz, Math.sin(a) * .9, .42, Math.cos(a) * .9, 's', camDist + .3) - .3); camera.position.set(px + Math.sin(a) * .9 * t, py + .42 * t, pz + Math.cos(a) * .9 * t); camera.rotation.set(-.44, a, 0); }
   else if (P.car) {
     const c = P.car, sp = carSpeed(c), air = !!c.spec.air; P.idleCam += dt;
-    if (!air && P.idleCam > 1.1 && sp > 2.5 && !keys.KeyC) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
-    const yaw = P.cyaw + (keys.KeyC && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
+    const lb = isHeld('behind'); if (!air && P.idleCam > 1.1 && sp > 2.5 && !lb) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
+    const yaw = P.cyaw + (lb && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
     camDist = lerp(camDist, want, Math.min(1, dt * 5)); const t = Math.max(1.2, Math.min(camDist, rayWorld(px, py, pz, -bx, -fy + .12, -bz, 's', camDist + .4) - .4));
     camera.position.set(px - bx * t + sx, py + (-fy + .12) * t + .5 + sy, pz - bz * t); camera.rotation.set(P.cpitch - .04 + sy * .3, yaw + sx * .3, clamp(c.yawRate * .02, -.05, .05)); fov = 72 + Math.min(16, sp * .32);
   } else if (firstPerson()) {
