@@ -63,7 +63,7 @@ BIZ.forEach(b => { b.m = mark(b.x, b.z, 0x7dffb0, .85); b.m.visible = false; });
 function bizMarks() { BIZ.forEach(b => { const own = ownBiz(b); b.m.visible = own || bizOpen(b); b.m.material.color.setHex(own ? (bizOpen(b) ? 0xffc83d : 0x8a8f98) : 0x7dffb0); }); }
 
 // --- the phone. T, or the PHONE button, opens it; a number or a tap calls whoever is on it.
-const PH = { homT: -999, homUntil: -1, fixT: -999, jobT: -999, mechT: -999 };
+const PH = { homT: -999, homUntil: -1, fixT: -999, jobT: -999, mechT: -999, airT: -999 };
 const coolLeft = (t, s) => Math.max(0, Math.ceil(t + s - G.time));
 const homiesOut = () => AUTH() ? bots.some(b => b.homie === P && !b.dead) : G.time < PH.homUntil;
 const myPV = () => { for (let i = 0; i < cars.length; i++) if (cars[i].pv === P && !cars[i].gone) return cars[i]; return null; };
@@ -77,7 +77,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
-  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems();
+  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (homiesOut()) out.push({ label: 'Homies', sub: 'Rolling with you · tap to send them home', act: dismissHomies });
@@ -95,7 +95,7 @@ function phoneItems(pg) {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
-  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'));
+  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
   return out;
 }
 function openPhone() { if (P.dead || G.state !== 'playing') return; openMenu({ kind: 'phone', title: 'Phone', items: phoneItems, foot: 'A number or a tap to call · T or Esc hangs up' }); }
@@ -128,12 +128,12 @@ function homieBrain(b) {
   if (!a || a.gone || G.time > b.until) { b.homie = null; b.until = G.time + 2; if (b.car && b.seat !== 0) botExit(b, false); return; }   // done for the day: they walk off and are gone once nobody is looking
   const saw = botLook(b);
   if (!saw && (!b.tgt || b.tgt.dead || G.time - b.seenT > 2)) { const t = threatOf(a); if (t && los(b.x, eyeY(b), b.z, t.x, chestY(t), t.z, 'a')) { if (b.tgt !== t) b.react = .35; b.tgt = t; b.seenT = G.time; b.lsx = t.x; b.lsy = t.y; b.lsz = t.z; } }   // whoever is shooting at you is who they shoot at
-  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0) botExit(b, false); else if (a.car !== c && carSpeed(c) < 7) botExit(b, false); return; }
+  if (b.car) { const c = b.car; if (c.spec.air) { if (a.car !== c) { if (c.landed) botExit(b, false); else homieCatchUp(b, a); } return; } if (c.wreck || c.burn > 0) botExit(b, false); else if (a.car !== c && carSpeed(c) < 7) botExit(b, false); return; }   // out of a helicopter only once it is down; if you jump, they meet you below
   const d = hyp(a.x - b.x, a.z - b.z);
   if (a.car && !a.dead && !a.car.wreck) { const c = a.car;
     if (b.wantCar === c) return;
     let k = -1; for (let q = 1; q < c.spec.seats; q++) if (!c.occ[q] && !bots.some(o => o !== b && o.wantCar === c && o.wantSeat === q)) { k = q; break; }
-    if (k > 0 && d < 40) { b.wantCar = c; b.wantSeat = k; b.carT = G.time; b.carChk = 0; b.path = null; b.tgt = null; return; } }
+    if (k > 0 && d < 40 && (!c.spec.air || c.landed)) { b.wantCar = c; b.wantSeat = k; b.carT = G.time; b.carChk = 0; b.path = null; b.tgt = null; return; } }
   else if (b.wantCar) b.wantCar = null;
   if (d > 120 || (d > 60 && (!a.car || carSpeed(a.car) < 4))) { homieCatchUp(b, a); return; }
   if (saw || (b.tgt && !b.tgt.dead && G.time - b.seenT < 2)) return;
@@ -216,6 +216,27 @@ function nitrous(c, dt, want) {
 }
 
 // --- each second or so: business marks, the car you were promised, the phone menu kept current
+// --- a helicopter of your own: bought on the phone, kept on file, and set down on the helipad nearest you whenever you call for it
+const AIR_SHOP = [['chopper', 45000, 4, 'Four seats, quick, no guns'], ['heli', 95000, 8, 'Nose guns and rockets']];
+const myAir = () => { for (let i = 0; i < cars.length; i++) if (cars[i].pa === P && !cars[i].gone) return cars[i]; return null; };
+function airItems() {
+  const r = P.rank || 1, out = [], cd = coolLeft(PH.airT, 30), c = myAir(), wrecked = !!c && (c.wreck || c.burn > 0);
+  if (P.air) out.push(cd ? { label: 'Bring my ' + CARS[P.air.t].name, sub: 'On the way · call back in ' + cd + 's', off: true } : { label: 'Bring my ' + CARS[P.air.t].name, sub: 'Set down on the helipad nearest you' + (wrecked ? ' · insurance' : ''), cost: wrecked ? 500 : 0, act: () => { if (wrecked && !payCash(500)) return; closeShop(); PH.airT = G.time; sendAir(); } });
+  AIR_SHOP.forEach(q => { const S = CARS[q[0]], has = P.air && P.air.t === q[0];
+    out.push(has ? { label: S.name + ' helicopter', sub: 'Yours · ' + q[3], off: true, own: true } : q[2] > r ? { label: S.name + ' helicopter', sub: 'Opens at rank ' + q[2], off: true, lock: 'Opens at rank ' + q[2] }
+      : { label: S.name + ' helicopter', sub: q[3] + ' · ' + Math.round(S.vmax * 2.237) + ' mph' + (P.air ? ' · replaces your ' + CARS[P.air.t].name : ''), cost: q[1], act: () => { if (!payCash(q[1])) return; P.air = { t: q[0], c: q[0] === 'heli' ? 0x1b1d21 : CREW_PAINT[P.team] }; addRP(CFG.rp.buy); saveGame(); closeShop(); PH.airT = G.time; sendAir(); banner(S.name, 'Bought · on its way to the nearest helipad', 2.6, 'gold'); } }); });
+  out.push(back()); return out;
+}
+function sendAir() { const v = P.air; if (!v || !CARS[v.t]) return; if (AUTH()) GAME.airDeliver(P, v.t, v.c); else NET.req('ad', CARS[v.t].n, Math.max(0, ALLPAINT.indexOf(v.c))); }
+// on the machine that runs the world: a's helicopter on the nearest free pad. The airport keeps three; the city has a few of its own.
+GAME.airDeliver = (a, t, col) => {
+  if (!a || a.gone || !CARS[t] || !CARS[t].air) return false;
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.pa === a && !c.occ.some(o => o)) removeCar(c); }
+  let best = null, bd = 1e9; AIRPORT.pads.concat(AIRPORT.city).forEach(p => { if (cars.some(c => hyp(c.x - p.x, c.z - p.z) < 9 && Math.abs(c.y - p.y) < 3)) return; const d = hyp(p.x - a.x, p.z - a.z); if (d < bd) { bd = d; best = p; } });
+  if (!best) return false; const c = spawnCar(t, best.x, best.z, best.yaw, { color: ALLPAINT.includes(col) ? col : undefined }); if (!c) return false;
+  c.pa = a; c.y = best.y; GAME.ev('ad', GAME.ref(a), best.name || 'the airport', t, c.id); return true;
+};
+
 function careerTick(dt) {
   PH.tickT = (PH.tickT || 0) - dt; if (PH.tickT > 0) return; PH.tickT = .5;
   bizMarks(); labTick();

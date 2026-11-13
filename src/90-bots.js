@@ -81,7 +81,7 @@ GAME.eject = (c, k, by) => {   // dragged out of the seat
 };
 function findCarFor(b, zone) {
   let best = null, bd = 42, seat = 0;
-  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .35 || c.temp) continue; const d = hyp(c.x - b.x, c.z - b.z); if (d >= bd) continue;
+  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .35 || c.temp || c.spec.air) continue; const d = hyp(c.x - b.x, c.z - b.z); if (d >= bd) continue;
     const dr = c.occ[0];
     if (!dr) { if (c.team >= 0 && c.team !== b.team && c.home) continue; if (c.home && c.home.lot && hyp(c.x - c.home.x, c.z - c.home.z) < 3) continue; if (bots.some(o => o !== b && o.wantCar === c && o.wantSeat === 0)) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k] && !bots.some(o => o.wantCar === c && o.wantSeat === k)) { bd = d; best = c; seat = k; break; } continue; } bd = d; best = c; seat = 0; }
     else if (dr.kind === 'bot' && dr.team === b.team && c.ai && c.ai.wait > 0 && c.ai.zone === zone) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) { bd = d; best = c; seat = k; break; } } }
@@ -159,7 +159,7 @@ function pickGoal(b) {
 }
 function crewBrain(b) {
   const saw = botLook(b);
-  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!c.occ[0] || c.occ[0].team !== b.team)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); } return; }
+  if (b.car) { const c = b.car; if (c.spec.air) { if (c.landed && !c.occ[0]) botExit(b, false); return; } if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!c.occ[0] || c.occ[0].team !== b.team)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); } return; }
   if (saw || b.tgt) return;
   if (b.hunterOf) { const a = b.hunterOf;   // sent after someone: keep looking for them until they are dead or the crew loses interest
     if (a.gone || a.dead || !(a.gn && a.gn[b.team] >= CFG.gang[0])) b.hunterOf = null;

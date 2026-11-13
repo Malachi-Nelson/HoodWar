@@ -34,6 +34,8 @@ function onEvent(e, mine) {
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st') heistNews(e);
+  else if (k === 'gs') { const a = GAME.unref(e[2]); if (a === P) banner('Gunship stolen', 'The airport police are coming', 2.6, 'gold'); else if (a) note(nameOf(a) + ' stole the airport gunship', 'g'); }
+  else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + ' is on the helipad at ' + e[3] + ' · it is on your map', 'g'); } }
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
@@ -173,11 +175,12 @@ function carAfterStep(c) {
 const NOINP = { thr: 0, steer: 0, hb: true };
 function updateCarsAuth(dt) {
   for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i];
-    if (c.wreck) { c.wreckT += dt; if (carSpeed(c) > .1) stepCar(c, dt, NOINP); c.crash = 0; if (c.wreckT > 26) { removeCar(c); } continue; }
+    if (c.wreck) { c.wreckT += dt; if (c.spec.air) { stepHeli(c, dt, NOAIR); if (c.sunk && c.wreckT > 9) { removeCar(c); continue; } } else if (carSpeed(c) > .1) stepCar(c, dt, NOINP); c.crash = 0; if (c.wreckT > 26) { removeCar(c); } continue; }
     if (c.burn > 0) { c.burn -= dt; if (c.burn <= 0) { blowCar(c); continue; } }
     if (c === P.car && P.seat === 0) { carAfterStep(c); continue; }
     if (c.kin) { c.crash = 0; continue; }
-    if (c.occ[0] || !c.asleep) stepCar(c, dt, c.occ[0] && c.ai ? c.inp : c.occ[0] ? c.inp : NOINP);
+    if (c.spec.air) { if (c.hai && c.occ[0] && c.occ[0].kind === 'bot') heliBrain(c, dt); if (c.gone) continue; if (c.occ[0] || !c.asleep) stepHeli(c, dt, c.occ[0] ? c.inp : NOAIR); }
+    else if (c.occ[0] || !c.asleep) stepCar(c, dt, c.occ[0] && c.ai ? c.inp : c.occ[0] ? c.inp : NOINP);
     carAfterStep(c);
     if (c.ai && c.occ[0] && carSpeed(c) > 4.5) GAME.roadkill(c, c.occ[0]);
     if (!c.occ[0] && !c.occ[1] && !c.occ[2] && !c.occ[3]) c.idle += dt; else c.idle = 0;
@@ -259,9 +262,9 @@ function populate() {
   staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
   // cars: abandoned traffic is cleared away, parked cars come back to their spots
-  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv) continue; const far = nearHuman(c.x, c.z);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv || c.pa || (c.spec.air && !c.landed)) continue; const far = nearHuman(c.x, c.z);
     if (!c.home && c.idle > 45 && far > 70) removeCar(c); else if (c.temp && c.idle > 8 && far > 60) removeCar(c); else if (c.home && c.idle > 70 && far > 90 && hyp(c.x - c.home.x, c.z - c.home.z) > 12) removeCar(c); }
-  G.homes.forEach(h => { if (h.car && !h.car.gone && !h.car.wreck) return; if (h.car) { h.car = null; h.t = G.time + 28; } if (G.time < h.t || nearHuman(h.spot.x, h.spot.z) < 70 || cars.some(c => hyp(c.x - h.spot.x, c.z - h.spot.z) < 6) || cars.length >= CAR_MAX - 4) return; h.car = parkCar(h.spot, h.type, h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : {}); });
+  G.homes.forEach(h => { if (h.car && !h.car.gone && !h.car.wreck) return; if (h.car) { h.car = null; h.t = G.time + 28; } if (G.time < h.t || nearHuman(h.spot.x, h.spot.z) < 70 || cars.some(c => hyp(c.x - h.spot.x, c.z - h.spot.z) < 6) || cars.length >= CAR_MAX - 4) return; h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : {}); });
 }
 // a few of each crew's people on its own corners, wherever a player is near: walk onto a rival's ground and they are there
 function streetCrews() {
@@ -310,7 +313,8 @@ function startWorld(at) {
   const take = (list, n) => { for (let k = 0, guard = 0; k < n && guard < 400; guard++) { const s = list[(r() * list.length) | 0]; if (used.some(u => hyp(u.x - s.x, u.z - s.z) < 9)) continue; used.push(s); k++; G.homes.push({ spot: s, type: pick(r, STREET_CARS), team: -1, car: null, t: 0 }); } };
   take(street, 10); take(lots, 5);
   for (let t = 0; t < NCREW; t++) BASECARS[t].forEach((s, k) => G.homes.push({ spot: s, type: k === 3 ? 'coupe' : CREW_CARS[k % 3], team: t, car: null, t: 0 }));
-  G.homes.forEach(h => { h.car = parkCar(h.spot, h.type, h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : { color: PAINTS[(r() * PAINTS.length) | 0] }); });
+  AIRPORT.pads.forEach((s, k) => s.kind !== 'free' && G.homes.push({ spot: s, type: s.kind === 'gun' ? 'heli' : 'chopper', team: -1, car: null, t: 0, color: s.kind === 'gun' ? 0x1d6b45 : [0xf2efe6, 0x1f4e8c][k % 2] }));   // the airport's helicopters
+  G.homes.forEach(h => { h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : { color: PAINTS[(r() * PAINTS.length) | 0] }); });
   for (let k = 0; k < G.traffic; k++) spawnTraffic();
   for (let t = 0; t < NCREW; t++) for (let k = crewSize(t); k > 0; k--) spawnCrewBot(t, .75);      // most of each crew starts out on its turf
   staffPosts(true);
@@ -322,7 +326,7 @@ const hourlyNow = () => { let amt = 0; ZS.forEach((s, i) => { if (s.owner === G.
 function authTick(dt) {
   G.tod = (G.tod + dt * TOD_RATE) % 24;
   updateZones(dt); updateRaids(dt);
-  G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); }
+  G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); airTick(); }
   if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }
   G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); }
   if (!DBG.freeze) for (let i = 0; i < bots.length; i++) updateBot(bots[i], dt);

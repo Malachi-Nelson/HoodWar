@@ -6,7 +6,12 @@
 const boxes = [];
 const NX = 7, NZ = 6, PX = 100, PZ = 84, ROAD = 13, WALK = 3.5, EDGE = 10;      // blocks across and down, block pitch, carriageway, sidewalk, road centre to lot line
 const CITY = { w: NX * PX + 20, d: NZ * PZ + 20 };                                // 720 x 524 m
-const WORLD = { x0: -48, z0: -48, x1: CITY.w + 48, z1: CITY.d + 48 };
+// Port Calder International sits on an island across the harbour channel to the east, joined to the city by the Harbor Bridge,
+// which carries the road along the line of the fourth cross street (z of RZ(3)). Everything else out there is water.
+const ISLE = { x0: 830, x1: 1120, z0: -10, z1: 540 }, BRIDGE = { z: EDGE + 3 * PZ, w: 10 };   // BRIDGE.w: half its width, pavements included
+const WORLD = { x0: -48, z0: -48, x1: ISLE.x1 + 48, z1: CITY.d + 48 };
+const onLand = (x, z) => (x >= -6 && x <= CITY.w && z >= -6 && z <= CITY.d) || (x >= ISLE.x0 && x <= ISLE.x1 && z >= ISLE.z0 && z <= ISLE.z1) || (x > CITY.w && x < ISLE.x0 && Math.abs(z - BRIDGE.z) <= BRIDGE.w);
+const AIRSPACE = { x0: -30, x1: ISLE.x1 + 140, z0: -30, z1: CITY.d + 110, top: 240 };   // how far a helicopter may go before it is turned back
 const CELL = 16, GW = Math.ceil((WORLD.x1 - WORLD.x0) / CELL), GH = Math.ceil((WORLD.z1 - WORLD.z0) / CELL);
 const gridCells = new Array(GW * GH); for (let i = 0; i < gridCells.length; i++) gridCells[i] = [];
 const cellX = x => clamp(Math.floor((x - WORLD.x0) / CELL), 0, GW - 1), cellZ = z => clamp(Math.floor((z - WORLD.z0) / CELL), 0, GH - 1);

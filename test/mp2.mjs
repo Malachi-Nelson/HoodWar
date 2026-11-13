@@ -109,6 +109,16 @@ log('client job on host', await A.evaluate(() => { const E = __pc.EVTS.find(q =>
 await B.evaluate(() => { const g = __pc, c = g.JEWEL.cases[0]; g.P.x = c.x + (g.JEWEL.door.x - c.x) * .2; g.P.z = c.z + (g.JEWEL.door.z - c.z) * .2; g.step(3, 1 / 30); const pr = g.findPromptNow(); if (pr && pr.act) pr.act(); });
 await pump(20);
 log('client smash', { host: await A.evaluate(() => { const E = __pc.EVTS.find(q => q.k === 'jewel'); return E ? { cases: E.cases, take: E.take } : null; }), client: await B.evaluate(() => { const E = __pc.EVTS.find(q => q.k === 'jewel'); __pc.visuals(1 / 30); return E ? { cases: E.cases, take: E.take, line: document.getElementById('h-race').textContent } : null; }) });
+// v7: a joined player flies a helicopter off the airport pad; the host and its world see it up there, leaning, and the gunship's fire
+await B.evaluate(() => { const g = __pc, c = g.cars.find(q => q.type === 'chopper' && !q.occ[0]); window.__heli = c.id; g.P.x = c.x + 2.6; g.P.z = c.z + .9; g.P.y = c.y; g.step(4, 1 / 30); const pr = g.findPromptNow(); if (pr && pr.act) pr.act(); });
+await pump(30);
+await B.evaluate(() => { const g = __pc; g.P.cyaw = g.P.car ? g.P.car.yaw : 0; g.keys.Space = true; });
+await pump(60); await B.evaluate(() => { const g = __pc; g.keys.Space = false; g.keys.KeyW = true; }); await pump(30); await B.evaluate(() => { __pc.keys.KeyW = false; }); await pump(10);
+log('client heli', { client: await B.evaluate(() => { const c = __pc.P.car; return c && { type: c.type, y: Math.round(c.y), dive: +c.dive.toFixed(2), mine: c.mine }; }),
+  host: await A.evaluate(id => { const c = __pc.cars.find(q => q.id === id); return c && { y: Math.round(c.y), dive: +c.dive.toFixed(2), kin: c.kin, pilot: c.occ[0] && c.occ[0].name, rotor: +(c.rotor || 0).toFixed(2), landed: c.landed }; }, await B.evaluate(() => window.__heli)) });
+await B.evaluate(() => { const g = __pc; g.keys.ShiftLeft = true; }); await pump(90); await B.evaluate(() => { __pc.keys.ShiftLeft = false; }); await pump(20);
+log('client heli down', await A.evaluate(id => { const c = __pc.cars.find(q => q.id === id); return c && { y: +c.y.toFixed(1), landed: c.landed, hp: Math.round(c.hp) }; }, await B.evaluate(() => window.__heli)));
+await B.evaluate(() => { __pc.GAME.leaveCar(false); }); await pump(10);
 log('client rank tag on host', await A.evaluate(() => { const r = Object.values(__pc.NET.remotes).find(q => q.name === 'Bob'); return r ? r.rank : null; }));
 // a third player turns up and joins the running session
 C = await open('C'); await sleep(1300); await C.fill('#co-name', 'Cara'); await C.dispatchEvent('#co-name', 'change'); await C.click('#crew2'); await sleep(300);

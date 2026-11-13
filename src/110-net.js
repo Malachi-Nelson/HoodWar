@@ -20,14 +20,15 @@ function snapAt(buf, o) {   // o gets x, y, z, yaw (and pitch, vf when the snaps
   for (let q = buf.length - 1; q > 0; q--) if (buf[q - 1].t <= rt) { a = buf[q - 1]; b = buf[q]; break; }
   if (a === b && buf.length > 1) a = buf[buf.length - 2];
   const span = Math.max(.001, b.t - a.t), far = hyp(b.x - a.x, b.z - a.z) > 14 || Math.abs(b.y - a.y) > 5, f = a === b || far ? 1 : clamp((rt - a.t) / span, 0, 1 + Math.min(.15, span) / span), g = Math.min(1, f);
-  o.x = a.x + (b.x - a.x) * f; o.y = a.y + (b.y - a.y) * f; o.z = a.z + (b.z - a.z) * f; o.yaw = a.yaw + angTo(a.yaw, b.yaw) * g; if (b.pitch !== undefined) o.pitch = a.pitch + (b.pitch - a.pitch) * g; if (b.vf !== undefined) o.vf = b.vf; return true;
+  o.x = a.x + (b.x - a.x) * f; o.y = a.y + (b.y - a.y) * f; o.z = a.z + (b.z - a.z) * f; o.yaw = a.yaw + angTo(a.yaw, b.yaw) * g; if (b.pitch !== undefined) o.pitch = a.pitch + (b.pitch - a.pitch) * g; if (b.roll !== undefined) o.roll = (a.roll || 0) + (b.roll - (a.roll || 0)) * g; if (b.vf !== undefined) o.vf = b.vf; return true;
 }
 // --- what I say about myself
 const myPos = () => [r2(P.x), r2(P.y), r2(P.z), r2(P.yaw), r2(P.pitch)];
 function myBody() {
-  const c = P.car, fl = (P.reloadT > 0 ? 1 : 0) | (P.ads > .5 || P.shootT > 0 ? 2 : 0) | (P.dead ? 4 : 0) | (c ? 8 : 0) | (P.sprint ? 16 : 0) | (P.knock > .5 ? 32 : 0) | (P.safeT > 0 ? 64 : 0);
+  const c = P.car, fl = (P.reloadT > 0 ? 1 : 0) | (P.ads > .5 || P.shootT > 0 ? 2 : 0) | (P.dead ? 4 : 0) | (c ? 8 : 0) | (P.sprint ? 16 : 0) | (P.knock > .5 ? 32 : 0) | (P.safeT > 0 ? 64 : 0) | (P.chute ? 128 : 0);
   const o = { n: myName(), cr: P.team, rk: P.rank || 1, p: myPos(), a: [P.shots | 0, WEAPONS[P.wpn].n, fl, r2(c ? P.cyaw : P.yaw)], v: null };
-  if (c && P.seat === 0 && c.mine !== false) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); o.v = [c.id, r2(c.x), r2(c.z), r2(c.yaw), Math.round((c.vx * fx + c.vz * fz) * 10) / 10, Math.round(c.steer * 10) / 10, r2(c.y), (c.horn ? 1 : 0) | (c.slip > 5.5 ? 2 : 0)]; }
+  if (c && P.seat === 0 && c.mine !== false) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); o.v = [c.id, r2(c.x), r2(c.z), r2(c.yaw), Math.round((c.vx * fx + c.vz * fz) * 10) / 10, Math.round(c.steer * 10) / 10, r2(c.y), (c.horn ? 1 : 0) | (c.slip > 5.5 ? 2 : 0)]; if (c.spec.air) o.v.push(r2(c.dive), r2(c.roll)); }
+  if (P.hg || P.hr) o.hf = [P.hg | 0, P.hr | 0];
   return o;
 }
 function prune(list, max) { const now = G.time; while (list.length && (now - list[0].t > 1.6 || list.length > max)) list.shift(); return list.map(e => e.d); }
@@ -56,7 +57,8 @@ function netPeers(dt, each) {
     const p = s.p, A = s.a || [0, 1, 0, 0], ox = r.x, oz = r.z;
     if (s !== r.lastS) { r.lastS = s; snapPush(r.buf, { x: p[0], y: p[1], z: p[2], yaw: p[3], pitch: p[4] || 0 }); } if (snapAt(r.buf, _so)) { r.x = _so.x; r.y = _so.y; r.z = _so.z; r.yaw = _so.yaw; r.pitch = _so.pitch; }
     r.spd = lerp(r.spd, hyp(r.x - ox, r.z - oz) / Math.max(dt, .001), .3); r.wpn = WID[A[1]] || 'pistol'; r.ayaw = A[3];
-    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
+    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128);
+    { const hf = Array.isArray(s.hf) ? s.hf : [0, 0]; if (r.hg === undefined) { r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if ((hf[0] | 0) > r.hg) fxHeli(r, 'gun', (hf[0] | 0) - r.hg); if ((hf[1] | 0) > r.hr) fxHeli(r, 'pod', (hf[1] | 0) - r.hr); r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
     if (A[0] !== r.shots) { if (A[0] > r.shots && !r.dead) { fxShot(r, r.wpn); if (NET.mode === 'host') GAME.noise(r.x, r.z, r); } r.shots = A[0]; }
     const team = G.crew; if (team !== r.team || cleanName(s.n) !== r.name) { r.team = team; r.name = cleanName(s.n); setLook(r.ch, makeLook(hashStr(pr.peer), team)); killTag(r.tag); r.tag = null; }
     r.v = Array.isArray(s.v) ? s.v : null; if ((s.rk | 0) !== (r.rank | 0)) { r.rank = clamp(s.rk | 0, 0, 999); killTag(r.tag); r.tag = null; }
@@ -64,7 +66,7 @@ function netPeers(dt, each) {
     (s.hp || []).forEach(h => { if (h[0] <= r.hpSeen) return; r.hpSeen = h[0]; if (h[1] !== NET.slot || r.team === P.team) return; const wid = widOf(h[4]); hurtPlayer(+h[2] || 0, r, wid, !!h[3]); if (wid === 'car' && !P.dead && !P.car) { P.knock = 1; P.knockT = 1; } });
     if (each) each(pr, s, r);
   }
-  for (const k in NET.remotes) if (!seen[k]) { const r = NET.remotes[k]; if (NET.mode === 'host') { note(r.name + ' left', 'g'); cars.forEach(c => { for (let q = 0; q < 4; q++) if (c.occ[q] === r) { c.occ[q] = null; if (!q) c.kin = false; } }); delete NET.slots[k]; delete NET.dmgOut[r.slot]; } freeChar(r.ch); killTag(r.tag); r.gone = true; delete NET.remotes[k]; }
+  for (const k in NET.remotes) if (!seen[k]) { const r = NET.remotes[k]; if (NET.mode === 'host') { note(r.name + ' left', 'g'); cars.forEach(c => { for (let q = 0; q < 4; q++) if (c.occ[q] === r) { c.occ[q] = null; if (!q) c.kin = false; } }); delete NET.slots[k]; delete NET.dmgOut[r.slot]; } freeChar(r.ch); killTag(r.tag); if (r.chm) scene.remove(r.chm); r.gone = true; delete NET.remotes[k]; }
   return host;
 }
 const hashStr = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h) % 100000; };
@@ -108,25 +110,31 @@ function decBots(sf, sv, sr) {
     b.car = b.dead ? null : c; b.seat = seat; b.act = 0; b.yaw = b.ayaw = yaw; b.pitch = U36(sr, o + 10, 1) / 35 * 3 - 1.5; b.buf.length = 0; if (b.car) b.car.occ[seat] = b; }
   for (let i = bots.length - 1; i >= 0; i--) if (!live[bots[i].id]) removeBot(bots[i]);
 }
-function encCars() {   // -> [in use, standing empty]
+function encCars() {   // -> [in use, standing empty]. A helicopter's head is four characters longer: its height (to 320 m) and its lean.
   let s = '', pk = '';
   for (let i = 0; i < cars.length; i++) { const c = cars[i], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, fl = (c.wreck ? 1 : 0) | (c.burn > 0 ? 2 : 0) | (c.horn ? 4 : 0) | (c.ai || c.occ[0] ? 8 : 0) | (c.slip > 5.5 ? 16 : 0);
-    const head = B36(c.id, 3) + B36(c.spec.n, 1) + B36(Math.max(0, ALLPAINT.indexOf(c.color)), 1) + B36((c.x + 8) * 16, 3) + B36((c.z + 8) * 16, 3) + B36(clamp((c.y + 1) * 8, 0, 35), 1) + encYaw(c.yaw), hp = B36(clamp(c.hp / c.spec.hp, 0, 1) * 35, 1);
-    if (!c.occ[0] && !c.occ[1] && !c.occ[2] && !c.occ[3] && !c.ai && !c.horn && Math.abs(vf) < .15) { pk += head + hp + B36(fl, 1); continue; }
+    const head = B36(c.id, 3) + B36(c.spec.n, 1) + B36(Math.max(0, ALLPAINT.indexOf(c.color)), 1) + B36((c.x + 8) * 16, 3) + B36((c.z + 8) * 16, 3) + B36(clamp((c.y + 1) * 8, 0, 35), 1) + encYaw(c.yaw)
+      + (c.spec.air ? B36(clamp((c.y + 4) * 4, 0, 1295), 2) + B36(clamp(((c.dive || 0) + .5) * 35, 0, 35), 1) + B36(clamp(((c.roll || 0) + .5) * 35, 0, 35), 1) : ''), hp = B36(clamp(c.hp / c.spec.hp, 0, 1) * 35, 1);
+    if (!c.occ[0] && !c.occ[1] && !c.occ[2] && !c.occ[3] && !c.ai && !c.horn && Math.abs(vf) < .15 && !(c.spec.air && (!c.landed || c.rotor > .05))) { pk += head + hp + B36(fl, 1); continue; }
     let occ = ''; for (let k = 0; k < 4; k++) { const o = c.occ[k]; occ += !o ? '-' : o.kind === 'bot' ? '*' : B36(o === P ? 0 : o.slot, 1); }
     s += head + B36(clamp((vf + 60) * 10, 0, 1295), 2) + hp + B36(fl, 1) + occ; }
   return [s, pk];
 }
 function decCars(s, pk) {
   const live = {};
-  const put = (src, o, moving) => { const id = U36(src, o, 3), tn = U36(src, o + 3, 1), ci = U36(src, o + 4, 1), x = U36(src, o + 5, 3) / 16 - 8, z = U36(src, o + 8, 3) / 16 - 8, y = U36(src, o + 11, 1) / 8 - 1, yaw = U36(src, o + 12, 2) / 1295 * TAU, q = moving ? o + 16 : o + 14, vf = moving ? U36(src, o + 14, 2) / 10 - 60 : 0, hp = U36(src, q, 1) / 35, fl = U36(src, q + 1, 1), occ = moving ? src.substr(o + 18, 4) : '----';
+  // one record from o; returns its length, so the next one can be found whatever this one turned out to be
+  const put = (src, o, moving) => { const tn = U36(src, o + 3, 1), sp = CARS[CID[tn]], air = !!(sp && sp.air), b = o + (air ? 18 : 14), len = b - o + (moving ? 8 : 2); if (o + len > src.length || !sp) return 0;
+    const id = U36(src, o, 3), ci = U36(src, o + 4, 1), x = U36(src, o + 5, 3) / 16 - 8, z = U36(src, o + 8, 3) / 16 - 8, yaw = U36(src, o + 12, 2) / 1295 * TAU,
+      y = air ? U36(src, o + 14, 2) / 4 - 4 : U36(src, o + 11, 1) / 8 - 1, dive = air ? U36(src, o + 16, 1) / 35 - .5 : 0, roll = air ? U36(src, o + 17, 1) / 35 - .5 : 0,
+      vf = moving ? U36(src, b, 2) / 10 - 60 : 0, q = moving ? b + 2 : b, hp = U36(src, q, 1) / 35, fl = U36(src, q + 1, 1), occ = moving ? src.substr(q + 2, 4) : '----';
     live[id] = 1; let c = carById(id);
-    if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return; c.kin = true; c.y = y; } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
-    if (!c.mine && !c.vbufOf) snapPush(c.buf, { x, y, z, yaw, vf });
+    if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
+    if (!c.mine && !c.vbufOf) snapPush(c.buf, air ? { x, y, z, yaw, vf, pitch: dive, roll } : { x, y, z, yaw, vf });
     c.hp = hp * c.spec.hp; if ((fl & 1) && !c.wreck) { c.wreck = true; c.wreckT = 0; } c.burn = fl & 2 ? 1 : 0; if (!c.mine) { c.horn = fl & 4 ? 1 : 0; c.rslip = fl & 16 ? 7 : 0; } c.eng = !!(fl & 8);
-    for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } } };
-  for (let o = 0; o + CAR_W <= s.length; o += CAR_W) put(s, o, true);
-  for (let o = 0; o + PARK_W <= pk.length; o += PARK_W) put(pk, o, false);
+    for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } }
+    return len; };
+  for (let o = 0, n; o < s.length; o += n) if (!(n = put(s, o, true))) break;
+  for (let o = 0, n; o < pk.length; o += n) if (!(n = put(pk, o, false))) break;
   for (let i = cars.length - 1; i >= 0; i--) if (!live[cars[i].id]) { if (P.car === cars[i]) { P.car = null; setHorn(false); radioVolume(0); } removeCar(cars[i]); }
   for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.car && (r.car.gone || r.car.occ[r.seat] !== r)) r.car = null; }
 }
@@ -143,10 +151,12 @@ NET.host = dt => {
     if (s.t !== 'c') return;
     (s.h || []).forEach(h => { if (h[0] <= r.hs) return; r.hs = h[0]; if (h[1] === 'b') { const b = botById(h[2]); if (b && !b.dead) damageBot(b, Math.min(+h[3] || 0, 400), !!h[4], r, widOf(h[5])); } else { const c = carById(h[2]); if (c) damageCar(c, Math.min(+h[3] || 0, 400), r); } });
     (s.q || []).forEach(q => { if (q[0] <= r.qs) return; r.qs = q[0]; const k = q[1], c = k === 'en' || k === 'cj' || k === 'ex' || k === 'cd' || k === 'fx' ? carById(q[2]) : null;
-      if (k === 'en' && c && !c.wreck) { const st = q[3] | 0; if (!c.occ[st] && !r.car && st < c.spec.seats) { c.occ[st] = r; r.car = c; r.seat = st; if (st === 0) { c.kin = true; c.ai = null; c.team = r.team; c.asleep = false; c.buf.length = 0; if (c.cop && !c.stolen) { c.stolen = true; GAME.crime(r, 20, 1); } } } }
-      else if (k === 'cj' && c && !c.wreck && !r.car) { if (c.occ[0] && c.occ[0] !== r) GAME.eject(c, 0, r); if (!c.occ[0]) { c.occ[0] = r; r.car = c; r.seat = 0; c.kin = true; c.ai = null; c.team = r.team; c.asleep = false; c.buf.length = 0; } }
+      if (k === 'en' && c && !c.wreck) { const st = q[3] | 0; if (!c.occ[st] && !r.car && st < c.spec.seats) { c.occ[st] = r; r.car = c; r.seat = st; if (st === 0) { c.kin = true; c.ai = null; c.team = r.team; c.asleep = false; c.buf.length = 0; GAME.boarded(c, r); } } }
+      else if (k === 'cj' && c && !c.wreck && !r.car) { if (c.occ[0] && c.occ[0] !== r) GAME.eject(c, 0, r); if (!c.occ[0]) { c.occ[0] = r; r.car = c; r.seat = 0; c.kin = true; c.ai = null; c.team = r.team; c.asleep = false; c.buf.length = 0; GAME.boarded(c, r); } }
       else if (k === 'ex' && c) { for (let st = 0; st < 4; st++) if (c.occ[st] === r) { c.occ[st] = null; if (st === 0) { c.kin = false; c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = false; c.asleep = false; } } r.car = null; }
       else if (k === 'cd' && c) damageCar(c, clamp(+q[3] || 0, 0, 600), null);
+      else if (k === 'dk') { const dc = carById(q[2]); if (dc && dc.spec.air && dc.occ.includes(r)) GAME.ditch(dc); }
+      else if (k === 'ad') GAME.airDeliver(r, CID[q[2] | 0], ALLPAINT[q[3] | 0]);
       else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && ALLPAINT[q[3] | 0] !== undefined && ALLPAINT[q[3] | 0] !== COP_PAINT) { setPaint(rc, ALLPAINT[q[3] | 0]); if (r.heat > 0 && r.evade) GAME.clearHeat(r); } }
       else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 3); rc.tune = clamp(q[4] | 0, 0, 3); rc.bp = q[5] ? 1 : 0; } }
@@ -166,9 +176,9 @@ NET.host = dt => {
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
     if (s.kd && s.kd[0] > r.kdSeen) { r.kdSeen = s.kd[0]; for (let st = 0; st < 4; st++) if (r.car && r.car.occ[st] === r) { r.car.occ[st] = null; if (!st) r.car.kin = false; } r.car = null; GAME.onKill(GAME.unref(s.kd[1]), r, widOf(s.kd[2]), !!s.kd[3]); }
     // the car this player is driving goes where they say it is
-    if (r.car && r.seat === 0 && r.v && r.v[0] === r.car.id && r.v !== r.car.lastV) { const c = r.car, v = r.v; c.lastV = v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4] }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; }
+    if (r.car && r.seat === 0 && r.v && r.v[0] === r.car.id && r.v !== r.car.lastV) { const c = r.car, v = r.v; c.lastV = v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4], pitch: +v[8] || 0, roll: +v[9] || 0 }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; }
   });
-  cars.forEach(c => { if (c.kin && snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
+  cars.forEach(c => { if (c.kin && snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; c.landed = c.y - groundAt(c.x, c.z, c.y + .3, 's', .6) < .35; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
   NET.sendT -= dt; if (NET.sendT > 0) return; NET.sendT = 1 / 10;
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
@@ -205,8 +215,8 @@ function updateReplicas(dt) {
     else { if (snapAt(b.buf, _so)) { b.x = _so.x; b.y = _so.y; b.z = _so.z; b.yaw = _so.yaw; b.pitch = _so.pitch; } b.spd = lerp(b.spd, hyp(b.x - ox, b.z - oz) / Math.max(dt, .001), .3); if (b.spd < .25) b.spd = 0; }
     if (b.pend) { b.pend = 0; b.ayaw = b.yaw; fxShot(b, b.wpn); } }
   for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.mine) { c.kin = false; continue; } c.kin = true; if (c.wreck) c.wreckT += dt;
-    const dr = c.occ[0]; if (dr && dr.kind === 'rp' && dr.v && dr.v[0] === c.id) { if (c.vbufOf !== dr) { c.vbufOf = dr; c.buf.length = 0; c.lastV = null; } if (dr.v !== c.lastV) { const v = c.lastV = dr.v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4] }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; } } else if (c.vbufOf) { c.vbufOf = null; c.buf.length = 0; }
-    if (snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } c.crash = 0; }
+    const dr = c.occ[0]; if (dr && dr.kind === 'rp' && dr.v && dr.v[0] === c.id) { if (c.vbufOf !== dr) { c.vbufOf = dr; c.buf.length = 0; c.lastV = null; } if (dr.v !== c.lastV) { const v = c.lastV = dr.v; snapPush(c.buf, { x: v[1], y: v[6] || 0, z: v[2], yaw: v[3], vf: v[4], pitch: +v[8] || 0, roll: +v[9] || 0 }); c.steer = v[5] || 0; c.horn = v[7] & 1; c.rslip = v[7] & 2 ? 7 : 0; } } else if (c.vbufOf) { c.vbufOf = null; c.buf.length = 0; }
+    if (snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; if (c.spec.air) { c.dive = _so.pitch || 0; c.roll = _so.roll || 0; } const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } c.crash = 0; }
   carsCollide(); if (P.car && P.seat === 0) carAfterStep(P.car);
   for (let i = pickups.length - 1; i >= 0; i--) pickups[i].g.rotation.y += dt * 2;
 }
@@ -267,7 +277,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-6'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-7'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();

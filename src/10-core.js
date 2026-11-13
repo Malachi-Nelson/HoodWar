@@ -58,6 +58,9 @@ const WEAPONS = {
   m60:      { name: 'M60',              slot: 7, dmg: 31, head: 2.0, mag: 100, res: 300, rpm: 560, auto: true,  reload: 4.2, spread: .02,  hip: .075, pellets: 1, kick: .05,  zoom: 50, range: [60, 140], snd: [.2, 1400], cost: 4800 },
   gl:       { name: 'Grenade Launcher', slot: 8, dmg: 0,  head: 1,   mag: 6,   res: 24,  rpm: 80,  auto: false, reload: 3.2, spread: .008, hip: .02,  pellets: 1, kick: .12,  zoom: 54, range: [40, 80],  proj: 'gl',  snd: [.22, 380], cost: 6000 },
   rpg:      { name: 'Bazooka',          slot: 9, dmg: 0,  head: 1,   mag: 1,   res: 8,   rpm: 45,  auto: false, reload: 2.6, spread: .003, hip: .02,  pellets: 1, kick: .2,   zoom: 46, range: [60, 150], proj: 'rpg', snd: [.32, 260], cost: 9000 },
+  // mounted on a gunship, never carried: the pilot's nose guns and rocket pods
+  hgun:     { name: 'Nose guns',        slot: -1, heli: true, dmg: 24, head: 1.5, mag: 999, res: 0, rpm: 1100, auto: true, reload: 0, spread: .014, hip: .014, pellets: 1, kick: 0, zoom: 60, range: [90, 240], snd: [.12, 1500], cost: 0 },
+  hr:       { name: 'Rockets',          slot: -1, heli: true, dmg: 0, head: 1, mag: 999, res: 0, rpm: 150, auto: true, reload: 0, spread: .004, hip: .004, pellets: 1, kick: 0, zoom: 60, range: [80, 220], proj: 'hr', snd: [.3, 300], cost: 0 },
 };
 const WID = Object.keys(WEAPONS);                      // weapon ids by number, for the wire
 Object.keys(WEAPONS).forEach((k, i) => { WEAPONS[k].id = k; WEAPONS[k].n = i; });
@@ -75,6 +78,10 @@ const CARS = {
 CARS.muscle = { name: 'Bruiser', len: 4.9, wid: 1.95, accel: 14, vmax: 52, grip: 8,    mass: 1.15, hp: 1150, seats: 2, body: { ride: .28, belt: .9,  roof: 1.3,  hood: 1.9,  trunk: 1.05, rake: .8, crake: .85 } };
 CARS.super  = { name: 'Vortex',  len: 4.5, wid: 2.02, accel: 17, vmax: 60, grip: 12.5, mass: .95,  hp: 900,  seats: 2, body: { ride: .18, belt: .7,  roof: 1.06, hood: 1.5,  trunk: .55, rake: 1.1, crake: 1.25 } };
 for (const k in CARS) { CARS[k].accel *= 1.22; CARS[k].vmax *= 1.28; }   // everything on the road quicker than it was
+// helicopters: kept with the cars so seats, damage, wrecks and the wire treat them alike. len and wid are the cabin (what you bump into);
+// accel and vmax are across the ground, climb is metres a second up or down, turn is how fast the nose comes round. air 'gun' carries nose guns and rockets.
+CARS.heli    = { name: 'Hornet',  air: 'gun', len: 5.2, wid: 2.3, accel: 21, vmax: 52, climb: 13, turn: 1.9, grip: 8, mass: 2.2, hp: 1800, seats: 4 };
+CARS.chopper = { name: 'Skylark', air: 'civ', len: 5.6, wid: 2.4, accel: 17, vmax: 46, climb: 11, turn: 1.6, grip: 8, mass: 2.0, hp: 1400, seats: 4 };
 const CID = Object.keys(CARS);
 CID.forEach((k, i) => { CARS[k].id = k; CARS[k].n = i; });
 const PAINTS = [0xd9d6cf, 0x1b1d21, 0x8c9299, 0xb3261e, 0x1f4e8c, 0x1d6b45, 0xe0a224, 0x6b3fa0, 0xd96f1c, 0x4a2d1e, 0x2a7f86, 0xf2efe6];

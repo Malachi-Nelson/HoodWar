@@ -26,16 +26,19 @@ const inkOf = (el, t) => { const c = CREWS[t]; el.style.color = c.ink; el.style.
 const lite = t => CREWS[t].halo ? CREWS[t].edge : CREWS[t].css;             // a crew's colour where it has to show up on the dark map or a dark bar
 const ringOf = (t, d) => CREWS[t].halo ? CREWS[t].edge : d;                // the edge round a crew's dot
 // --- the map: drawn once, then moved and turned under the radar every frame
-const MS = 1.4, mapCv = texCanvas(Math.ceil((CITY.w + 60) * MS), Math.ceil((CITY.d + 60) * MS)), MO = 30;
+const MS = 1.4, MAPW = ISLE.x1 + 60, MAPD = CITY.d + 60, mapCv = texCanvas(Math.ceil(MAPW * MS), Math.ceil(MAPD * MS)), MO = 30;   // the city, the channel and the airport island
 { const g = mapCv.getContext('2d'), X = x => (x + MO) * MS, R = (x0, z0, x1, z1, c) => { g.fillStyle = c; g.fillRect(X(x0), X(z0), (x1 - x0) * MS, (z1 - z0) * MS); };
-  R(-MO, -MO, CITY.w + MO, CITY.d + MO, '#1d3a4d'); R(-MO, -MO, CITY.w + MO, 0, '#15171b'); R(-MO, -MO, 0, CITY.d + MO, '#15171b'); R(0, 0, CITY.w, CITY.d, '#2b2e34');
+  R(-MO, -MO, MAPW - MO, CITY.d + MO, '#1d3a4d'); R(-MO, -MO, CITY.w, 0, '#15171b'); R(-MO, -MO, 0, CITY.d + MO, '#15171b'); R(0, 0, CITY.w, CITY.d, '#2b2e34');
   for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const L = lotOf(i, j); R(L.x0 - WALK, L.z0 - WALK, L.x1 + WALK, L.z1 + WALK, '#454952'); }
-  const PC = { grass: '#35553c', lot: '#33363d', plaza: '#50535a', dirt: '#5a5040', court: '#3d5f7a', tile: '#5a5a62', water: '#2a6a88', tree: '#2a4a30' };
+  const PC = { grass: '#35553c', lot: '#33363d', plaza: '#50535a', dirt: '#5a5040', court: '#3d5f7a', tile: '#5a5a62', water: '#2a6a88', tree: '#2a4a30', asphalt: '#2b2e34' };
   PATCH.forEach(p => { if (p[4] !== 'tree') R(p[0], p[1], p[2], p[3], PC[p[4]] || '#454952'); });
   PATCH.forEach(p => { if (p[4] === 'tree') { g.fillStyle = PC.tree; g.beginPath(); g.arc(X((p[0] + p[2]) / 2), X((p[1] + p[3]) / 2), (p[2] - p[0]) / 2 * MS, 0, TAU); g.fill(); } });
   const FC = { n: '#4f6a55', y: '#8a7f4a', q: '#8f8c84', r: '#2c2e33', b: '#6b7079', h: '#7a7166', o: '#76808d', m: '#8a7a9a', i: '#66747b', c: '#8a6a4a', s: '#9a8a6a', e: '#8a4a3a' };
   FOOT.forEach(f => R(f[0], f[1], f[2], f[3], FC[f[4]] || FC.b));
-  R(LINE.x - 5, 0, LINE.x + 5, CITY.d, 'rgba(18,20,24,.82)'); R(LINE.x - 13, LINE.sz - 17, LINE.x + 13, LINE.sz + 17, 'rgba(60,66,70,.9)'); }
+  R(LINE.x - 5, 0, LINE.x + 5, CITY.d, 'rgba(18,20,24,.82)'); R(LINE.x - 13, LINE.sz - 17, LINE.x + 13, LINE.sz + 17, 'rgba(60,66,70,.9)');
+  for (let z = RWY.z0 + 20; z < RWY.z1 - 20; z += 24) R(RWY.cx - .6, z, RWY.cx + .6, z + 12, 'rgba(216,214,204,.7)');                       // the runway's centre line
+  g.save(); g.fillStyle = 'rgba(242,239,230,.75)'; g.font = '700 ' + Math.round(13 * MS) + 'px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.translate(X(RWY.cx + 34), X(380)); g.rotate(-PI / 2); g.fillText('PORT CALDER INTL', 0, 0); g.restore(); }
 const radar = $('radar'), rctx = radar.getContext('2d'), blipO = [0, 0];
 function blip(g, x, z, k, R, col, r, ring, clampEdge) {
   radarXY(x, z, k, blipO); let bx = blipO[0], by = blipO[1]; const d = hyp(bx, by);
@@ -43,7 +46,7 @@ function blip(g, x, z, k, R, col, r, ring, clampEdge) {
   g.beginPath(); g.arc(bx, by, r, 0, TAU); g.fillStyle = col; g.fill(); if (ring) { g.lineWidth = 1.5; g.strokeStyle = ring; g.stroke(); } blipO[0] = bx; blipO[1] = by;
 }
 function drawRadar() {
-  const S = radar.width, R = S / 2, g = rctx, k = P.car ? .62 : 1; g.clearRect(0, 0, S, S); g.save(); g.translate(R, R);
+  const S = radar.width, R = S / 2, g = rctx, k = P.car ? (P.car.spec.air ? .3 : .62) : 1; g.clearRect(0, 0, S, S); g.save(); g.translate(R, R);
   g.save(); g.rotate(P.cyaw); g.scale(k / MS, k / MS); g.drawImage(mapCv, -(P.x + MO) * MS, -(P.z + MO) * MS); hoodTint(g, x => (x - P.x) * MS, z => (z - P.z) * MS, MS, .17); g.restore();
   ZONES.forEach((z, i) => { const s = ZS[i], o = s.owner, col = o < 0 ? '#f2efe6' : CREWS[o].css; radarXY(z.x, z.z, k, blipO); if (hyp(blipO[0], blipO[1]) < R + z.r * k) { g.beginPath(); g.arc(blipO[0], blipO[1], z.r * k, 0, TAU); g.fillStyle = o < 0 ? 'rgba(242,239,230,.12)' : 'rgba(' + CREWS[o].rgb + ',.2)'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = o < 0 ? col : lite(o); g.stroke(); }
     blip(g, z.x, z.z, k, R, col, 8, s.hot && Math.sin(G.time * 9) > 0 ? '#fff' : o < 0 ? '#111' : ringOf(o, '#111'), true); g.fillStyle = o < 0 ? '#111' : CREWS[o].on; g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(z.id, blipO[0], blipO[1] + .5); });
@@ -53,6 +56,8 @@ function drawRadar() {
   ROBS.forEach((s, i) => { if (tillOpen(i)) blip(g, s.x, s.z, k, R, '#ff5fa2', 3.5, '#111'); });
   BIZ.forEach(q => { const own = ownBiz(q); if (own || bizOpen(q)) blip(g, q.x, q.z, k, R, own ? '#ffc83d' : '#7dffb0', own ? 3.6 : 3, '#111'); });
   { const c = myPV(); if (c && !c.wreck && c !== P.car) blip(g, c.x, c.z, k, R, '#7dc3ff', 4.6, '#fff', true); }
+  AIRPORT.pads.forEach(p => { blip(g, p.x, p.z, k, R, '#1d3a4d', 5.5, '#7fb8ff'); g.fillStyle = '#cfe4ff'; g.font = '700 8px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; radarXY(p.x, p.z, k, blipO); if (hyp(blipO[0], blipO[1]) < R - 6) g.fillText('H', blipO[0], blipO[1] + .5); });
+  { const c = myAir(); if (c && !c.wreck && c !== P.car) blip(g, c.x, c.z, k, R, '#b9a2ff', 4.8, '#fff', true); }
   pickups.forEach(p => { if (p.type === 'chain') blip(g, p.x, p.z, k, R, '#ffc83d', 2.5); });
   const hot = P.heat > 0, fl = Math.sin(G.time * 11) > 0;
   cars.forEach(c => { if (c.cop && c.occ[0] && c.occ[0].team === TEAM_COP) { if (hot && !c.wreck) blip(g, c.x, c.z, k, R, fl ? '#ff4a4a' : '#5c98ff', 4.4, '#fff', true); return; } if (!c.wreck && c !== P.car && (c.occ[0] || c.team === P.team)) blip(g, c.x, c.z, k, R, c.occ[0] && isCrew(c.occ[0].team) ? CREWS[c.occ[0].team].css : c.team === P.team ? '#d8d6cc' : '#8b929c', 3, c.occ[0] && isCrew(c.occ[0].team) ? ringOf(c.occ[0].team, '#111') : '#111'); });
@@ -63,7 +68,7 @@ function drawRadar() {
   g.restore();
 }
 function drawBigMap() {
-  const c = $('mapc'), g = c.getContext('2d'), k = c.width / (CITY.w + 60), X = x => (x + MO) * k; g.fillStyle = '#0e1014'; g.fillRect(0, 0, c.width, c.height); g.drawImage(mapCv, 0, 0, mapCv.width, mapCv.height, 0, 0, mapCv.width * k / MS, mapCv.height * k / MS);
+  const c = $('mapc'), g = c.getContext('2d'), k = c.width / MAPW, X = x => (x + MO) * k; g.fillStyle = '#0e1014'; g.fillRect(0, 0, c.width, c.height); g.drawImage(mapCv, 0, 0, mapCv.width, mapCv.height, 0, 0, mapCv.width * k / MS, mapCv.height * k / MS);
   const dot = (x, z, r, col, ring) => { g.beginPath(); g.arc(X(x), X(z), r, 0, TAU); g.fillStyle = col; g.fill(); if (ring) { g.lineWidth = 2; g.strokeStyle = ring; g.stroke(); } };
   hoodTint(g, X, X, k, .22);
   ZONES.forEach((z, i) => { const s = ZS[i], o = s.owner, col = o < 0 ? '#f2efe6' : CREWS[o].css; g.beginPath(); g.arc(X(z.x), X(z.z), z.r * k, 0, TAU); g.fillStyle = o < 0 ? 'rgba(242,239,230,.15)' : 'rgba(' + CREWS[o].rgb + ',.28)'; g.fill(); g.lineWidth = 2; g.strokeStyle = o < 0 ? col : lite(o); g.stroke(); dot(z.x, z.z, 11, col, o < 0 ? '#111' : ringOf(o, '#111')); g.fillStyle = o < 0 ? '#111' : CREWS[o].on; g.font = '700 14px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(z.id, X(z.x), X(z.z) + 1); g.fillStyle = '#f2efe6'; g.font = '600 13px sans-serif'; g.fillText(z.name, X(z.x), X(z.z) + z.r * k + 10); });
@@ -71,11 +76,13 @@ function drawBigMap() {
   ROBS.forEach((s, i) => { if (tillOpen(i)) dot(s.x, s.z, 5, '#ff5fa2', '#111'); });
   BIZ.forEach(q => { const own = ownBiz(q); if (own || bizOpen(q)) dot(q.x, q.z, own ? 6 : 5, own ? '#ffc83d' : '#7dffb0', '#111'); });
   { const c = myPV(); if (c && !c.wreck) { dot(c.x, c.z, 7, '#7dc3ff', '#fff'); g.fillStyle = '#f2efe6'; g.font = '600 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Your car', X(c.x), X(c.z) - 13); } }
+  AIRPORT.pads.forEach(p => { dot(p.x, p.z, 6, '#1d3a4d', '#7fb8ff'); g.fillStyle = '#cfe4ff'; g.font = '700 9px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('H', X(p.x), X(p.z) + .5); });
+  { const c = myAir(); if (c && !c.wreck) { dot(c.x, c.z, 7, '#b9a2ff', '#fff'); g.fillStyle = '#f2efe6'; g.font = '600 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Your helicopter', X(c.x), X(c.z) - 13); } }
   EVTS.forEach(E => { const I = EV_INFO[E.k]; evSpot(E, _ev); dot(_ev.x, _ev.z, 10, I.col, '#111'); g.fillStyle = '#111'; g.font = '700 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(I.icon, X(_ev.x), X(_ev.z) + 1); });
   if (RACE.on) RACE.cps.slice(RACE.i).forEach((cp, q) => dot(cp[0], cp[1], q ? 4 : 7, '#ffc83d', '#111'));
   bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, b.homie ? 4.5 : 3.5, CREWS[b.team].css, b.homie ? '#fff' : ringOf(b.team)); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, CREWS[r.team].css, '#fff'); }
   dot(P.x, P.z, 6, '#fff', '#111');
-  const key = [['#8fe36b', 'Guns'], ['#9fd0e8', 'Car shop: repairs, resprays, upgrades'], ['#ff5fa2', 'A till worth robbing'], ['#ffc83d', 'Your business'], ['#7dffb0', 'For sale on your turf'], ['#7dc3ff', 'Your car'], ['#fff', 'You']].concat(CREWS.map((q, t) => [q.css, q.name + (t === P.team ? ' · your crew' : ''), ringOf(t, '#111')]));
+  const key = [['#8fe36b', 'Guns'], ['#9fd0e8', 'Car shop: repairs, resprays, upgrades'], ['#ff5fa2', 'A till worth robbing'], ['#ffc83d', 'Your business'], ['#7dffb0', 'For sale on your turf'], ['#7dc3ff', 'Your car'], ['#b9a2ff', 'Your helicopter'], ['#1d3a4d', 'Helipad', '#7fb8ff'], ['#fff', 'You']].concat(CREWS.map((q, t) => [q.css, q.name + (t === P.team ? ' · your crew' : ''), ringOf(t, '#111')]));
   g.fillStyle = 'rgba(14,16,20,.82)'; g.fillRect(6, c.height - 12 - key.length * 18, 270, key.length * 18 + 6);
   g.textAlign = 'left'; g.font = '600 13px sans-serif'; key.forEach((q, i) => { const y = c.height - key.length * 18 + i * 18; g.beginPath(); g.arc(18, y, 5, 0, TAU); g.fillStyle = q[0]; g.fill(); g.lineWidth = 1.5; g.strokeStyle = q[2] || '#111'; g.stroke(); g.fillStyle = '#f2efe6'; g.fillText(q[1], 30, y + 1); });
 }
@@ -130,7 +137,7 @@ function updateHud(dt) {
       setHud('cap-label', (work && s.by === P.team ? (s.owner >= 0 ? 'Breaking their hold · ' : 'Taking · ') : work && mine ? 'Losing · ' : s.hot ? 'Contested · ' : mine ? 'Holding · ' : s.owner >= 0 ? CREWS[s.owner].name + ' turf · ' : 'Nobody holds · ') + ZONES[hereZone].name);
       const c = work ? Math.round(s.prog * 100) : 0, key = c + (s.by + 1) * 1000 + (s.owner + 1) * 10000; if (hudCache.capv !== key) { hudCache.capv = key; f.style.width = c + '%'; f.style.background = work ? lite(s.by) : 'transparent'; tr.style.background = s.owner >= 0 ? 'rgba(' + CREWS[s.owner].rgb + ',.45)' : 'rgba(10,12,16,.75)'; } } }
   setHud('h-prompt', prompt && !shopOpen ? prompt.text : P.enter ? '' : '', true);
-  { const c = P.car, show = !!c; if (hudCache.spd !== show) { hudCache.spd = show; $('h-speed').hidden = !show; } if (c) { setHud('spd-n', String(Math.round(carSpeed(c) * 2.237))); setHud('h-car', (c.cop ? 'Police ' : '') + c.spec.name + (P.seat ? ' · passenger' : '') + (c.cop && !P.seat ? ' · H siren' : '')); const h = Math.round(clamp(c.hp / c.spec.hp, 0, 1) * 40); if (hudCache.chp !== h) { hudCache.chp = h; $('car-fill').style.transform = `scaleX(${h / 40})`; $('car-fill').style.background = h < 12 ? 'var(--blood)' : 'var(--gold)'; }
+  { const c = P.car, show = !!c; if (hudCache.spd !== show) { hudCache.spd = show; $('h-speed').hidden = !show; } if (c) { setHud('spd-n', String(Math.round(carSpeed(c) * 2.237))); setHud('h-car', (c.cop ? 'Police ' : '') + c.spec.name + (P.seat ? ' · passenger' : '') + (c.cop && !P.seat && !c.spec.air ? ' · H siren' : '')); setHud('h-air', c.spec.air ? 'ALT ' + Math.max(0, Math.round((c.y - groundAt(c.x, c.z, c.y + .2, 's', 0)) * 3.28)) + ' FT' + (c.spec.air === 'gun' && !P.seat ? ' · ROCKETS ' + Math.floor(c.rk === undefined ? 8 : c.rk) + '/8' : '') : ''); const h = Math.round(clamp(c.hp / c.spec.hp, 0, 1) * 40); if (hudCache.chp !== h) { hudCache.chp = h; $('car-fill').style.transform = `scaleX(${h / 40})`; $('car-fill').style.background = h < 12 ? 'var(--blood)' : 'var(--gold)'; }
     const nq = c.nos > 0 && P.seat === 0 ? Math.round((c.nosQ === undefined ? 1 : c.nosQ) * 30) : -1; if (hudCache.nos !== nq) { hudCache.nos = nq; $('car-nos').hidden = nq < 0; if (nq >= 0) $('nos-fill').style.transform = `scaleX(${nq / 30})`; } } }
   { const fp = firstPerson(), sc = (1 + P.kick * 3 + Math.min(1, P.spd / 5) * .35).toFixed(2), op = P.dead || scoped() || d.melee && !fp ? '0' : (P.car ? .6 : fp ? .85 * (1 - P.ads) : .85).toFixed(1); if (hudCache.cs !== sc) { hudCache.cs = sc; $('cross').style.transform = `scale(${sc})`; } if (hudCache.co !== op) { hudCache.co = op; $('cross').style.opacity = op; } }
   hitT -= dt; { const o = hitT > 0 ? '1' : '0'; if (hudCache.hit !== o) { hudCache.hit = o; $('hitm').style.opacity = o; } }
@@ -142,7 +149,9 @@ function updateHud(dt) {
   for (let i = feedRows.length - 1; i >= 0; i--) { const f = feedRows[i]; f.t -= dt; if (f.t < 1) f.row.style.opacity = String(Math.max(0, f.t)); if (f.t <= 0) { f.row.remove(); feedRows.splice(i, 1); } }
   if (P.dead) setHud('dead-sub', (P.deadMsg || '') + (G.phase === 'play' ? ' · back in ' + Math.max(0, Math.ceil(CFG.respawn - P.deadT)) : ''));
   // which part of town this is, shown for a moment when it changes
-  { const i = clamp(Math.floor((P.x - EDGE) / PX), 0, NX - 1), j = clamp(Math.floor((P.z - EDGE) / PZ), 0, NZ - 1), nm = AREAS[j][i]; if (nm !== areaNow) { areaNow = nm; const zi = HOOD[j][i], s = ZS[zi]; $('h-area').innerHTML = ''; $('h-area').append(nm); const sm = document.createElement('small'); sm.textContent = ZONES[zi].name + ' · ' + (s.owner < 0 ? 'nobody runs it' : s.owner === P.team ? 'your turf' : CREWS[s.owner].name + ' turf'); if (s.owner >= 0) inkOf(sm, s.owner); $('h-area').appendChild(sm); $('h-area').classList.add('on'); areaT = 3.2; } if (areaT > 0) { areaT -= dt; if (areaT <= 0) $('h-area').classList.remove('on'); } }
+  { const i = clamp(Math.floor((P.x - EDGE) / PX), 0, NX - 1), j = clamp(Math.floor((P.z - EDGE) / PZ), 0, NZ - 1), out = P.x > CITY.w + 2, nm = out ? (P.x < ISLE.x0 - 2 ? 'Harbor Bridge' : AIRPORT.name) : AREAS[j][i]; if (nm !== areaNow) { areaNow = nm; $('h-area').innerHTML = ''; $('h-area').append(nm); const sm = document.createElement('small');
+      if (out) sm.textContent = P.x < ISLE.x0 - 2 ? 'to the airport' : 'nobody runs it · helicopters on the pads'; else { const zi = HOOD[j][i], s = ZS[zi]; sm.textContent = ZONES[zi].name + ' · ' + (s.owner < 0 ? 'nobody runs it' : s.owner === P.team ? 'your turf' : CREWS[s.owner].name + ' turf'); if (s.owner >= 0) inkOf(sm, s.owner); }
+      $('h-area').appendChild(sm); $('h-area').classList.add('on'); areaT = 3.2; } if (areaT > 0) { areaT -= dt; if (areaT <= 0) $('h-area').classList.remove('on'); } }
   { const gs = AUTH() ? CREWS.map((c, t) => skullsOf(P.gn ? P.gn[t] : 0)).join('') : P.gs || ''; if (hudCache.gs !== gs) { const was = hudCache.gs || ''; hudCache.gs = gs; const e = $('h-gang'); e.textContent = ''; let any = false;
       for (let t = 0; t < NCREW; t++) { const n = +gs[t] || 0; if (!n) continue; any = true; const sp = document.createElement('span'); inkOf(sp, t); sp.title = CREWS[t].name; sp.textContent = '☠\uFE0E'.repeat(n); e.appendChild(sp); if (n > (+was[t] || 0) && n >= 2 && !P.dead) note(CREWS[t].name + ' notoriety · ' + n + ' skulls', 'k' + t); }
       e.hidden = !any; } }

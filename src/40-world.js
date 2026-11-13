@@ -180,27 +180,31 @@ for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z
 // blocks: a raised pavement slab each; the generators lay other surfaces on top
 for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const L = lotOf(i, j); addBox(L.x0 - WALK, L.x1 + WALK, -.6, CURB, L.z0 - WALK, L.z1 + WALK, 'walk', { faces: 15 | 16 }); }
 // the outer pavement and what closes the city in: an expressway wall to the west and north, water to the east and south
-addBox(0, WALK, -.6, CURB, 0, CITY.d, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, 0, CITY.d, 'walk', { faces: 15 | 16 });
+addBox(0, WALK, -.6, CURB, 0, CITY.d, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, 0, BRIDGE.z - 6.5, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, BRIDGE.z + 6.5, CITY.d, 'walk', { faces: 15 | 16 });   // the east pavement opens where the Harbor Bridge road leaves town
 addBox(WALK, CITY.w - WALK, -.6, CURB, 0, WALK, 'walk', { faces: 15 | 16 }); addBox(WALK, CITY.w - WALK, -.6, CURB, CITY.d - WALK, CITY.d, 'walk', { faces: 15 | 16 });
 addBox(-6, 0, 0, 8, -6, CITY.d, 'concrete', { tcol: 0x555a5e }); addBox(0, CITY.w, 0, 8, -6, 0, 'concrete', { tcol: 0x555a5e });
-solid(-48, 0, 0, 90, -48, WORLD.z1, { a: false, s: false }); solid(-48, WORLD.x1, 0, 90, -48, 0, { a: false, s: false });
-solid(CITY.w, WORLD.x1, -3, 90, -48, WORLD.z1, { a: false, s: false }); solid(-48, WORLD.x1, -3, 90, CITY.d, WORLD.z1, { a: false, s: false });
+// unseen walls that keep anyone on foot or on wheels out of the water. They stop neither bullets nor eyes nor anything flying (see 82-air.js).
+{ const wf = { a: false, s: false };
+  solid(-48, 0, 0, 90, -48, WORLD.z1, wf); solid(-48, CITY.w, 0, 90, -48, 0, wf); solid(-48, CITY.w, -3, 90, CITY.d, WORLD.z1, wf);
+  solid(CITY.w, ISLE.x0, -3, 90, -48, BRIDGE.z - BRIDGE.w, wf); solid(CITY.w, ISLE.x0, -3, 90, BRIDGE.z + BRIDGE.w, WORLD.z1, wf);                        // the channel, either side of the bridge
+  solid(ISLE.x0, WORLD.x1, -3, 90, -48, ISLE.z0, wf); solid(ISLE.x0, WORLD.x1, -3, 90, ISLE.z1, WORLD.z1, wf); solid(ISLE.x1, WORLD.x1, -3, 90, ISLE.z0, ISLE.z1, wf); }   // round the island
 deco(-6.3, -5.7, 8, 10.5, -6, CITY.d, 0x6f7a80); deco(-6, CITY.w, 8, 10.5, -6.3, -5.7, 0x6f7a80);                          // noise barrier along the expressway
-for (let z = 6; z < CITY.d; z += 3) deco(CITY.w - .25, CITY.w - .1, CURB, CURB + 1.05, z - .06, z + .06, 0x30363a);            // harbour railing posts
-deco(CITY.w - .25, CITY.w - .1, CURB + 1, CURB + 1.1, 0, CITY.d, 0x30363a); deco(CITY.w - .25, CITY.w - .1, CURB + .5, CURB + .56, 0, CITY.d, 0x30363a);
+for (let z = 6; z < CITY.d; z += 3) if (Math.abs(z - BRIDGE.z) > BRIDGE.w + .4) deco(CITY.w - .25, CITY.w - .1, CURB, CURB + 1.05, z - .06, z + .06, 0x30363a);            // harbour railing posts
+[[0, BRIDGE.z - BRIDGE.w], [BRIDGE.z + BRIDGE.w, CITY.d]].forEach(q => { deco(CITY.w - .25, CITY.w - .1, CURB + 1, CURB + 1.1, q[0], q[1], 0x30363a); deco(CITY.w - .25, CITY.w - .1, CURB + .5, CURB + .56, q[0], q[1], 0x30363a); });
 for (let x = 6; x < CITY.w; x += 3) deco(x - .06, x + .06, CURB, CURB + 1.05, CITY.d - .25, CITY.d - .1, 0x30363a);
 deco(0, CITY.w, CURB + 1, CURB + 1.1, CITY.d - .25, CITY.d - .1, 0x30363a); deco(0, CITY.w, CURB + .5, CURB + .56, CITY.d - .25, CITY.d - .1, 0x30363a);
-addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, CITY.d + 1.2, 'concrete', { nocol: true }); addBox(-6, CITY.w, -3, CURB, CITY.d, CITY.d + 1.2, 'concrete', { nocol: true });
+addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, BRIDGE.z - BRIDGE.w, 'concrete', { nocol: true }); addBox(CITY.w, CITY.w + 1.2, -3, CURB, BRIDGE.z + BRIDGE.w, CITY.d + 1.2, 'concrete', { nocol: true }); addBox(-6, CITY.w, -3, CURB, CITY.d, CITY.d + 1.2, 'concrete', { nocol: true });
 // the skyline beyond: nothing out there can be reached
 { const far = (x0, z0, w, d, h, mat) => addBox(x0, x0 + w, 0, h, z0, z0 + d, mat, { nocol: true, faces: 15 | 16, top: 'roof', col: pick(W, mat === 'brick' ? BRICKS : [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3]) });
   for (let z = -40; z < CITY.d; z += wr(34, 60)) far(wr(-150, -50), z, wr(22, 40), wr(22, 36), wr(18, 95), pick(W, ['office', 'tower', 'brick', 'office']));
   for (let x = -40; x < CITY.w + 30; x += wr(34, 60)) far(x, wr(-160, -55), wr(22, 40), wr(22, 36), wr(18, 110), pick(W, ['office', 'tower', 'brick', 'tower']));
   for (let x = -60; x < CITY.w + 60; x += wr(40, 80)) far(x, CITY.d + wr(120, 190), wr(26, 50), wr(22, 30), wr(10, 46), pick(W, ['brick', 'office', 'brick2']));
   addBox(-60, CITY.w + 80, -3, 1.2, CITY.d + 104, CITY.d + 240, 'concrete', { nocol: true });                                    // far bank of the river
-  addBox(CITY.w + 150, CITY.w + 330, -1, 6, 160, 190, 'flat', { nocol: true, col: 0x7a2a22 }); addBox(CITY.w + 290, CITY.w + 318, 6, 22, 166, 184, 'flat', { nocol: true, col: 0xd8d6cc });   // a freighter at anchor
-  addBox(CITY.w + 120, CITY.w + 240, -1, 5, 380, 404, 'flat', { nocol: true, col: 0x1f3d5c }); addBox(CITY.w + 212, CITY.w + 234, 5, 17, 384, 400, 'flat', { nocol: true, col: 0xd8d6cc });
-  for (let k = 0; k < 14; k++) addBox(CITY.w + 160 + k * 8.4, CITY.w + 168 + k * 8.4, 6, 6 + 2.6 * wi(1, 3), 163, 187, 'flat', { nocol: true, col: pick(W, [0xb3261e, 0x1f4e8c, 0xd9a521, 0x1d6b45, 0x8c9299]) });
-  cyl(CITY.w + 96, -2, 24, 60, 3.2, 'flat', 0xe8e4da, { nocol: true, rTop: 2.2 }); cyl(CITY.w + 96, 24, 27, 60, 2.4, 'glow', 0xffe9a8, { nocol: true }); cyl(CITY.w + 96, 27, 29.5, 60, 2.6, 'flat', 0xa3221b, { nocol: true, rTop: .2 });   // breakwater light
-  addBox(CITY.w + 30, CITY.w + 100, -2, 1, 56, 64, 'concrete', { nocol: true }); }
+  const sx = 440;   // the freighters ride at anchor out past the airport
+  addBox(CITY.w + sx + 150, CITY.w + sx + 330, -1, 6, 160, 190, 'flat', { nocol: true, col: 0x7a2a22 }); addBox(CITY.w + sx + 290, CITY.w + sx + 318, 6, 22, 166, 184, 'flat', { nocol: true, col: 0xd8d6cc });   // a freighter at anchor
+  addBox(CITY.w + sx + 120, CITY.w + sx + 240, -1, 5, 380, 404, 'flat', { nocol: true, col: 0x1f3d5c }); addBox(CITY.w + sx + 212, CITY.w + sx + 234, 5, 17, 384, 400, 'flat', { nocol: true, col: 0xd8d6cc });
+  for (let k = 0; k < 14; k++) addBox(CITY.w + sx + 160 + k * 8.4, CITY.w + sx + 168 + k * 8.4, 6, 6 + 2.6 * wi(1, 3), 163, 187, 'flat', { nocol: true, col: pick(W, [0xb3261e, 0x1f4e8c, 0xd9a521, 0x1d6b45, 0x8c9299]) });
+  cyl(CITY.w + 62, -2, 24, 60, 3.2, 'flat', 0xe8e4da, { rTop: 2.2, a: false }); cyl(CITY.w + 62, 24, 27, 60, 2.4, 'glow', 0xffe9a8, { nocol: true }); cyl(CITY.w + 62, 27, 29.5, 60, 2.6, 'flat', 0xa3221b, { nocol: true, rTop: .2 });   // breakwater light
+  addBox(CITY.w + 20, CITY.w + 66, -2, 1, 56, 64, 'concrete', { nocol: true }); }
 const water = new T.Mesh(new T.PlaneGeometry(2600, 2600, 1, 1), new T.MeshLambertMaterial({ color: 0x35607a, map: noiseTex('#8fa9b8', .1, { blots: 20, grain: 4 }) }));
 water.material.map.repeat.set(90, 90); water.rotation.x = -PI / 2; water.position.set(CITY.w / 2, -1.4, CITY.d / 2); water.receiveShadow = false; scene.add(water);

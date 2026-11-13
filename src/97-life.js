@@ -99,9 +99,9 @@ function updateTraffic3(dt) {
     if (B.ax === 'z') { B.m.position.set(B.at, -1.2 + bob, p); B.m.rotation.set(Math.sin(t * .6 + i) * .012, B.sp > 0 ? 0 : PI, Math.sin(t * .5 + i) * (B.ls > 5 ? .008 : .04)); }
     else { B.m.position.set(p, -1.2 + bob, B.at); B.m.rotation.set(Math.sin(t * .6 + i) * .012, B.sp > 0 ? PI / 2 : -PI / 2, Math.sin(t * .5 + i) * .04); }
     B.lt.material.opacity = glow * .9; }
-  // one airliner every couple of minutes, west to east and a little north
-  const cyc = 150, u = (t % cyc) / 46; plane.visible = u < 1;
-  if (plane.visible) { plane.position.set(lerp(-1500, CITY.w + 1500, u), 330, lerp(CITY.d * .9, -260, u)); plane.rotation.y = Math.atan2(CITY.w + 3000, -(CITY.d * .9 + 260)); const bl = (t * 1.1) % 1 < .12 ? 1 : 0; plane.children[1].material.opacity = plane.children[2].material.opacity = glow; plane.children[3].material.opacity = bl * (.35 + glow * .65); }
+  // the airliner: in over the water from the south, down onto the runway, round at the end, and away again (see 82-air.js)
+  jetAt(t, _jt); plane.visible = true; plane.position.set(_jt.x, _jt.y, _jt.z); plane.rotation.set(_jt.pitch, _jt.yaw + PI, 0, 'YXZ');
+  { const bl = (t * 1.1) % 1 < .12 ? 1 : 0; plane.children[1].material.opacity = plane.children[2].material.opacity = Math.max(glow, _jt.ground ? 0 : .35); plane.children[3].material.opacity = bl * (.35 + glow * .65); }
 }
 
 // --- the ball on each court: dribbled by whoever is up, put up at the rim, collected by the next. Also the box someone at work is carrying.

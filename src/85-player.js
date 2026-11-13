@@ -19,7 +19,7 @@ function setVm(id) {
 const SIGHT = { pistol: .084, smg: .098, shotgun: .09, rifle: .118, marksman: .128, fist: .05, glocks: .084, m60: .12, gl: .12, rpg: .14 };
 const autoNow = () => { const d = WEAPONS[P.wpn], w = P.inv[P.wpn]; return !!d.auto || (!!d.dual && !!w && !!w.sw); };   // a switch on the Glocks makes them automatic
 function resetLoadout() { P.inv = { fist: { mag: 0, res: 0 }, pistol: { mag: WEAPONS.pistol.mag, res: 60 } }; P.wpn = 'pistol'; P.nades = 1; P.armor = 0; }
-function giveWeapon(id, ammo) { const d = WEAPONS[id]; if (!d || d.melee) return; if (!P.inv[id]) P.inv[id] = { mag: d.mag, res: ammo === undefined ? d.res : ammo }; else P.inv[id].res = Math.min(Math.round(d.res * 1.5), P.inv[id].res + (ammo === undefined ? d.mag * 2 : ammo)); }
+function giveWeapon(id, ammo) { const d = WEAPONS[id]; if (!d || d.melee || d.heli) return; if (!P.inv[id]) P.inv[id] = { mag: d.mag, res: ammo === undefined ? d.res : ammo }; else P.inv[id].res = Math.min(Math.round(d.res * 1.5), P.inv[id].res + (ammo === undefined ? d.mag * 2 : ammo)); }
 function setWeapon(id) { if (!P.inv[id] || P.wpn === id || P.dead) return; if (P.car && !WEAPONS[id].car) return; P.wpn = id; P.reloadT = 0; P.autoReload = 0; P.switchT = .3; P.ads = 0; SFX.swap(); }
 function cycleWeapon(dir) { const own = WID.filter(id => P.inv[id] && (!P.car || WEAPONS[id].car)); if (own.length < 2) return; setWeapon(own[(own.indexOf(P.wpn) + dir + own.length) % own.length]); }
 function startReload() { const w = P.inv[P.wpn], d = WEAPONS[P.wpn]; if (d.melee || P.reloadT > 0 || w.mag >= d.mag || w.res <= 0) return; P.reloadT = d.reload; SFX.reload(d.reload); }
@@ -71,8 +71,8 @@ function carInReach() {
   return best;
 }
 function carOffer(c) {   // -> { seat, jack, text } or null
-  const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name;
-  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>Drive the ${nm}` };
+  const dr = c.occ[0], nm = (c.cop ? 'police ' : '') + c.spec.name + (c.spec.air ? ' helicopter' : ''), go = c.spec.air ? 'Fly' : 'Drive';
+  if (!dr) return { seat: 0, jack: false, text: `<b>F</b>${go} the ${nm}` + (c.spec.air && c.home && c.home.kind === 'gun' && !c.stolen ? ' · it brings three stars' : '') };
   if (isCrew(dr.team) && dr.team === P.team) { for (let k = 1; k < c.spec.seats; k++) if (!c.occ[k]) return { seat: k, jack: false, text: `<b>F</b>Ride with ${nameOf(dr)}` }; return null; }
   if (carSpeed(c) < 7) return { seat: 0, jack: true, text: `<b>F</b>Jack the ${nm}` };
   return null;
@@ -85,7 +85,8 @@ function tryEnter(c, o) {
 }
 function sitIn(c, seat) {
   P.enter = null; P.car = c; P.seat = seat; P.ads = 0; P.knock = 0;
-  if (seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = false; c.ai = null; c.kin = false; c.mine = true; c.asleep = false; c.team = P.team; c.horn = 0; P.siren = false; if (c.cop && !c.stolen && AUTH()) { c.stolen = true; GAME.crime(P, 20, 1); } }
+  if (seat === 0) { c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = false; c.ai = null; c.kin = false; c.mine = true; c.asleep = false; c.team = P.team; c.horn = 0; P.siren = false; if (AUTH()) GAME.boarded(c, P); }
+  if (c.spec.air && seat === 0 && !P.flown) { P.flown = true; banner(c.spec.name, TOUCH.on ? 'The stick flies it · UP and DOWN for height · drag to turn' + (c.spec.air === 'gun' ? ' · FIRE guns · ROCKETS' : '') : 'W A S D fly · Space up · Shift down · the mouse turns it' + (c.spec.air === 'gun' ? ' · click guns · right-click rockets' : ''), 5, 'gold'); }
   if (!WEAPONS[P.wpn].car) { P.prevWpn = P.wpn; P.wpn = P.inv.smg ? 'smg' : 'pistol'; P.reloadT = 0; } else P.prevWpn = null;
   P.idleCam = 2; if (RADIO.on !== P.radio) setRadio(P.radio); radioVolume(P.radio >= 0 ? .55 : 0); if (P.radio >= 0) radioToast();   // whatever a speaker outside was playing gives way to the car's own station
 }
@@ -105,7 +106,9 @@ GAME.leaveCar = dead => {
   for (let i = 0; i < tries.length && !ok; i++) { doorPos(c, tries[i][0], _d0, tries[i][1]); if (!pushOut(_d0.x, _d0.z, CFG.player.r, c.y + CFG.step + .01, c.y + 1.7, 'p')) { P.x = _d0.x; P.z = _d0.z; ok = true; } }
   if (!ok) { P.x = c.x; P.z = c.z; P.y = c.y + c.geo.roof + .1; } else P.y = c.y + .05;
   P.vx = c.vx * .5; P.vz = c.vz * .5; P.vy = 0; P.onGround = false; P.yaw = c.yaw; P.cyaw = P.cyaw;
-  if (!dead && sp > 9) { hurtPlayer((sp - 9) * 2.4, null, 'fall'); P.knock = 1; P.knockT = .9; }
+  const high = c.spec.air && P.y - groundAt(P.x, P.z, P.y, 'p') > 6;
+  if (high && !dead) { P.chute = 1; P.vy = Math.min(0, c.vy || 0); banner('Parachute', TOUCH.on ? 'Steer with the stick' : 'Steer with W A S D', 1.6); }
+  else if (!dead && sp > 9) { hurtPlayer((sp - 9) * 2.4, null, 'fall'); P.knock = 1; P.knockT = .9; }
   if (P.prevWpn && P.inv[P.prevWpn]) P.wpn = P.prevWpn; P.prevWpn = null; if (!dead) SFX.door(c.x, c.y, c.z);
 };
 function radioToast() { const e = $('h-radio'); e.innerHTML = P.radio < 0 ? 'Radio off' : `<b>${STATIONS[P.radio].name}</b> · ${STATIONS[P.radio].tag}`; e.classList.add('on'); P.radioT = 2.6; }
@@ -181,12 +184,14 @@ function updateOnFoot(dt) {
   const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
   let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
-  const acc = Math.min(1, dt * (P.onGround ? 11 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
+  if (P.chute) { const k = 6.5 / (sp || 1); wx *= k; wz *= k; P.vy = Math.max(P.vy, -4.6); }   // under a canopy: a slow drift down, steered
+  const acc = Math.min(1, dt * (P.onGround ? 11 : P.chute ? 1.6 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
   if (keys.Space && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!keys.Space) P.jumpHeld = false;
   const wasAir = !P.onGround;
   moveEntity(P, P.vx * dt, P.vz * dt, dt, CFG.player.r, 'p', CFG.player.h); carBlock(P, CFG.player.r);
   if (wasAir && P.onGround) { if (P.fell < -15) hurtPlayer((-P.fell - 15) * 8, null, 'fall'); if (P.fell < -5) SFX.land(); }
-  if (P.y < -4) { P.y = CURB + 1; P.vy = 0; }
+  if (P.chute && P.onGround) { P.chute = 0; SFX.land(); }
+  if (P.y < -4 || (P.onGround && P.y < 1 && !onLand(P.x, P.z))) swimAshore();
   P.spd = hyp(P.vx, P.vz); P.sprint = sprint && P.spd > 5.5;
   if (P.onGround) { P.stepPh = (P.stepPh || 0) + dt * P.spd * 2.1; const si = Math.floor(P.stepPh / PI); if (si !== P.stepI) { P.stepI = si; if (P.spd > 1.2) SFX.step(sprint ? 1.3 : 1); } }
   // which way the body faces: with the camera when a weapon is up, otherwise where it is walking
@@ -205,7 +210,9 @@ function updateOnFoot(dt) {
 function updateInCar(dt) {
   const c = P.car, d = WEAPONS[P.wpn], w = P.inv[P.wpn];
   if (c.gone) { P.car = null; return; }
-  if (P.seat === 0 && c.mine !== false) {
+  if (c.spec.air && (c.sunk || (c.wreck && c.y < 1.2 && !onLand(c.x, c.z)))) { GAME.leaveCar(true); swimAshore(); return; }
+  if (c.spec.air && P.seat === 0 && c.mine !== false) heliControls(c, dt);
+  else if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
     if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
     nitrous(c, dt, !!(keys.ShiftLeft || keys.ShiftRight)); stepCar(c, dt, inp);
@@ -216,7 +223,7 @@ function updateInCar(dt) {
   seatPos(c, P.seat, _sp); P.x = _sp.x; P.z = _sp.z; P.y = c.y; P.vx = c.vx; P.vz = c.vz; P.vy = 0; P.onGround = true; P.yaw = c.yaw; P.spd = 0; P.pitch = P.cpitch; P.sprint = false;
   P.shootT -= dt; if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && (autoNow() || mouse.fresh)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
+  if (mouse.down && (autoNow() || mouse.fresh) && !(c.spec.air && P.seat === 0)) tryFire(); mouse.fresh = false; P.ads = 0; prompt = null;
   if (P.radioT > 0) { P.radioT -= dt; if (P.radioT <= 0) $('h-radio').classList.remove('on'); }
 }
 function updatePlayer(dt) {
@@ -234,9 +241,9 @@ function updateCamera(dt) {
   const sk = shakeAmt * shakeAmt, sx = rs(sk * .05), sy = rs(sk * .05); let fov = 72, px, py, pz, want, rollZ = 0;
   if (P.dead) { P.orbit = (P.orbit || 0) + dt * .25; px = P.x; py = P.y + .8; pz = P.z; const a = P.cyaw + P.orbit; want = 5; camDist = lerp(camDist, want, Math.min(1, dt * 3)); const t = Math.min(camDist, rayWorld(px, py, pz, Math.sin(a) * .9, .42, Math.cos(a) * .9, 's', camDist + .3) - .3); camera.position.set(px + Math.sin(a) * .9 * t, py + .42 * t, pz + Math.cos(a) * .9 * t); camera.rotation.set(-.44, a, 0); }
   else if (P.car) {
-    const c = P.car, sp = carSpeed(c); P.idleCam += dt;
-    if (P.idleCam > 1.1 && sp > 2.5 && !keys.KeyC) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }
-    const yaw = P.cyaw + (keys.KeyC ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + 1.5; pz = c.z; want = (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
+    const c = P.car, sp = carSpeed(c), air = !!c.spec.air; P.idleCam += dt;
+    if (!air && P.idleCam > 1.1 && sp > 2.5 && !keys.KeyC) { P.cyaw = lerpAng(P.cyaw, c.yaw, Math.min(1, dt * 2.6)); P.cpitch = lerp(P.cpitch, -.13, Math.min(1, dt * 2)); }   // a helicopter turns to the camera instead
+    const yaw = P.cyaw + (keys.KeyC && !air ? PI : 0), cpp = Math.cos(P.cpitch), bx = -Math.sin(yaw) * cpp, bz = -Math.cos(yaw) * cpp; px = c.x; py = c.y + (air ? 2.4 : 1.5); pz = c.z; want = air ? (camFar ? 20 : 12.5) + sp * .06 : (camFar ? 9.5 : 6.6) + sp * .055 + (c.spec.len - 4.5) * .6;
     camDist = lerp(camDist, want, Math.min(1, dt * 5)); const t = Math.max(1.2, Math.min(camDist, rayWorld(px, py, pz, -bx, -fy + .12, -bz, 's', camDist + .4) - .4));
     camera.position.set(px - bx * t + sx, py + (-fy + .12) * t + .5 + sy, pz - bz * t); camera.rotation.set(P.cpitch - .04 + sy * .3, yaw + sx * .3, clamp(c.yawRate * .02, -.05, .05)); fov = 72 + Math.min(16, sp * .32);
   } else if (firstPerson()) {
@@ -248,6 +255,7 @@ function updateCamera(dt) {
     const t = Math.max(.35, Math.min(camDist, rayCars(px, py, pz, -fx, -fy, -fz, rayWorld(px, py, pz, -fx, -fy, -fz, 's', camDist + .3), null) - .28));
     P.camClose = t < .95; camera.position.set(px - fx * t + sx, py - fy * t + .12 + sy, pz - fz * t); camera.rotation.set(P.cpitch + sy * .4, P.cyaw + sx * .4, rollZ); fov = lerp(72, Math.max(44, d.zoom + 4), P.ads) + (P.sprint ? 5 : 0);
   }
+  { const nr = (P.car && P.car.spec.air) || P.chute ? 1 : .12; if (camera.near !== nr) { camera.near = nr; camera.updateProjectionMatrix(); } }   // up in the air the near plane steps back, so the ground far below does not shimmer
   if (Math.abs(camera.fov - fov) > .05) { camera.fov = lerp(camera.fov, fov, Math.min(1, dt * 12)); camera.updateProjectionMatrix(); }
   skyDome.position.copy(camera.position);
   EAR.x = camera.position.x; EAR.y = camera.position.y; EAR.z = camera.position.z; EAR.rx = rx; EAR.rz = rz;

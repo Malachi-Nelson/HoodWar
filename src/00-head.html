@@ -116,6 +116,8 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #h-speed small{font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--ash);margin-left:6px}
 #h-car{font-size:16px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--chalk)}
 #car-hp{width:150px;margin-left:auto;margin-top:5px}
+#h-air{font-size:12px;font-weight:700;letter-spacing:.12em;color:#cfe4ff;text-align:right}#h-air:empty{display:none}
+body.touch #h-air{text-align:center}
 #car-fill{background:var(--gold)}
 #car-nos{width:150px;margin-left:auto;margin-top:4px;height:6px}#nos-fill{background:#5fe9ff}
 body.touch #car-nos{margin:3px auto 0;width:110px}
@@ -133,12 +135,13 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 .tc-fire{border-color:rgba(255,106,90,.95);background:rgba(226,59,46,.3)}
 .tc-fire.down{background:rgba(226,59,46,.6)}
 .tc-use.go{border-color:var(--gold);background:rgba(255,200,61,.34)}
-.tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}
+.tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}.tc-up{border-color:rgba(143,227,107,.9)}.tc-down{border-color:rgba(127,184,255,.9)}.tc-rocket{border-color:rgba(255,200,61,.95);background:rgba(217,165,33,.25)}
 .tc-pause,.tc-map,.tc-turf,.tc-cam{border-radius:10px}
 .tc-stick{background:rgba(10,12,16,.22);border-style:dashed}
 .tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .tc-stick.down{border-style:solid}
-#touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c]{display:none}
+#touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c],#touch.air .tc[data-ctx=f],#touch.air .tc[data-ctx=c],#touch.car .tc[data-ctx=a],#touch.foot .tc[data-ctx=a]{display:none}
+#touch.air:not(.gun):not(.edit) .tc-rocket{display:none}
 #touch:not(.call) .tc-call{display:none}
 .tc-call{border-color:var(--gold);color:var(--gold)}
 #touch.dead .tc:not(.tc-pause){display:none}
@@ -308,12 +311,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="feed"></div>
     <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar" id="cap-track"><i id="cap-fill"></i></div></div>
     <div id="h-prompt" class="sh"></div>
-    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div><div class="bar" id="car-nos" hidden><i id="nos-fill"></i></div></div>
+    <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div id="h-air"></div><div class="bar" id="car-hp"><i id="car-fill"></i></div><div class="bar" id="car-nos" hidden><i id="nos-fill"></i></div></div>
     <div id="h-dev"></div>
     <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
     <div id="board" class="pane" hidden></div>
     <div id="shop" class="pane" hidden><button type="button" id="shop-x" aria-label="Close">×</button><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p id="shop-foot">Press a number or click to buy. F or Esc closes.</p></div>
-    <div id="bigmap" hidden><canvas id="mapc" width="960" height="700" aria-label="City map"></canvas></div>
+    <div id="bigmap" hidden><canvas id="mapc" width="1180" height="584" aria-label="City map"></canvas></div>
   </div>
   <div id="dev" hidden>
     <div class="dev-h">DEV MENU <span>` or Resume to close</span></div>
@@ -361,8 +364,9 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
         <div><dt>Q · H</dt><dd>Radio · horn, or siren in a police car</dd></div>
         <div><dt>Tab · M</dt><dd>Players and turf · map</dd></div>
         <div><dt>B · T</dt><dd>Call a drive-by (4-kill streak) · phone: homies, mechanic, fixer, work</dd></div>
+        <div><dt>Helicopter</dt><dd>W A S D fly · Space up · Shift down · mouse turns · click guns · right-click or G rockets</dd></div>
       </dl>
-      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work.</p>
+      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work.</p>
       <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
       <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>

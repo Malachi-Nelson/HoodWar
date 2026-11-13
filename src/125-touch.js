@@ -3,7 +3,7 @@
         whole set made more or less see-through, and the layout is kept in this browser.
         In Auto, the controls appear on a touch screen and step aside as soon as a mouse is used.
    ===================================================================== */
-// id, label, when it shows (f on foot, c in a car, b both), what it does, and where it sits by default: anchored to the left (0), right (1)
+// id, label, when it shows (f on foot, c in a car, a flying a helicopter, b everywhere), what it does, and where it sits by default: anchored to the left (0), right (1)
 // or middle (.5) of the screen and the top (0) or bottom (1), offset and sized in units of the screen's shorter side (capped for tablets)
 const TC_DEF = [
   ['stick', '', 'b', 'stick', 0, .3, 1, .28, .38],
@@ -24,6 +24,7 @@ const TC_DEF = [
   ['turf', 'TURF', 'b', 'board', 0, .55, 0, .07, .1],
   ['cam', 'CAM', 'b', 'tap:KeyV', 1, .5, 0, .07, .1],
   ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'tap:KeyT', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'key:ShiftLeft', 1, .5, 1, .68, .13],
+  ['up', 'UP', 'a', 'key:Space', 1, .12, 1, .16, .2], ['down', 'DOWN', 'a', 'key:ShiftLeft', 1, .34, 1, .14, .17], ['rocket', 'ROCKETS', 'a', 'key:KeyG', 1, .53, 1, .14, .15],
 ];
 const TCD = {}; TC_DEF.forEach(d => { TCD[d[0]] = d; });
 const TOUCH = { on: false, fx: 0, fy: 0, ptr: {}, edit: false, sel: null, aim: false, ectx: 'f', el: {}, cfg: null, coarse: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) };
@@ -126,7 +127,7 @@ function touchAssist(dt) {
 // which controls show: the foot set or the car set, CALL when a drive-by is ready, USE lit when it would do something
 function updateTouchUi() {
   const show = TOUCH.on && (G.state === 'playing' || TOUCH.edit); if (tLayer.hidden === show) tLayer.hidden = !show; if (!show) return;
-  const car = TOUCH.edit ? TOUCH.ectx === 'c' : !!P.car, cls = (car ? 'car' : 'foot') + (TOUCH.edit ? ' edit' : '') + (P.driveby || TOUCH.edit ? ' call' : '') + (P.dead && !TOUCH.edit ? ' dead' : '');
+  const air = TOUCH.edit ? TOUCH.ectx === 'a' : !!P.car && !!P.car.spec.air && P.seat === 0, car = TOUCH.edit ? TOUCH.ectx === 'c' : !!P.car && !air, cls = (air ? 'air' : car ? 'car' : 'foot') + (P.car && P.car.spec.air === 'gun' && !TOUCH.edit ? ' gun' : '') + (TOUCH.edit ? ' edit' : '') + (P.driveby || TOUCH.edit ? ' call' : '') + (P.dead && !TOUCH.edit ? ' dead' : '');
   if (tLayer.className !== cls) tLayer.className = cls;
   if ((P.car || P.dead) && TOUCH.aim) { TOUCH.aim = false; mouse.right = false; TOUCH.el.aim.classList.remove('on'); }
   const go = !TOUCH.edit && (!!P.car || shopOpen || (prompt && !!prompt.act)); TOUCH.el.use.classList.toggle('go', go); TOUCH.el.use.textContent = P.car && !TOUCH.edit ? 'EXIT' : 'USE';
@@ -143,7 +144,7 @@ function touchEdit(on) {
 }
 $('te-size').addEventListener('input', e => { const id = TOUCH.sel; if (!id) return; const q = tPlace(id); tKeep(id, q[0], q[1], clamp(+e.target.value, .06, .5)); layoutTouch(); });
 $('te-alpha').addEventListener('input', e => { TOUCH.cfg.alpha = clamp(+e.target.value, .15, 1); layoutTouch(); });
-$('te-ctx').addEventListener('click', () => { TOUCH.ectx = TOUCH.ectx === 'f' ? 'c' : 'f'; $('te-ctx').textContent = TOUCH.ectx === 'f' ? 'Showing: on foot' : 'Showing: in a car'; updateTouchUi(); });
+$('te-ctx').addEventListener('click', () => { TOUCH.ectx = TOUCH.ectx === 'f' ? 'c' : TOUCH.ectx === 'c' ? 'a' : 'f'; $('te-ctx').textContent = TOUCH.ectx === 'f' ? 'Showing: on foot' : TOUCH.ectx === 'c' ? 'Showing: in a car' : 'Showing: flying'; updateTouchUi(); });
 $('te-reset').addEventListener('click', () => { TOUCH.cfg.lay = {}; TOUCH.cfg.alpha = TC_CFG0.alpha; $('te-alpha').value = String(TOUCH.cfg.alpha); layoutTouch(); if (TOUCH.sel) tSelect(TOUCH.sel); saveTouch(); });
 $('te-done').addEventListener('click', () => touchEdit(false));
 ['pointerdown', 'pointermove', 'pointerup'].forEach(t => $('tedit').addEventListener(t, e => e.stopPropagation()));

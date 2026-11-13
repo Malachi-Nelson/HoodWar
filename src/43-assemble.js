@@ -60,6 +60,7 @@ for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const R = RING[i][j]
   if (i + 1 < NX) { navLink(R.ne, RING[i + 1][j].nw, true); navLink(R.se, RING[i + 1][j].sw, true); }
   if (j + 1 < NZ) { navLink(R.sw, RING[i][j + 1].nw, true); navLink(R.se, RING[i][j + 1].ne, true); } }
 genLine();
+genAirport(genBridge());   // across the channel: see 42.5-airport.js
 ZONES.sort((a, b) => a.id < b.id ? -1 : 1);
 for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) if ((i * 7 + j * 3) % 5 === 0) { const x = RX(i) + 2.6, z = RZ(j) + 14; paint(x - .42, z - .42, x + .42, z + .42, 0x1c1e20); VENTS.push([x, z]); }   // manholes that breathe steam
 billboard(-5.6, 150, 8, 'CALDER LAGER · BREWED BY THE LAKE', 'gold', 'e'); billboard(-5.6, 390, 8, 'WKPC 94.7 · THE BLOCK', 'neon', 'e'); billboard(260, -5.6, 8, 'INJURED? CALL 555-0144', 'white', 's'); billboard(560, -5.6, 8, 'PORT CALDER LOTTERY · $4 MILLION', 'green', 's');

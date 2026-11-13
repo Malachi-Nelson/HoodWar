@@ -134,6 +134,7 @@ defMat('flatnc',  lam({}), 1, 1, { cast: false });
 defMat('paint',   lam({ polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -22 }), 1, 1, { cast: false });
 defMat('lot',     lam({ map: noiseTex('#46484b', .1, { cracks: 10, blots: 18 }) }), 12, 12, { cast: false });
 ['grass', 'dirt', 'lot', 'plaza', 'tile', 'court'].forEach((k, i) => { const m = MATS[k].mat; m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2 - i * 3; });   // these lie on top of the pavement slab, and on each other in this order: a court laid on grass always wins
+defMat('turf', lam({ map: MATS.grass.mat.map }), 10, 10, { cast: false });   // grass as a base to lay roads on (the airport island): no pull toward the eye, so the runway shows over it
 defMat('glass',   new T.MeshLambertMaterial({ color: 0x9fc4d8, transparent: true, opacity: .32, vertexColors: true }), 1, 1, { cast: false, recv: false });
 defMat('glow',    new T.MeshBasicMaterial({ vertexColors: true }), 1, 1, { cast: false, recv: false });
 { const c = texCanvas(64), g = c.getContext('2d'); g.clearRect(0, 0, 64, 64); g.strokeStyle = 'rgba(200,205,210,.95)'; g.lineWidth = 1.6; for (let i = -64; i < 128; i += 8) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 64, 64); g.moveTo(i + 64, 0); g.lineTo(i, 64); g.stroke(); }

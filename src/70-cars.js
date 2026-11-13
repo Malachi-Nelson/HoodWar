@@ -47,28 +47,29 @@ function copDress(c) {
 }
 function spawnCar(type, x, z, yaw, o) {
   if (!carFree.length) return null; o = o || {};
-  const S = CARS[type], geo = carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
+  const S = CARS[type], geo = S.air ? heliGeo(type) : carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
   const g = new T.Group(), body = new T.Group(); g.rotation.order = 'YXZ'; g.add(body);
   const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, carTrimMat), gm = new T.Mesh(geo.glass, carGlassMat), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
   pm.castShadow = tm.castShadow = true; pm.receiveShadow = true; gm.renderOrder = 3; bm.renderOrder = 4; bm.visible = false; body.add(pm, tm, gm, lm, bm); scene.add(g);
   const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm,
     occ: [null, null, null, null], inp: { thr: 0, steer: 0, hb: false }, wreck: false, burn: 0, spin: 0, roll: 0, dive: 0, asleep: true, home: o.home || null, team: o.team === undefined ? -1 : o.team, horn: 0, smokeT: 0, lastHit: null, idle: 0, buf: [], slip: 0, crash: 0 };
   if (c.id > carSeq) carSeq = c.id;
-  if (color === COP_PAINT) copDress(c);
+  if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
   cars.push(c); placeCar(c); return c;
 }
 function setPaint(c, hex) { if (hex === undefined || c.color === hex) return; c.color = hex; if (!c.wreck) c.pm.material = paintMat(hex); }
-function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true; carFree.push(c.slot); c.gone = true; }
+function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true; carFree.push(c.slot); c.gone = true; }
 const carById = id => { for (let i = 0; i < cars.length; i++) if (cars[i].id === id) return cars[i]; return null; };
 const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _we = new T.Euler(0, 0, 0, 'YXZ'), _wv = new T.Vector3(), _ws = new T.Vector3();
 function placeCar(c) {
   const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.g.updateMatrixWorld(true);
+  if (c.spec.air) return;   // skids, not wheels
   const hw = c.spec.wid / 2 - .13;
   for (let k = 0; k < 4; k++) { const front = k < 2, sd = k % 2 ? 1 : -1; _we.set(c.spin, front ? -c.steer * .5 : 0, 0); _wq.setFromEuler(_we); _wm.compose(_wv.set(sd * hw, G.wr, front ? G.axF : G.axR), _wq, _ws.set(.25, G.wr, G.wr)); _cm.multiplyMatrices(c.g.matrixWorld, _wm); wheelMesh.setMatrixAt(c.slot * 4 + k, _cm); }
 }
 const carFwd = c => [-Math.sin(c.yaw), -Math.cos(c.yaw)], carSpeed = c => hyp(c.vx, c.vz);
-function seatPos(c, k, out) { const s = SEATS[k], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * s[0] + fx * s[1]; out.z = c.z + rz * s[0] + fz * s[1]; out.y = c.y + c.geo.seatY; return out; }
-function doorPos(c, k, out, gap) { const s = SEATS[k], side = s[0] < 0 ? -1 : 1, d = c.spec.wid / 2 + (gap === undefined ? .6 : gap), fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * side * d + fx * s[1]; out.z = c.z + rz * side * d + fz * s[1]; out.y = c.y; return out; }
+function seatPos(c, k, out) { const s = (c.geo.seats || SEATS)[k], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * s[0] + fx * s[1]; out.z = c.z + rz * s[0] + fz * s[1]; out.y = c.y + c.geo.seatY; return out; }
+function doorPos(c, k, out, gap) { const s = (c.geo.seats || SEATS)[k], side = s[0] < 0 ? -1 : 1, d = c.spec.wid / 2 + (gap === undefined ? .6 : gap), fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * side * d + fx * s[1]; out.z = c.z + rz * side * d + fz * s[1]; out.y = c.y; return out; }
 // --- props in a hash so a moving car can find the ones in its way
 const propGrid = {}; PROPS.forEach(p => { const k = Math.floor(p.x / 12) + ',' + Math.floor(p.z / 12); (propGrid[k] || (propGrid[k] = [])).push(p); });
 function carProps(c, px, pz, R, sp) {
@@ -145,7 +146,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 }
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
-  placeCar(c);
+  placeCar(c); if (c.spec.air) { heliVisual(c, dt); return; }
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
   if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }

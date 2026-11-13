@@ -14,7 +14,7 @@ GAME.crime = (who, pts, min, gap) => {
   if (h > (who.heat | 0)) { if (!(who.heat > 0)) { who.seenT = G.time; who.dispT = G.time + 1.2; who.lostT = -8; } who.heat = h; who.lkx = who.x; who.lky = who.y; who.lkz = who.z; }   // the first car gets time to arrive before the clock starts
   if (who.heat > 0) { who.crimeT = G.time; who.lostT = Math.min(who.lostT || 0, 0); }
 };
-GAME.clearHeat = a => { a.wp = 0; a.heat = 0; a.evade = false; a.lostT = 0; };
+GAME.clearHeat = a => { a.wp = 0; a.heat = 0; a.evade = false; a.lostT = 0; a.heliT = 0; };
 // what each car brings, by how many stars its target has
 const COP_GUNS = [null, ['pistol', 'pistol'], ['pistol', 'smg'], ['smg', 'shotgun'], ['smg', 'rifle', 'shotgun'], ['rifle', 'rifle', 'smg']];
 function copUnit(x, z, yaw, heat, chase) {
@@ -46,12 +46,12 @@ function updatePolice() {    // four times a second
   let cops = 0, manned = 0, spare = 0, anyHeat = false; const hs = humans(), empty = [];
   for (let i = 0; i < bots.length; i++) if (bots[i].team === TEAM_COP && !bots[i].dead) cops++;
   for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || c.wreck) continue;
-    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o)) empty.push(c); }
+    if (c.occ.some(o => o && o.kind === 'bot')) { manned++; if (c.occ[0] && c.occ[0].kind === 'bot' && c.ai && c.ai.mode !== 'cop') spare++; } else if (!c.occ.some(o => o) && (!c.spec.air || c.landed)) empty.push(c); }   // a helicopter with nobody aboard comes down first
   hs.forEach(a => {
     if (!(a.heat > 0)) { if (a.wp > 0) a.wp = Math.max(0, a.wp - .15); a.evade = false; return; }   // small things are forgotten
     if (a.dead || !G.cops) { GAME.clearHeat(a); return; }
     anyHeat = true; let seen = false, close = false, mine = 0; const ay = chestY(a);
-    for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.team !== TEAM_COP || b.dead) continue; if (b.chase === a) mine++; if (seen) continue; const d = hyp(b.x - a.x, b.z - a.z); if (d < 42) close = true;
+    for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.team !== TEAM_COP || b.dead) continue; if (b.chase === a) mine++; if (seen) continue; const d = hyp(b.x - a.x, b.z - a.z); if (d < 42 && !(b.car && b.car.spec.air)) close = true;
       if (d < 90 && (d < 14 || los(b.x, eyeY(b), b.z, a.x, ay, a.z, 'a') || los(b.x, eyeY(b), b.z, a.x, ay + .4, a.z, 'a'))) seen = true; }
     // the clock that ends a chase only runs while nobody has eyes on them and no officer is close by
     if (seen) { a.seenT = G.time; a.lostT = 0; a.lkx = a.x; a.lky = a.y; a.lkz = a.z; } else if (!close) a.lostT = (a.lostT || 0) + .25;
@@ -105,6 +105,7 @@ function copBrain(b) {
   if (!a && !(b.guard && b.car)) { let bd = 170; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.lkx - b.x, h.lkz - b.z); if (d < bd) { bd = d; a = h; } });
     if (a) { b.chase = a; b.until = 1e9; b.path = null; if (b.car && b.seat === 0 && b.car.ai && b.car.ai.mode !== 'cop') { b.car.ai.mode = 'cop'; b.car.ai.chase = a; b.car.ai.done = false; } } }
   botLook(b);
+  if (b.car && b.car.spec.air) return;   // up in the police helicopter: they stay aboard and shoot from the doors
   if (b.car) { const c = b.car, dr = c.occ[0];
     if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!dr || dr.team !== TEAM_COP)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); }
     return; }
@@ -117,5 +118,6 @@ function copBrain(b) {
     let k = -1; for (let s = 0; s < c.spec.seats && k < 0; s++) if (!c.occ[s] && !bots.some(o => o !== b && o.wantCar === c && o.wantSeat === s)) k = s;
     if (k >= 0) { b.wantCar = c; b.wantSeat = k; b.carT = G.time; b.carChk = 0; b.path = null; b.hunt = false; return; } }
   if (a) { if (!b.hunt && !b.path) { b.lsx = a.lkx; b.lsy = a.lky; b.lsz = a.lkz; b.hunt = true; if (!botPathTo(b, a.lkx, a.lky, a.lkz, false)) b.hunt = false; } }
+  else if (b.stay) { if (!b.path && hyp(b.x - b.stay.x, b.z - b.stay.z) > 2.5) botPathTo(b, b.stay.x, CURB, b.stay.z, false); }   // a guard goes back to their post
   else if (!b.path && !b.hunt) { const from = nearestNode(b.x, b.y, b.z, true); for (let k = 0; k < 5; k++) { const n = NAVOK[(rand() * NAVOK.length) | 0], d = hyp(n.x - b.x, n.z - b.z); if (d < 50 || d > 200) continue; const p = navPath(from, n.i, true); if (p) { b.path = p; b.pi = 0; break; } } }   // nothing to do and no car: walk the beat until out of everyone's way
 }
