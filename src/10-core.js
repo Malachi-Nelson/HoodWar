@@ -19,13 +19,16 @@ const CFG = {
   player: { r: .34, h: 1.78, eye: 1.6, walk: 2.4, run: 5.0, sprint: 7.3, jump: 6.6, hp: 100, armor: 100, regenDelay: 5, regenRate: 24 },
   gravity: 22, step: .5,
   startCash: 600,
-  pay: { kill: 100, head: 50, chain: 150, save: 50, capture: 300, turf: 30, rob: [350, 650] },
-  turfEvery: 60,              // seconds between payouts for the turf your crew holds
+  pay: { kill: 100, head: 50, chain: 150, save: 50, capture: 300, rob: [350, 650] },
   botDmg: .5,                 // bots hit players this much softer than players hit bots
   respawn: 5, botRespawn: [14, 22],
   streak: 4,                  // kills in one life that earn a drive-by call-in
   stars: [10, 30, 60, 100, 150],   // heat it takes to reach each wanted star
   robEvery: 240,              // seconds before a till that was emptied is worth robbing again
+  gang: [10, 30, 60, 100, 150],     // notoriety it takes for each skull a crew puts on your head
+  hourly: { A: 80, B: 100, C: 150, D: 120, E: 150, F: 120, G: 120, H: 100, I: 80, J: 120 },   // what each neighbourhood pays its crew every hour of the day
+  offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
+  ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
 };
 // Four invented crews, named for the parts of town they come from. Each has a yard and starts with two turfs.
 // `tops` is what its people wear; `paint` is the colour of its cars.

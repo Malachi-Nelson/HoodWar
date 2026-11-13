@@ -3,13 +3,14 @@
    ===================================================================== */
 let wasLocked = false;
 const locked = () => document.pointerLockElement === canvas;
-function requestLock() { if (TEST) return; try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+function requestLock() { if (TEST || TOUCH.on) return; try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
 let SENS = .0022; try { const s = +localStorage.getItem('pc-sens'); if (s > .0004 && s < .01) SENS = s; } catch (e) {}
 function showOverlay(mode) {
   const o = $('overlay'); o.hidden = false; $('hud').hidden = mode !== 'paused'; $('o-stats').hidden = true; $('leave').hidden = mode !== 'paused';
   const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = false; if (inGame) $('co-roster').hidden = true;
   if (mode === 'paused') { $('o-eyebrow').textContent = 'Paused'; $('o-text').textContent = NET.mode ? 'The city keeps moving while this menu is open.' : 'The city waits.'; $('deploy').textContent = 'Resume'; $('deploy').hidden = false;
-    let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span><span>Deaths <b>${P.deaths | 0}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span>`; return; }
+    let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span><span>Hourly <b>$${hourlyNow().toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span>`; $('row-save').hidden = true; return; }
+  $('row-save').hidden = false; saveLine();
   $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; crewLock(false);
   if (mode === 'lost') { $('o-eyebrow').textContent = 'Session closed'; $('o-text').textContent = 'The host left, so the session closed. Open a new lobby or play solo. Your cash and guns are kept.'; }
   else { $('o-eyebrow').textContent = 'Open world · four crews · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
@@ -25,21 +26,61 @@ function wearCrew(t) { P.team = clamp(t | 0, 0, NCREW - 1); for (let q = 0; q < 
 const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && +v >= 0 && +v < NCREW) return +v | 0; } catch (e) {} return -1; };
 const ownCrew = () => { const c = savedCrew(); if (c >= 0 && c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
 function setCrew(t) { wearCrew(t); try { localStorage.setItem('pc-crew', String(P.team)); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); }
-// cash and guns are kept in this browser between sessions: with no rounds, there is nothing else to reset them
+// --- progress. Cash, guns, armor and the city's turf are written to this browser a moment after anything changes, and, on the Claude
+//     page, to the player's own account as well, so they follow the player to any device signed in to it. A save code carries them
+//     anywhere else. Turf keeps paying while the player is away, up to a limit.
 function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save') || 'null'); if (s && isFinite(s.c)) return s; } catch (e) {} return null; }
-function saveGame() { if (G.state === 'menu') return; try { localStorage.setItem('pc-save', JSON.stringify({ c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades })); } catch (e) {} }
+function saveData() {
+  const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
+  return { v: 3, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null };
+}
+function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
+function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); writeSave(saveData()); }
+const SAVE = { live: false, lastC: -1 };
+const CLOUD = { ref: null, busy: false, pend: null, last: '' };
+const later = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+CLOUD.init = async () => {
+  try { if (!window.claude || !window.claude.use) return; const u = await later(window.claude.use('user'), 12000), db = u && await later(window.claude.use('db'), 12000); if (!u || !db) return;
+    const id = await later(u.id(), 8000); if (!id) return; const ref = db.doc('data/users/' + id + '/save'), snap = await later(ref.get(), 12000); if (!snap) return;
+    CLOUD.ref = ref; if (snap.exists) CLOUD.adopt(snap.data()); else { const l = loadSave(); if (l) CLOUD.put(l); } saveLine();
+  } catch (e) {}
+};
+// the account and this browser compare notes: whichever saved last wins, and the other catches up
+CLOUD.adopt = d => {
+  if (!d || !isFinite(d.c)) return; const l = loadSave(); if (l && (l.t || 0) >= (d.t || 0)) { if ((l.t || 0) > (d.t || 0)) CLOUD.put(l); return; }
+  try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {}
+  if (G.state !== 'menu' && SAVE.live) { P.bank = clamp(Math.round(d.c), 0, 1e7); (d.w || []).forEach(w => { if (WEAPONS[w] && !WEAPONS[w].melee && !P.inv[w]) giveWeapon(w); }); note('Progress brought over from your account', 'g'); }
+};
+CLOUD.put = d => { if (!CLOUD.ref) return; CLOUD.pend = d; if (!CLOUD.busy) CLOUD.flush(); };
+CLOUD.flush = async () => {   // one write at a time, only when something other than the clock changed, at most every ten seconds
+  CLOUD.busy = true;
+  try { while (CLOUD.pend && CLOUD.ref) { const d = CLOUD.pend; CLOUD.pend = null; const key = JSON.stringify(Object.assign({}, d, { t: 0 })); if (key === CLOUD.last) continue;
+      try { await CLOUD.ref.set(d); CLOUD.last = key; } catch (e) { const c = e && e.code; if (c === 'invalid_argument' || c === 'revoked' || c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed' || c === 'quota_exceeded') { CLOUD.ref = null; saveLine(); break; } CLOUD.pend = CLOUD.pend || d; }
+      await new Promise(r => setTimeout(r, 10000)); } } finally { CLOUD.busy = false; }
+};
+function saveLine() { const e = $('save-line'); if (!e) return; const s = loadSave(); e.textContent = (s ? '$' + Math.round(s.c).toLocaleString('en-US') + ' saved · ' : '') + (CLOUD.ref ? 'kept in your Claude account, on every device you sign in on' : 'kept in this browser · a save code moves it to another device'); }
+// a save code: the save itself, readable by this game alone, with a check so a typo is caught
+const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+const sum36 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h.toString(36); };
+function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }, j = JSON.stringify({ c: d.c, w: d.w || [], n: d.n | 0, a: d.a | 0, cr: d.cr | 0, z: d.z || null, t: d.t || Date.now() }); return 'PC-' + b64e(j) + '-' + sum36(j); }
+function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
 const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 4); }
-  Object.assign(P, { bank: sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
+  // what the player's turf made while they were away: an hour of income for every real hour, at most eight
+  let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); }); away = Math.round(per * CFG.offline.rate * hrs / 10) * 10; } }
+  Object.assign(P, { bank: (sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash) + away, armor: sv ? clamp(sv.a | 0, 0, 100) : 0, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
   hudCache.heat = 0; $('h-stars').hidden = true; closeShop(); $('dead').hidden = true; $('board').hidden = true; $('bigmap').hidden = true;
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
   banner('Port Calder', 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
-  P.hintAt = G.time; P.hints = [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Stand in a ring your crew does not hold to take the turf: each one pays'], [22, 'Pink dots are tills to rob · pale blue dots fix and respray a car']];
+  P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
+    : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
+  SAVE.live = true; if (away > 0) { P.hints.unshift([3.6, 'While you were away your turf made $' + away.toLocaleString('en-US')]); gain(away); } saveGame();
 }
 function startAttract() { readSettings(); startWorld({ x: ZONES[1].x + 18, z: ZONES[1].z }); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }   // the menu looks out over The Corner, so that is where the city gathers
 function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; saveGame(); showOverlay('paused'); }
-function leaveSession() { saveGame(); if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
+function leaveSession() { saveGame(); SAVE.live = false; if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
 $('deploy').addEventListener('click', () => {
   initAudio();
   if (G.state === 'paused') { G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock(); return; }
@@ -110,7 +151,13 @@ Object.keys(TELEPORTS).forEach(id => $('dv-tp').add(new Option(id, id)));
 const devOn = (id, fn) => $(id).addEventListener('click', fn);
 devOn('dv-cash', () => { P.earn += 5000; });
 devOn('dv-star', () => { if (AUTH()) GAME.crime(P, 0, Math.min(5, (P.heat | 0) + 1)); }); devOn('dv-clear', () => { if (AUTH()) GAME.clearHeat(P); });
-devOn('dv-wipe', () => { try { localStorage.removeItem('pc-save'); } catch (e) {} resetLoadout(); P.bank = CFG.startCash; P.earn = 0; P.spent = 0; }); devOn('dv-guns', () => { WID.forEach(id => giveWeapon(id)); P.nades = 4; }); devOn('dv-heal', () => { P.hp = CFG.player.hp; P.armor = 100; }); devOn('dv-streak', () => { P.driveby = true; });
+devOn('dv-wipe', () => { try { localStorage.removeItem('pc-save'); } catch (e) {} CLOUD.put({ v: 3, t: Date.now(), c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }); resetLoadout(); P.bank = CFG.startCash; P.earn = 0; P.spent = 0; });
+// the save buttons on the menu
+$('sv-copy').addEventListener('click', () => { const code = saveCode(), done = () => { $('save-line').textContent = 'Save code copied. On the other device: Load save code, then paste it.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => window.prompt('Your save code. Copy it:', code)); else window.prompt('Your save code. Copy it:', code); });
+$('sv-load').addEventListener('click', () => { const code = window.prompt('Paste a save code'); if (code === null) return; const d = readCode(code); if (!d) { $('save-line').textContent = 'That save code did not work. Check it was copied whole.'; return; }
+  d.v = 3; d.t = Date.now(); writeSave(d); $('save-line').textContent = 'Loaded · $' + Math.round(d.c).toLocaleString('en-US') + (d.w && d.w.length ? ' and ' + d.w.length + (d.w.length === 1 ? ' gun' : ' guns') : '') + '. Play to pick it up.'; if (!NET.mode) startAttract(); });
+$('sv-reset').addEventListener('click', () => { if (!window.confirm('Start over? Your cash, guns and turf go back to the beginning. This cannot be undone.')) return; try { localStorage.removeItem('pc-save'); } catch (e) {} CLOUD.put({ v: 3, t: Date.now(), c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }); saveLine(); if (!NET.mode) startAttract(); }); devOn('dv-guns', () => { WID.forEach(id => giveWeapon(id)); P.nades = 4; }); devOn('dv-heal', () => { P.hp = CFG.player.hp; P.armor = 100; }); devOn('dv-streak', () => { P.driveby = true; });
 devOn('dv-spawncar', () => { if (!AUTH()) return; const fx = -Math.sin(P.cyaw), fz = -Math.cos(P.cyaw); spawnCar($('dv-car').value, P.x + fx * 6, P.z + fz * 6, P.cyaw, {}); });
 devOn('dv-go', () => { const t = TELEPORTS[$('dv-tp').value]; if (P.car) GAME.leaveCar(false); P.x = t[0]; P.y = P.camY = t[1]; P.z = t[2]; P.vy = 0; });
 $('dv-tod').addEventListener('input', e => { if (AUTH()) G.tod = +e.target.value; const h = +e.target.value; $('dv-todv').textContent = Math.floor(h) + ':' + String(Math.round(h % 1 * 60)).padStart(2, '0'); });
@@ -121,7 +168,7 @@ window.addEventListener('keydown', e => { if (e.code === 'Backquote' && G.state 
 /* ---- the loop ---- */
 function step(dt) {
   G.time += dt;
-  if (G.state !== 'menu') updatePlayer(dt);
+  if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
   updateGrenades(dt);
 }
@@ -129,7 +176,8 @@ let todT = 0, slowT = 0, menuA = 0, saveT = 15;
 function visuals(dt, now) {
   todT -= dt; if (todT <= 0) { todT = .2; applyTod(G.tod); }
   if (G.state === 'menu') { menuA += dt * .05; const z = ZONES[1], r = 62; camera.position.set(z.x + 40 + Math.sin(menuA) * r, 26 + Math.sin(menuA * .7) * 5, z.z + Math.cos(menuA) * r); camera.rotation.set(-.3, menuA + .5, 0); if (Math.abs(camera.fov - 62) > .1) { camera.fov = 62; camera.updateProjectionMatrix(); } skyDome.position.copy(camera.position); EAR.x = camera.position.x; EAR.y = 200; EAR.z = camera.position.z; vmRoot.visible = false; }
-  else { updateCamera(dt); updatePlayerLook(dt); }
+  else { touchAssist(dt); updateCamera(dt); updatePlayerLook(dt); }
+  updateTouchUi();
   updateSun(G.state === 'menu' ? camera.position.x - Math.sin(menuA + .5) * 50 : P.x, 0, G.state === 'menu' ? camera.position.z - Math.cos(menuA + .5) * 50 : P.z);
   lifePoses(dt);
   for (let i = 0; i < bots.length; i++) botVisual(bots[i], dt);
@@ -137,7 +185,7 @@ function visuals(dt, now) {
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
-  updateLife(dt);
+  updateLife(dt); updateEventMarks(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -149,7 +197,7 @@ function frame(now) {
   const live = G.state === 'playing' || G.state === 'menu' || (NET.mode && (G.state === 'paused' || G.state === 'dev'));
   if (live) step(dt);
   visuals(live ? dt : 0, now);
-  if (G.state === 'playing') { saveT -= raw; if (saveT <= 0) { saveT = 15; saveGame(); } }
+  if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash); if (c !== SAVE.lastC) { SAVE.lastC = c; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
   // a machine that cannot keep up drops to the lighter settings by itself, once
   if (G.state === 'playing' && !GFX.low && !GFX.auto && !TEST) { if (DBG.fps < 27) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 5) { GFX.auto = true; GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); banner('Graphics set to Low', 'to keep the game smooth · change it in the pause menu', 3.5); } }
   renderer.clear(); renderer.render(scene, camera);
@@ -158,10 +206,10 @@ function frame(now) {
 // a host whose tab is hidden would freeze the city for everyone, so a worker keeps the world ticking while the page is out of sight
 let bgWorker = null, bgLast = 0;
 function bgTick() { if (!document.hidden || !NET.mode) return; const now = performance.now(); let left = Math.min(.3, (now - bgLast) / 1000); bgLast = now; while (left > .001) { const d = Math.min(.05, left); step(d); left -= d; } }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
-applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect();
+applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
 if (TEST) window.__pc = { G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
-  initAudio, RADIO, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
+  damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

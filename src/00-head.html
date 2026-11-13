@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <title>Port Calder Open World</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Saira+Condensed:wght@400;500;600;700&family=Permanent+Marker&display=swap">
 <style>
@@ -46,6 +47,7 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #h-right{top:14px;right:18px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:0}
 #h-stars{font-size:clamp(22px,3vw,30px);line-height:1;letter-spacing:.08em;color:var(--gold);margin-bottom:4px}
 #h-stars.evade{animation:evade .8s steps(2) infinite}
+#h-gang{font-size:clamp(18px,2.4vw,24px);line-height:1;letter-spacing:.04em;margin-bottom:4px;display:flex;gap:10px;justify-content:flex-end}
 @keyframes evade{50%{opacity:.35}}
 #h-cash{font-family:var(--font-display);font-size:clamp(28px,4vw,40px);line-height:1;color:var(--cash)}
 #h-gain{font-size:18px;font-weight:600;height:22px;color:var(--cash);opacity:0}
@@ -69,6 +71,13 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
+#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
+/* top-left: the jobs going on in the city */
+#evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
+#evl div{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;background:rgba(10,12,16,.62);padding:4px 10px 4px 4px}
+#evl b{grid-row:1/3;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;color:#111;font-size:15px}
+#evl span{font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.1}
+#evl small{font-size:13px;color:var(--ash);letter-spacing:.04em}
 #feed{top:236px;right:18px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:16px;font-weight:600}
 #feed div{background:rgba(10,12,16,.6);padding:1px 8px;white-space:nowrap}
 #feed .k0{color:var(--ember)}#feed .k1{color:var(--tide)}#feed .k2{color:var(--north)}#feed .k3{color:var(--steel)}#feed .c{color:var(--ash)}#feed .g{color:var(--gold)}#feed .p{color:#9db8ff}#feed .w{color:var(--chalk);font-weight:400;opacity:.85;margin:0 6px}
@@ -112,6 +121,78 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #dead-big{font-family:var(--font-tag);font-size:clamp(54px,11vw,128px);line-height:1;color:var(--blood);transform:rotate(-4deg);text-shadow:0 4px 0 rgba(0,0,0,.6)}
 #dead-sub{font-size:20px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-top:10px}
 #h-dev{top:120px;left:18px;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--gold);white-space:pre}
+/* touch: the stick and buttons sit under the HUD text; the layer itself is the look pad */
+#touch{position:absolute;inset:0;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;--ta:.6}
+.tc{position:absolute;box-sizing:border-box;border-radius:50%;display:grid;place-items:center;font-family:var(--font-ui);font-weight:700;letter-spacing:.06em;color:var(--chalk);background:rgba(10,12,16,.42);border:2px solid rgba(242,239,230,.6);opacity:var(--ta);touch-action:none;text-shadow:0 1px 2px #000}
+.tc.down,.tc.on{background:rgba(242,239,230,.32)}
+.tc-fire{border-color:rgba(255,106,90,.95);background:rgba(226,59,46,.3)}
+.tc-fire.down{background:rgba(226,59,46,.6)}
+.tc-use.go{border-color:var(--gold);background:rgba(255,200,61,.34)}
+.tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}
+.tc-pause,.tc-map,.tc-turf,.tc-cam{border-radius:10px}
+.tc-stick{background:rgba(10,12,16,.22);border-style:dashed}
+.tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.tc-stick.down{border-style:solid}
+#touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c]{display:none}
+#touch:not(.call) .tc-call{display:none}
+.tc-call{border-color:var(--gold);color:var(--gold)}
+#touch.dead .tc:not(.tc-pause){display:none}
+#touch.edit{background:rgba(14,16,20,.35)}
+#touch.edit .tc{opacity:.95}
+#touch.edit .tc.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold)}
+#tedit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;width:min(92vw,420px);background:rgba(23,26,32,.95);border:1px solid var(--gold);padding:10px 12px;display:grid;gap:8px;font-size:15px;touch-action:auto}
+#tedit .r{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#tedit label{display:flex;gap:8px;align-items:center;flex:1;min-width:150px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--ash)}
+#tedit input[type=range]{flex:1;accent-color:var(--gold)}
+#te-what{color:var(--gold);font-weight:700;letter-spacing:.04em}
+#rotate{position:absolute;inset:0;z-index:9;background:var(--asphalt);display:none;place-items:center;text-align:center;font-family:var(--font-display);font-size:30px;padding:24px}
+#rotate small{display:block;font-family:var(--font-ui);font-size:16px;color:var(--ash);margin-top:8px}
+@media (orientation:portrait){body.touch #rotate{display:grid}}
+/* touch: the HUD makes room for thumbs */
+body.touch #radarwrap{top:8px;left:8px;bottom:auto}
+body.touch{--u:min(1vw,1vh,4.8px)}
+body.touch #radar{width:calc(var(--u)*24);border-radius:10px}
+body.touch .bars{grid-template-columns:1fr}
+body.touch #h-area{left:50%;bottom:10px;transform:translateX(-50%);text-align:center;font-size:15px}
+body.touch #h-area small{font-size:12px}
+body.touch #h-right{top:6px;right:10px}
+body.touch #h-stars{font-size:18px;margin-bottom:2px}
+body.touch #h-gang{font-size:16px}
+body.touch #h-cash{font-size:24px}
+body.touch #h-gain{height:15px;font-size:14px}
+body.touch #h-weapon{font-size:12px}
+body.touch #h-ammo{font-size:24px}
+body.touch #h-nades,body.touch #h-streak{display:none}
+body.touch #turf{top:6px}
+body.touch #turf .zs{gap:2px}
+body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
+body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
+body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
+body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
+body.touch #feed div{white-space:normal;text-align:right}
+body.touch #feed div:nth-last-child(n+3){display:none}
+@media (max-width:760px){body.touch #h-banner.on ~ #feed{opacity:0}}
+body.touch #feed{transition:opacity .25s}
+body.touch #evl{top:calc(var(--u)*24 + 40px);left:8px;max-width:46vw;gap:3px}
+body.touch #evl div{display:flex;align-items:center;gap:5px;padding:2px 8px 2px 2px}
+body.touch #evl b{flex:none;width:16px;height:16px;font-size:10px}
+body.touch #evl span{flex:0 1 auto;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.touch #evl small{flex:none;font-size:10px;white-space:nowrap}
+body.touch #h-banner{top:30%}
+body.touch #h-banner .big{font-size:clamp(28px,9vmin,52px)}
+body.touch #h-banner .sub{font-size:13px}
+body.touch #cap{bottom:auto;top:calc(5.2vmin + 52px);width:min(36vw,300px)}
+body.touch #cap-label{font-size:11px;letter-spacing:.1em;margin-bottom:2px}
+body.touch #cap .bar{height:7px}
+body.touch #h-prompt{bottom:auto;top:50%;pointer-events:auto;background:rgba(10,12,16,.6);padding:6px 14px;border-radius:22px;font-size:16px}
+body.touch #h-speed{right:auto;left:50%;bottom:44px;transform:translateX(-50%);text-align:center}
+body.touch #spd-n{font-size:34px}
+body.touch #car-hp{margin:4px auto 0;width:110px}
+body.touch #board,body.touch #bigmap{pointer-events:auto}
+body.touch #shop li{padding:9px 0;cursor:pointer}
+body.touch #shop p{display:none}
+body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
+@media (max-height:520px){.lockup{font-size:clamp(44px,13vh,70px)}.col{gap:10px;padding:16px 20px}.col p{font-size:16px}.crew b{font-size:20px}}
 /* scoreboard, shop, map: panels over the game */
 .pane{background:rgba(23,26,32,.94);border:1px solid var(--line)}
 #board{left:50%;top:50%;transform:translate(-50%,-50%);width:min(94%,720px);padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
@@ -200,22 +281,24 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
     <div id="vign"></div><div id="flash"></div><div id="scope"></div>
     <div id="radarwrap"><canvas id="radar" width="204" height="204" aria-label="Radar"></canvas><div class="bars"><div class="bar"><i id="hp-fill"></i></div><div class="bar"><i id="ar-fill"></i></div></div></div>
     <div id="h-area" class="sh"></div>
-    <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
+    <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-gang" aria-label="Crew notoriety" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
+    <div id="h-race" class="sh" hidden></div>
+    <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>
-    <div id="feed"></div>
     <div id="cross"><i></i><i></i><i></i><i></i><i></i></div>
     <div id="hitm"></div>
     <div id="dmg"></div>
     <div id="h-banner" class="sh"><div class="big"></div><div class="sub"></div></div>
+    <div id="feed"></div>
     <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar" id="cap-track"><i id="cap-fill"></i></div></div>
     <div id="h-prompt" class="sh"></div>
     <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div></div>
     <div id="h-dev"></div>
     <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
     <div id="board" class="pane" hidden></div>
-    <div id="shop" class="pane" hidden><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p>Press a number to buy. F or Esc closes.</p></div>
+    <div id="shop" class="pane" hidden><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p>Press a number or click to buy. F or Esc closes.</p></div>
     <div id="bigmap" hidden><canvas id="mapc" width="960" height="700" aria-label="City map"></canvas></div>
   </div>
   <div id="dev" hidden>
@@ -236,6 +319,12 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
     <div class="r"><button type="button" id="dv-star">Wanted +1</button><button type="button" id="dv-clear">Clear wanted</button><button type="button" id="dv-wipe">Reset saved cash + guns</button></div>
     <div class="r"><button type="button" id="dv-close">Resume</button></div>
   </div>
+  <div id="tedit" hidden>
+    <div id="te-what">Drag a control to move it</div>
+    <div class="r"><button type="button" class="btn sm" id="te-ctx">Showing: on foot</button><button type="button" class="btn sm" id="te-reset">Reset layout</button><button type="button" class="btn sm" id="te-done">Done</button></div>
+    <div class="r"><label>Size <input type="range" id="te-size" min="0.06" max="0.5" step="0.01" value="0.14"></label><label>See-through <input type="range" id="te-alpha" min="0.15" max="1" step="0.05" value="0.6"></label></div>
+  </div>
+  <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
     <div class="col">
       <div class="eyebrow" id="o-eyebrow">Open world · four crews · solo or co-op</div>
@@ -259,8 +348,11 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
         <div><dt>Tab · M</dt><dd>Players and turf · map</dd></div>
         <div><dt>B</dt><dd>Call a drive-by (4-kill streak)</dd></div>
       </dl>
+      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. MAP and TURF open the map and the turf board.</p>
+      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
       <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
-      <p class="note" id="o-note">Needs a keyboard and mouse. Esc pauses. The ` key opens the dev menu. Cash and guns are kept in this browser between sessions. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. On Claude, multiplayer reaches signed-in people this page has been shared with.</p>
+      <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
+      <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns and your turf are saved as you play, and your turf keeps earning while you are away. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. On Claude, multiplayer reaches signed-in people this page has been shared with.</p>
     </div>
   </div>
 </div>

@@ -3,7 +3,8 @@
    ===================================================================== */
 const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
 // each turf: who holds it (-1 nobody), which crew is in the middle of taking it and how far along they are, and how many of each crew stand in it
-const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false }));
+// ctrl: how firmly the holder runs the neighbourhood, 0..100. Hits against them in it wear it down, and a hold worn thin is quicker to break.
+const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false, ctrl: 100, calmT: -99, warnT: -99 }));
 const keys = {}, mouse = { down: false, fresh: false, right: false };
 const DBG = { god: false, ammo: false, freeze: false, stats: false, nav: false, notarget: false, scale: 1, fps: 60 };
 const NET = { mode: null, room: null, remotes: {}, me: null, slot: 0 };
@@ -99,6 +100,7 @@ function hurtPlayer(dmg, src, wid, head) {
 }
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
+  if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -117,6 +119,7 @@ function explode(x, y, z, owner, power, wid) {
 function blowCar(c) {
   if (c.wreck) return; c.wreck = true; c.wreckT = 0; c.burn = 0; c.hp = 0; c.vx *= .3; c.vz *= .3; c.ai = null; c.inp.thr = 0;
   const src = c.lastHit && !c.lastHit.gone ? c.lastHit : null;
+  if (AUTH()) { if (c.armored && !c.opened) GAME.truckOpen(c, src); if (src && src.kind !== 'bot' && isCrew(c.team) && c.team !== src.team) { GAME.notor(src, c.team, 8); GAME.hurtHood(hoodAt(c.x, c.z), src, 5); } }
   for (let k = 0; k < 4; k++) { const o = c.occ[k]; if (!o) continue; if (o.kind === 'bot') { c.occ[k] = null; o.car = null; killBot(o, src, 'boom', false); } else if (o === P) { GAME.leaveCar(true); hurtPlayer(999, src, 'boom'); } }
   if (AUTH()) { GAME.ev('x', Math.round(c.x), Math.round(c.y), Math.round(c.z), 13, c.id, GAME.ref(src)); explode(c.x, c.y + .6, c.z, src, 1.3, 'boom'); }
 }
@@ -139,14 +142,17 @@ function updateGrenades(dt) {
   }
 }
 // --- things lying in the street: chains off the fallen, dropped guns
+const cashGeo = new T.BoxGeometry(.36, .24, .26), cashMat = new T.MeshLambertMaterial({ color: 0x3d7a3a }), bagGeo = new T.BoxGeometry(.62, .3, .3), bagMat = new T.MeshLambertMaterial({ color: 0x2a2620 });
 const chainGeo = new T.TorusGeometry(.2, .045, 6, 14), chainMat = new T.MeshBasicMaterial({ color: 0xffc83d }), pickGlow = new T.SpriteMaterial({ map: glowTex, color: 0xffc83d, transparent: true, opacity: .55, blending: T.AdditiveBlending, depthWrite: false });
 let pickSeq = 0;
 function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
-  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' ? 1.5 : 1.1); if (type === 'chain' && isCrew(team)) { s.material = pickGlow.clone(); s.material.color.setHex(CREWS[team].color); }
+  // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].color : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
-  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: 40, g }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
-  while (pickups.length > 14) removePickup(pickups[0]); return p;
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' ? 1e9 : 40, g, amt: type === 'cash' ? (team | 0) * 100 : 0 }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
+  return p;
 }
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }

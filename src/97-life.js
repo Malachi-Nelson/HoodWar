@@ -4,7 +4,7 @@
         of a crowd, music from a speaker. None of it changes the game and none of it is sent between players: each machine
         makes its own from the people and places it can see.
    ===================================================================== */
-const LIFE = { vol: 0, bangT: -99, bangX: 0, bangZ: 0, bangR: 0, said: {}, sayT: 0, spk: null, steamT: 0, stackN: 0, hornT: 0, ambT: 0, dogT: 14, birdT: 3, gullT: 8, crkT: 0, crowd: 0, barkT: 0, au: null,
+const LIFE = { frame: 0, vol: 0, bangT: -99, bangX: 0, bangZ: 0, bangR: 0, said: {}, sayT: 0, spk: null, steamT: 0, stackN: 0, hornT: 0, ambT: 0, dogT: 14, birdT: 3, gullT: 8, crkT: 0, crowd: 0, barkT: 0, au: null,
   bang(x, z, r) { LIFE.bangT = G.time; LIFE.bangX = x; LIFE.bangZ = z; LIFE.bangR = r || 40; },                                     // a shot or a blast: every bird in earshot goes up
   reset() { flocks.forEach(f => { f.mode = 0; f.t = 0; f.birds.forEach(b => { b.x = b.tx = b.hx; b.y = b.hy; b.z = b.tz = b.hz; b.wait = rand() * 3; }); }); barks.forEach(k => { k.t = 0; k.who = null; k.sp.visible = false; }); LIFE.said = {}; LIFE.bangT = -99; LIFE.sayT = 0; },
 };
@@ -222,4 +222,4 @@ function updateAmbience(dt) {
   if (best) { if (RADIO.on !== best.st) setRadio(best.st); LIFE.spk = best; const v = .3 * Math.pow(1 - bd / 32, 1.4); if (Math.abs(v - LIFE.vol) > .008) { LIFE.vol = v; radioVolume(v); } }
   else if (LIFE.spk || RADIO.on >= 0) { LIFE.spk = null; LIFE.vol = 0; radioVolume(0); setRadio(-1); }
 }
-function updateLife(dt) { updateBirds(dt); updateSmoke(dt); updateTraffic3(dt); updateProps3(dt); updateBarks(dt); updateAmbience(dt); }
+function updateLife(dt) { LIFE.frame = (LIFE.frame + 1) | 0; updateBirds(dt); updateSmoke(dt); updateTraffic3(dt); updateProps3(dt); updateBarks(dt); updateAmbience(dt); }

@@ -73,11 +73,13 @@ function updatePolice() {    // four times a second
 // --- at the wheel. Far from the target a cruiser follows the streets like anything else, only faster; with a clear
 //     line to them it drives straight at them, and stops short so the officers can get out.
 function regrid(c, A) { const sn = aiSnap(c); A.from = sn[0]; A.to = sn[1]; A.next = aiNext(A); A.direct = false; }
+// a car hunting someone: the police after a wanted player, or (A.gang) a crew's hit squad after someone that crew has marked
+const chased = (A, a) => !!a && !a.gone && !a.dead && (A.gang === undefined ? a.heat > 0 : !!a.gn && a.gn[A.gang] >= CFG.gang[0]);
 function copDrive(c, A, dt) {   // true when it has set the controls for this step
-  const a = A.chase, inp = c.inp;
-  if (!a || a.gone || a.dead || !(a.heat > 0)) { A.mode = 'traffic'; A.chase = null; A.dest = null; A.cruise = 11; A.done = false; c.horn = 0; if (A.direct) regrid(c, A); return false; }
-  c.horn = 1; A.cruise = 26;
-  const known = G.time - a.seenT < 2.5, tx = known ? a.x : a.lkx, tz = known ? a.z : a.lkz, dx = tx - c.x, dz = tz - c.z, d = hyp(dx, dz);
+  const a = A.chase, inp = c.inp, gang = A.gang !== undefined;
+  if (!chased(A, a)) { A.mode = 'traffic'; A.chase = null; A.dest = null; A.cruise = 11; A.done = false; if (c.cop) c.horn = 0; if (A.direct) regrid(c, A); return false; }
+  if (c.cop) c.horn = 1; A.cruise = gang ? 23 : 26;
+  const known = gang || G.time - a.seenT < 2.5, tx = known ? a.x : a.lkx, tz = known ? a.z : a.lkz, dx = tx - c.x, dz = tz - c.z, d = hyp(dx, dz);
   A.destT = (A.destT || 0) - dt; if (A.destT <= 0) { A.destT = .6; A.dest = xingOf(tx, tz); A.clear = d < 70 && Math.abs((known ? a.y : a.lky) - c.y) < 3 && los(c.x, c.y + .8, c.z, tx, c.y + .8, tz, 'p'); }
   const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, sp = Math.abs(vf);
   // how near the streets have brought it so far; once it starts drawing away again, this is as close as the car gets
@@ -100,7 +102,7 @@ function copDrive(c, A, dt) {   // true when it has set the controls for this st
 function copBrain(b) {
   let a = b.chase;
   if (a && (a.gone || a.dead || !(a.heat > 0))) { a = b.chase = null; if (b.tgt && b.tgt.kind !== 'bot') b.tgt = null; b.hunt = false; b.path = null; b.until = G.time + 25; }
-  if (!a) { let bd = 170; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.lkx - b.x, h.lkz - b.z); if (d < bd) { bd = d; a = h; } });
+  if (!a && !(b.guard && b.car)) { let bd = 170; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.lkx - b.x, h.lkz - b.z); if (d < bd) { bd = d; a = h; } });
     if (a) { b.chase = a; b.until = 1e9; b.path = null; if (b.car && b.seat === 0 && b.car.ai && b.car.ai.mode !== 'cop') { b.car.ai.mode = 'cop'; b.car.ai.chase = a; b.car.ai.done = false; } } }
   botLook(b);
   if (b.car) { const c = b.car, dr = c.occ[0];

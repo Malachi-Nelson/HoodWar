@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <title>Port Calder Open World</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Saira+Condensed:wght@400;500;600;700&family=Permanent+Marker&display=swap">
 <style>
@@ -46,6 +47,7 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #h-right{top:14px;right:18px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:0}
 #h-stars{font-size:clamp(22px,3vw,30px);line-height:1;letter-spacing:.08em;color:var(--gold);margin-bottom:4px}
 #h-stars.evade{animation:evade .8s steps(2) infinite}
+#h-gang{font-size:clamp(18px,2.4vw,24px);line-height:1;letter-spacing:.04em;margin-bottom:4px;display:flex;gap:10px;justify-content:flex-end}
 @keyframes evade{50%{opacity:.35}}
 #h-cash{font-family:var(--font-display);font-size:clamp(28px,4vw,40px);line-height:1;color:var(--cash)}
 #h-gain{font-size:18px;font-weight:600;height:22px;color:var(--cash);opacity:0}
@@ -69,6 +71,13 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
+#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
+/* top-left: the jobs going on in the city */
+#evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
+#evl div{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;background:rgba(10,12,16,.62);padding:4px 10px 4px 4px}
+#evl b{grid-row:1/3;width:26px;height:26px;display:grid;place-items:center;border-radius:50%;color:#111;font-size:15px}
+#evl span{font-size:16px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.1}
+#evl small{font-size:13px;color:var(--ash);letter-spacing:.04em}
 #feed{top:236px;right:18px;display:flex;flex-direction:column;align-items:flex-end;gap:3px;font-size:16px;font-weight:600}
 #feed div{background:rgba(10,12,16,.6);padding:1px 8px;white-space:nowrap}
 #feed .k0{color:var(--ember)}#feed .k1{color:var(--tide)}#feed .k2{color:var(--north)}#feed .k3{color:var(--steel)}#feed .c{color:var(--ash)}#feed .g{color:var(--gold)}#feed .p{color:#9db8ff}#feed .w{color:var(--chalk);font-weight:400;opacity:.85;margin:0 6px}
@@ -112,6 +121,78 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #dead-big{font-family:var(--font-tag);font-size:clamp(54px,11vw,128px);line-height:1;color:var(--blood);transform:rotate(-4deg);text-shadow:0 4px 0 rgba(0,0,0,.6)}
 #dead-sub{font-size:20px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-top:10px}
 #h-dev{top:120px;left:18px;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--gold);white-space:pre}
+/* touch: the stick and buttons sit under the HUD text; the layer itself is the look pad */
+#touch{position:absolute;inset:0;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;--ta:.6}
+.tc{position:absolute;box-sizing:border-box;border-radius:50%;display:grid;place-items:center;font-family:var(--font-ui);font-weight:700;letter-spacing:.06em;color:var(--chalk);background:rgba(10,12,16,.42);border:2px solid rgba(242,239,230,.6);opacity:var(--ta);touch-action:none;text-shadow:0 1px 2px #000}
+.tc.down,.tc.on{background:rgba(242,239,230,.32)}
+.tc-fire{border-color:rgba(255,106,90,.95);background:rgba(226,59,46,.3)}
+.tc-fire.down{background:rgba(226,59,46,.6)}
+.tc-use.go{border-color:var(--gold);background:rgba(255,200,61,.34)}
+.tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}
+.tc-pause,.tc-map,.tc-turf,.tc-cam{border-radius:10px}
+.tc-stick{background:rgba(10,12,16,.22);border-style:dashed}
+.tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
+.tc-stick.down{border-style:solid}
+#touch.car .tc[data-ctx=f],#touch.foot .tc[data-ctx=c]{display:none}
+#touch:not(.call) .tc-call{display:none}
+.tc-call{border-color:var(--gold);color:var(--gold)}
+#touch.dead .tc:not(.tc-pause){display:none}
+#touch.edit{background:rgba(14,16,20,.35)}
+#touch.edit .tc{opacity:.95}
+#touch.edit .tc.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold)}
+#tedit{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:6;width:min(92vw,420px);background:rgba(23,26,32,.95);border:1px solid var(--gold);padding:10px 12px;display:grid;gap:8px;font-size:15px;touch-action:auto}
+#tedit .r{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#tedit label{display:flex;gap:8px;align-items:center;flex:1;min-width:150px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:13px;color:var(--ash)}
+#tedit input[type=range]{flex:1;accent-color:var(--gold)}
+#te-what{color:var(--gold);font-weight:700;letter-spacing:.04em}
+#rotate{position:absolute;inset:0;z-index:9;background:var(--asphalt);display:none;place-items:center;text-align:center;font-family:var(--font-display);font-size:30px;padding:24px}
+#rotate small{display:block;font-family:var(--font-ui);font-size:16px;color:var(--ash);margin-top:8px}
+@media (orientation:portrait){body.touch #rotate{display:grid}}
+/* touch: the HUD makes room for thumbs */
+body.touch #radarwrap{top:8px;left:8px;bottom:auto}
+body.touch{--u:min(1vw,1vh,4.8px)}
+body.touch #radar{width:calc(var(--u)*24);border-radius:10px}
+body.touch .bars{grid-template-columns:1fr}
+body.touch #h-area{left:50%;bottom:10px;transform:translateX(-50%);text-align:center;font-size:15px}
+body.touch #h-area small{font-size:12px}
+body.touch #h-right{top:6px;right:10px}
+body.touch #h-stars{font-size:18px;margin-bottom:2px}
+body.touch #h-gang{font-size:16px}
+body.touch #h-cash{font-size:24px}
+body.touch #h-gain{height:15px;font-size:14px}
+body.touch #h-weapon{font-size:12px}
+body.touch #h-ammo{font-size:24px}
+body.touch #h-nades,body.touch #h-streak{display:none}
+body.touch #turf{top:6px}
+body.touch #turf .zs{gap:2px}
+body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
+body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
+body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
+body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
+body.touch #feed div{white-space:normal;text-align:right}
+body.touch #feed div:nth-last-child(n+3){display:none}
+@media (max-width:760px){body.touch #h-banner.on ~ #feed{opacity:0}}
+body.touch #feed{transition:opacity .25s}
+body.touch #evl{top:calc(var(--u)*24 + 40px);left:8px;max-width:46vw;gap:3px}
+body.touch #evl div{display:flex;align-items:center;gap:5px;padding:2px 8px 2px 2px}
+body.touch #evl b{flex:none;width:16px;height:16px;font-size:10px}
+body.touch #evl span{flex:0 1 auto;min-width:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.touch #evl small{flex:none;font-size:10px;white-space:nowrap}
+body.touch #h-banner{top:30%}
+body.touch #h-banner .big{font-size:clamp(28px,9vmin,52px)}
+body.touch #h-banner .sub{font-size:13px}
+body.touch #cap{bottom:auto;top:calc(5.2vmin + 52px);width:min(36vw,300px)}
+body.touch #cap-label{font-size:11px;letter-spacing:.1em;margin-bottom:2px}
+body.touch #cap .bar{height:7px}
+body.touch #h-prompt{bottom:auto;top:50%;pointer-events:auto;background:rgba(10,12,16,.6);padding:6px 14px;border-radius:22px;font-size:16px}
+body.touch #h-speed{right:auto;left:50%;bottom:44px;transform:translateX(-50%);text-align:center}
+body.touch #spd-n{font-size:34px}
+body.touch #car-hp{margin:4px auto 0;width:110px}
+body.touch #board,body.touch #bigmap{pointer-events:auto}
+body.touch #shop li{padding:9px 0;cursor:pointer}
+body.touch #shop p{display:none}
+body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
+@media (max-height:520px){.lockup{font-size:clamp(44px,13vh,70px)}.col{gap:10px;padding:16px 20px}.col p{font-size:16px}.crew b{font-size:20px}}
 /* scoreboard, shop, map: panels over the game */
 .pane{background:rgba(23,26,32,.94);border:1px solid var(--line)}
 #board{left:50%;top:50%;transform:translate(-50%,-50%);width:min(94%,720px);padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:6px 24px}
@@ -200,22 +281,24 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
     <div id="vign"></div><div id="flash"></div><div id="scope"></div>
     <div id="radarwrap"><canvas id="radar" width="204" height="204" aria-label="Radar"></canvas><div class="bars"><div class="bar"><i id="hp-fill"></i></div><div class="bar"><i id="ar-fill"></i></div></div></div>
     <div id="h-area" class="sh"></div>
-    <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
+    <div id="h-right" class="sh"><div id="h-stars" aria-label="Wanted level" hidden></div><div id="h-gang" aria-label="Crew notoriety" hidden></div><div id="h-cash">$0</div><div id="h-gain"></div><div id="h-weapon"></div><div id="h-ammo"></div><div id="h-nades"></div><div id="h-streak" hidden>DRIVE-BY READY · B</div></div>
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
+    <div id="h-race" class="sh" hidden></div>
+    <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>
-    <div id="feed"></div>
     <div id="cross"><i></i><i></i><i></i><i></i><i></i></div>
     <div id="hitm"></div>
     <div id="dmg"></div>
     <div id="h-banner" class="sh"><div class="big"></div><div class="sub"></div></div>
+    <div id="feed"></div>
     <div id="cap" hidden><div id="cap-label" class="sh"></div><div class="bar" id="cap-track"><i id="cap-fill"></i></div></div>
     <div id="h-prompt" class="sh"></div>
     <div id="h-speed" class="sh" hidden><div id="h-car"></div><div><span id="spd-n">0</span><small>MPH</small></div><div class="bar" id="car-hp"><i id="car-fill"></i></div></div>
     <div id="h-dev"></div>
     <div id="dead" hidden><div><div id="dead-big">Dropped</div><div id="dead-sub" class="sh"></div></div></div>
     <div id="board" class="pane" hidden></div>
-    <div id="shop" class="pane" hidden><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p>Press a number to buy. F or Esc closes.</p></div>
+    <div id="shop" class="pane" hidden><h3 id="shop-title">Pawn &amp; Guns</h3><ol id="shop-list"></ol><p>Press a number or click to buy. F or Esc closes.</p></div>
     <div id="bigmap" hidden><canvas id="mapc" width="960" height="700" aria-label="City map"></canvas></div>
   </div>
   <div id="dev" hidden>
@@ -236,6 +319,12 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
     <div class="r"><button type="button" id="dv-star">Wanted +1</button><button type="button" id="dv-clear">Clear wanted</button><button type="button" id="dv-wipe">Reset saved cash + guns</button></div>
     <div class="r"><button type="button" id="dv-close">Resume</button></div>
   </div>
+  <div id="tedit" hidden>
+    <div id="te-what">Drag a control to move it</div>
+    <div class="r"><button type="button" class="btn sm" id="te-ctx">Showing: on foot</button><button type="button" class="btn sm" id="te-reset">Reset layout</button><button type="button" class="btn sm" id="te-done">Done</button></div>
+    <div class="r"><label>Size <input type="range" id="te-size" min="0.06" max="0.5" step="0.01" value="0.14"></label><label>See-through <input type="range" id="te-alpha" min="0.15" max="1" step="0.05" value="0.6"></label></div>
+  </div>
+  <div id="rotate"><div>Turn your phone sideways<small>Port Calder plays in landscape</small></div></div>
   <div id="overlay">
     <div class="col">
       <div class="eyebrow" id="o-eyebrow">Open world · four crews · solo or co-op</div>
@@ -259,8 +348,11 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
         <div><dt>Tab · M</dt><dd>Players and turf · map</dd></div>
         <div><dt>B</dt><dd>Call a drive-by (4-kill streak)</dd></div>
       </dl>
+      <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. AIM zooms. USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. MAP and TURF open the map and the turf board.</p>
+      <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
       <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select></div>
-      <p class="note" id="o-note">Needs a keyboard and mouse. Esc pauses. The ` key opens the dev menu. Cash and guns are kept in this browser between sessions. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
+      <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
+      <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns and your turf are saved as you play, and your turf keeps earning while you are away. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
     </div>
   </div>
 </div>
@@ -274,12 +366,12 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
    The plain page is one public room. A link with a #code is a private room for whoever has that link.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 01:24 UTC · v2';
+  const BUILD = 'build 13 Nov 03:50 UTC';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const STALE = 7000;   // a player the relay has not heard from for this long has gone
   const hash = (location.hash || '').replace(/^#/, '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
   const priv = !!hash, code = hash || 'public', where = priv ? 'private room ' + code : 'public room';
-  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v2/' + code + '/';
+  const me = 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), base = 'hoodwar/v3/' + code + '/';
   const table = {}, seen = {}, subs = [];
   let cl = null, up = false, si = 0, mine = {}, started = false, lastT = 0, fails = 0, note = '';
   const fire = () => subs.forEach(f => { try { f({}); } catch (e) {} });
@@ -371,13 +463,16 @@ const CFG = {
   player: { r: .34, h: 1.78, eye: 1.6, walk: 2.4, run: 5.0, sprint: 7.3, jump: 6.6, hp: 100, armor: 100, regenDelay: 5, regenRate: 24 },
   gravity: 22, step: .5,
   startCash: 600,
-  pay: { kill: 100, head: 50, chain: 150, save: 50, capture: 300, turf: 30, rob: [350, 650] },
-  turfEvery: 60,              // seconds between payouts for the turf your crew holds
+  pay: { kill: 100, head: 50, chain: 150, save: 50, capture: 300, rob: [350, 650] },
   botDmg: .5,                 // bots hit players this much softer than players hit bots
   respawn: 5, botRespawn: [14, 22],
   streak: 4,                  // kills in one life that earn a drive-by call-in
   stars: [10, 30, 60, 100, 150],   // heat it takes to reach each wanted star
   robEvery: 240,              // seconds before a till that was emptied is worth robbing again
+  gang: [10, 30, 60, 100, 150],     // notoriety it takes for each skull a crew puts on your head
+  hourly: { A: 80, B: 100, C: 150, D: 120, E: 150, F: 120, G: 120, H: 100, I: 80, J: 120 },   // what each neighbourhood pays its crew every hour of the day
+  offline: { rate: 1, cap: 8 },     // away from the game, your turf keeps earning one in-game hour of income per real hour, for up to eight hours
+  ev: { truck: [250, 450], hit: 1200, war: 800, warHalf: 300, chop: [600, 1200], stash: 1000, race: 700 },
 };
 // Four invented crews, named for the parts of town they come from. Each has a yard and starts with two turfs.
 // `tops` is what its people wear; `paint` is the colour of its cars.
@@ -1510,6 +1605,11 @@ function navPath(a, b, civ) {
   return null;
 }
 const zoneNode = ZONES.map(z => nearestNode(z.x, CURB, z.z, false));
+// --- neighbourhoods: every block belongs to the turf nearest it, so the whole map is somebody's ground (or nobody's). The ring is the
+//     neighbourhood's stronghold; whoever holds it runs the streets around it and is paid for them.
+const HOOD = []; for (let j = 0; j < NZ; j++) { HOOD.push([]); for (let i = 0; i < NX; i++) { const cx = RX(i) + PX / 2, cz = RZ(j) + PZ / 2; let best = 0, bd = 1e9; ZONES.forEach((z, k) => { const d = hyp(z.x - cx, z.z - cz); if (d < bd) { bd = d; best = k; } }); HOOD[j].push(best); } }
+const hoodAt = (x, z) => { const i = Math.floor((x - EDGE) / PX), j = Math.floor((z - EDGE) / PZ); return i < 0 || j < 0 || i >= NX || j >= NZ ? -1 : HOOD[j][i]; };
+ZONES.forEach((z, k) => { z.blocks = HOOD.reduce((n, row) => n + row.filter(q => q === k).length, 0); z.val = CFG.hourly[z.id] || 100; });
 // --- places to be. Each one is checked against the finished city: moved out of anything solid, tied to the walking graph, and given
 //     its standing spots. One that cannot be reached is dropped.
 { const free = (x, z, y) => !pushOut(x, z, .3, y + .6, y + 1.6, 'p');
@@ -1533,7 +1633,7 @@ const zoneNode = ZONES.map(z => nearestNode(z.x, CURB, z.z, false));
     if (p.node < 0 || (!staff && (NAV[p.node].iso || hyp(NAV[p.node].x - p.fx, NAV[p.node].z - p.fz) > 34 || Math.abs(NAV[p.node].y - p.y) > 1.2 || !walkClear(NAV[p.node], { x: p.fx, y: p.y, z: p.fz })))) { POI.splice(i, 1); continue; }
     if (p.k === 'work') { if (pushOut(p.bx, p.bz, .34, p.y + .6, p.y + 1.6, 'p')) { p.bx = COL.x; p.bz = COL.z; } p.bnode = nearestNode(p.bx, p.y, p.bz, true); if (p.bnode < 0 || NAV[p.bnode].iso) { POI.splice(i, 1); continue; } }
     p.cap = p.slots.length; p.who = p.slots.map(() => null); }
-  POI.forEach((p, i) => { p.i = i; p.zone = ZONES.findIndex(z => hyp(z.x - p.x, z.z - p.z) < z.r + 5); p.npc = null; p.t = 0; }); }
+  POI.forEach((p, i) => { p.i = i; p.zone = ZONES.findIndex(z => hyp(z.x - p.x, z.z - p.z) < z.r + 5); p.hood = hoodAt(p.x, p.z); p.npc = null; p.t = 0; }); }
 const POSTS = POI.filter(p => p.k === 'post' || p.k === 'work'), SPOTS = POI.filter(p => p.k !== 'post' && p.k !== 'work');
 // --- the driving graph is the street grid itself: crossings (i, j), i = 0..NX, j = 0..NZ
 const xingOf = (x, z) => [clamp(Math.round((x - EDGE) / PX), 0, NX), clamp(Math.round((z - EDGE) / PZ), 0, NZ)];
@@ -2053,7 +2153,8 @@ function updateCarVisual(c, dt) {
    ===================================================================== */
 const G = { state: 'menu', time: 0, tod: 18, phase: 'idle', botsPer: 4, cops: true, crew: 0, solo: true, raid: CREWS.map(() => null), raidT: CREWS.map(() => 60), payT: 60, polT: 0, patrolT: 0, robT: [] };
 // each turf: who holds it (-1 nobody), which crew is in the middle of taking it and how far along they are, and how many of each crew stand in it
-const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false }));
+// ctrl: how firmly the holder runs the neighbourhood, 0..100. Hits against them in it wear it down, and a hold worn thin is quicker to break.
+const ZS = ZONES.map(() => ({ owner: -1, by: -1, prog: 0, n: CREWS.map(() => 0), hot: false, ctrl: 100, calmT: -99, warnT: -99 }));
 const keys = {}, mouse = { down: false, fresh: false, right: false };
 const DBG = { god: false, ammo: false, freeze: false, stats: false, nav: false, notarget: false, scale: 1, fps: 60 };
 const NET = { mode: null, room: null, remotes: {}, me: null, slot: 0 };
@@ -2149,6 +2250,7 @@ function hurtPlayer(dmg, src, wid, head) {
 }
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
+  if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -2167,6 +2269,7 @@ function explode(x, y, z, owner, power, wid) {
 function blowCar(c) {
   if (c.wreck) return; c.wreck = true; c.wreckT = 0; c.burn = 0; c.hp = 0; c.vx *= .3; c.vz *= .3; c.ai = null; c.inp.thr = 0;
   const src = c.lastHit && !c.lastHit.gone ? c.lastHit : null;
+  if (AUTH()) { if (c.armored && !c.opened) GAME.truckOpen(c, src); if (src && src.kind !== 'bot' && isCrew(c.team) && c.team !== src.team) { GAME.notor(src, c.team, 8); GAME.hurtHood(hoodAt(c.x, c.z), src, 5); } }
   for (let k = 0; k < 4; k++) { const o = c.occ[k]; if (!o) continue; if (o.kind === 'bot') { c.occ[k] = null; o.car = null; killBot(o, src, 'boom', false); } else if (o === P) { GAME.leaveCar(true); hurtPlayer(999, src, 'boom'); } }
   if (AUTH()) { GAME.ev('x', Math.round(c.x), Math.round(c.y), Math.round(c.z), 13, c.id, GAME.ref(src)); explode(c.x, c.y + .6, c.z, src, 1.3, 'boom'); }
 }
@@ -2189,15 +2292,18 @@ function updateGrenades(dt) {
   }
 }
 // --- things lying in the street: chains off the fallen, dropped guns
+const cashGeo = new T.BoxGeometry(.36, .24, .26), cashMat = new T.MeshLambertMaterial({ color: 0x3d7a3a }), bagGeo = new T.BoxGeometry(.62, .3, .3), bagMat = new T.MeshLambertMaterial({ color: 0x2a2620 });
 const chainGeo = new T.TorusGeometry(.2, .045, 6, 14), chainMat = new T.MeshBasicMaterial({ color: 0xffc83d }), pickGlow = new T.SpriteMaterial({ map: glowTex, color: 0xffc83d, transparent: true, opacity: .55, blending: T.AdditiveBlending, depthWrite: false });
 let pickSeq = 0;
 function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
-  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' ? 1.5 : 1.1); if (type === 'chain' && isCrew(team)) { s.material = pickGlow.clone(); s.material.color.setHex(CREWS[team].color); }
+  // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].color : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
-  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: 40, g }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
-  while (pickups.length > 14) removePickup(pickups[0]); return p;
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' ? 1e9 : 40, g, amt: type === 'cash' ? (team | 0) * 100 : 0 }; if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
+  return p;
 }
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }
 
@@ -2333,7 +2439,7 @@ function updateRob(dt) {
 function openShop(s) { shopOpen = s; $('shop-title').textContent = s.name; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
 function renderShop() { const ol = $('shop-list'); ol.textContent = ''; SHOP.forEach(it => { const li = document.createElement('li'), own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
-    li.className = own || full ? 'own' : P.cash < it.cost ? 'no' : ''; const b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); b.textContent = it.key; a.textContent = it.label; c.textContent = own ? 'Owned' : full ? 'Full' : '$' + it.cost; li.append(b, a, c); ol.appendChild(li); }); }
+    li.className = own || full ? 'own' : P.cash < it.cost ? 'no' : ''; li.dataset.key = it.key; const b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); b.textContent = it.key; a.textContent = it.label; c.textContent = own ? 'Owned' : full ? 'Full' : '$' + it.cost; li.append(b, a, c); ol.appendChild(li); }); }
 function buy(key) {
   const it = SHOP.find(q => q.key === key); if (!it) return;
   const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
@@ -2345,14 +2451,15 @@ function buy(key) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain') { if (AUTH()) GAME.takeChain(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } }
+    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot
 function updateOnFoot(dt) {
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), d = WEAPONS[P.wpn], w = P.inv[P.wpn];
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight) && fwd > 0 && !aiming && P.reloadT <= 0;
-  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
+  let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
+  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = -TOUCH.fy; str = TOUCH.fx; push = Math.min(1, hyp(fwd, str)); }   // the stick: a little push walks, all the way runs, pinned forward sprints
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
+  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   const acc = Math.min(1, dt * (P.onGround ? 11 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
   if (keys.Space && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!keys.Space) P.jumpHeld = false;
@@ -2380,6 +2487,7 @@ function updateInCar(dt) {
   if (c.gone) { P.car = null; return; }
   if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
+    if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
     stepCar(c, dt, inp);
     if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
     GAME.roadkill(c, P);
@@ -2607,6 +2715,9 @@ function crewBrain(b) {
   const saw = botLook(b);
   if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!c.occ[0] || c.occ[0].team !== b.team)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); } return; }
   if (saw || b.tgt) return;
+  if (b.hunterOf) { const a = b.hunterOf;   // sent after someone: keep looking for them until they are dead or the crew loses interest
+    if (a.gone || a.dead || !(a.gn && a.gn[b.team] >= CFG.gang[0])) b.hunterOf = null;
+    else if (!b.hunt && hyp(a.x - b.x, a.z - b.z) < 160) { b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = true; b.path = null; if (!botPathTo(b, a.x, a.y, a.z, false)) b.hunt = false; return; } }
   if (!b.goal || G.time > b.goalT || (b.arrived && rand() < .03 && (b.goal.zone < 0 || (ZS[b.goal.zone].owner === b.team && !ZS[b.goal.zone].hot)))) pickGoal(b);
   const z = goalAt(b.goal), dist = hyp(z.x - b.x, z.z - b.z);
   if (dist < z.r * .75) { b.arrived = true; b.wantCar = null; }
@@ -2719,6 +2830,26 @@ function civAct(b, dt) {
   if (b.path) { if (botFollow(b, b.fleeT > 0 ? 6.4 : b.walk, dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
+// --- street crews: a crew's people on its own corners. They pass the time at a spot until somebody from another crew shows up,
+//     fight, then drift back to where they were.
+const STREET_ACTS = [ACT.talk, ACT.talk, ACT.smoke, ACT.phone, ACT.lean, 0];
+function streetBrain(b) {
+  const saw = botLook(b);
+  if (saw || b.tgt || b.hunt) { if (b.poi) leavePoi(b); return; }
+  if (b.poi || !b.home) return;
+  const p = b.home, k = freeSlot(p); if (k < 0) return;                                                 // somebody has their spot: stand about where they are
+  const path = hyp(p.fx - b.x, p.fz - b.z) > 5 ? navPath(nearestNode(b.x, b.y, b.z, true), p.node, false) : null;
+  p.who[k] = b; b.poi = p; b.slot = k; b.at = path ? 0 : 1; b.path = path; b.pi = 0; b.poiT = G.time + 40;
+}
+function streetAct(b, dt) {
+  b.aim = Math.max(0, b.aim - dt * 2); b.pitch = lerp(b.pitch, 0, Math.min(1, dt * 5));
+  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = 0; return; }
+  if (b.at === 2) { civStand(b, dt, p.slots[b.slot].yaw); if (G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 10; b.act = p.k === 'hang' || p.k === 'browse' ? STREET_ACTS[(rand() * STREET_ACTS.length) | 0] : ACT_AT[p.k][0]; } return; }
+  b.act = 0;
+  if (b.at === 0) { if (botFollow(b, 2.4, dt)) { b.path = null; b.at = 1; } }
+  else if (botWalk(b, p.fx, p.fz, 2.2, dt) < .6 || G.time > b.poiT) takeSpot(b, p, b.slot);
+  if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
+}
 // a loud thing happened at (x,z): bystanders run, people at work get down, crew who have nothing better to do come and look
 GAME.noise = (x, z, src, r) => {
   r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false; const rc = r > 45 ? r : 32;   // people on the pavement mind a gunshot down the street less than one beside them
@@ -2732,14 +2863,17 @@ function updateBot(b, dt) {
   if (b.dead) { b.deadT += dt; b.spd = 0; return; }
   if (b.knock > 0) { b.knockT -= dt; if (b.knockT <= 0) b.knock = 0; b.vx *= Math.max(0, 1 - dt * 3); b.vz *= Math.max(0, 1 - dt * 3); moveEntity(b, b.vx * dt, b.vz * dt, dt, .32, 'p', 1.75); b.spd = 0; b.aim = 0; return; }
   b.brainT -= dt; const civ = b.team === TEAM_CIV;
-  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else crewBrain(b); }
+  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
   if (b.dead) return;
-  if (civ) civAct(b, dt); else crewAct(b, dt);
+  if (civ) civAct(b, dt); else if (b.street && !b.tgt && !b.hunt && !b.car) streetAct(b, dt); else crewAct(b, dt);
 }
 // what a bot looks like from its state; runs for every bot on every machine
 function botVisual(b, dt) {
   const ch = b.ch; if (!ch) return;
-  if ((b.dead && b.deadT > 7) || hyp(b.x - camera.position.x, b.z - camera.position.z) > 300) { hideChar(ch); return; }
+  const far = hyp(b.x - camera.position.x, b.z - camera.position.z);
+  if ((b.dead && b.deadT > 7) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
+  ch.acc = (ch.acc || 0) + dt; if (far > 70 && ch.shown && ((LIFE.frame + ch.idx) & (far > 140 ? 3 : 1))) return;   // far enough that nobody can tell it is posed half as often
+  dt = Math.min(.2, ch.acc); ch.acc = 0;
   let seat = null, twist = 0, x = b.x, y = b.y, z = b.z;
   if (b.car) { seat = b.seat === 0 ? 'drive' : 'ride'; seatPos(b.car, b.seat, _sp); x = _sp.x; y = _sp.y; z = _sp.z; if (b.aim > .5 && b.ayaw !== undefined) twist = clamp(angTo(b.car.yaw, b.ayaw), -1.5, 1.5); }
   poseChar(ch, { x, y, z, yaw: b.car ? b.car.yaw : b.yaw, pitch: b.pitch, spd: b.spd, air: !b.onGround && !b.car, wpn: b.team === TEAM_CIV ? null : b.wpn, aim: b.aim, reload: b.reloadT > 0, seat, twist, dead: b.dead ? b.deadT : -1, knock: b.knock, sprint: b.spd > 5.9, act: b.car ? 0 : b.act, shoot: b.shootK || 0 }, dt);
@@ -2820,11 +2954,13 @@ function updatePolice() {    // four times a second
 // --- at the wheel. Far from the target a cruiser follows the streets like anything else, only faster; with a clear
 //     line to them it drives straight at them, and stops short so the officers can get out.
 function regrid(c, A) { const sn = aiSnap(c); A.from = sn[0]; A.to = sn[1]; A.next = aiNext(A); A.direct = false; }
+// a car hunting someone: the police after a wanted player, or (A.gang) a crew's hit squad after someone that crew has marked
+const chased = (A, a) => !!a && !a.gone && !a.dead && (A.gang === undefined ? a.heat > 0 : !!a.gn && a.gn[A.gang] >= CFG.gang[0]);
 function copDrive(c, A, dt) {   // true when it has set the controls for this step
-  const a = A.chase, inp = c.inp;
-  if (!a || a.gone || a.dead || !(a.heat > 0)) { A.mode = 'traffic'; A.chase = null; A.dest = null; A.cruise = 11; A.done = false; c.horn = 0; if (A.direct) regrid(c, A); return false; }
-  c.horn = 1; A.cruise = 26;
-  const known = G.time - a.seenT < 2.5, tx = known ? a.x : a.lkx, tz = known ? a.z : a.lkz, dx = tx - c.x, dz = tz - c.z, d = hyp(dx, dz);
+  const a = A.chase, inp = c.inp, gang = A.gang !== undefined;
+  if (!chased(A, a)) { A.mode = 'traffic'; A.chase = null; A.dest = null; A.cruise = 11; A.done = false; if (c.cop) c.horn = 0; if (A.direct) regrid(c, A); return false; }
+  if (c.cop) c.horn = 1; A.cruise = gang ? 23 : 26;
+  const known = gang || G.time - a.seenT < 2.5, tx = known ? a.x : a.lkx, tz = known ? a.z : a.lkz, dx = tx - c.x, dz = tz - c.z, d = hyp(dx, dz);
   A.destT = (A.destT || 0) - dt; if (A.destT <= 0) { A.destT = .6; A.dest = xingOf(tx, tz); A.clear = d < 70 && Math.abs((known ? a.y : a.lky) - c.y) < 3 && los(c.x, c.y + .8, c.z, tx, c.y + .8, tz, 'p'); }
   const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, sp = Math.abs(vf);
   // how near the streets have brought it so far; once it starts drawing away again, this is as close as the car gets
@@ -2847,7 +2983,7 @@ function copDrive(c, A, dt) {   // true when it has set the controls for this st
 function copBrain(b) {
   let a = b.chase;
   if (a && (a.gone || a.dead || !(a.heat > 0))) { a = b.chase = null; if (b.tgt && b.tgt.kind !== 'bot') b.tgt = null; b.hunt = false; b.path = null; b.until = G.time + 25; }
-  if (!a) { let bd = 170; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.lkx - b.x, h.lkz - b.z); if (d < bd) { bd = d; a = h; } });
+  if (!a && !(b.guard && b.car)) { let bd = 170; humans().forEach(h => { if (!(h.heat > 0) || h.dead) return; const d = hyp(h.lkx - b.x, h.lkz - b.z); if (d < bd) { bd = d; a = h; } });
     if (a) { b.chase = a; b.until = 1e9; b.path = null; if (b.car && b.seat === 0 && b.car.ai && b.car.ai.mode !== 'cop') { b.car.ai.mode = 'cop'; b.car.ai.chase = a; b.car.ai.done = false; } } }
   botLook(b);
   if (b.car) { const c = b.car, dr = c.occ[0];
@@ -2871,7 +3007,7 @@ function copBrain(b) {
         of a crowd, music from a speaker. None of it changes the game and none of it is sent between players: each machine
         makes its own from the people and places it can see.
    ===================================================================== */
-const LIFE = { vol: 0, bangT: -99, bangX: 0, bangZ: 0, bangR: 0, said: {}, sayT: 0, spk: null, steamT: 0, stackN: 0, hornT: 0, ambT: 0, dogT: 14, birdT: 3, gullT: 8, crkT: 0, crowd: 0, barkT: 0, au: null,
+const LIFE = { frame: 0, vol: 0, bangT: -99, bangX: 0, bangZ: 0, bangR: 0, said: {}, sayT: 0, spk: null, steamT: 0, stackN: 0, hornT: 0, ambT: 0, dogT: 14, birdT: 3, gullT: 8, crkT: 0, crowd: 0, barkT: 0, au: null,
   bang(x, z, r) { LIFE.bangT = G.time; LIFE.bangX = x; LIFE.bangZ = z; LIFE.bangR = r || 40; },                                     // a shot or a blast: every bird in earshot goes up
   reset() { flocks.forEach(f => { f.mode = 0; f.t = 0; f.birds.forEach(b => { b.x = b.tx = b.hx; b.y = b.hy; b.z = b.tz = b.hz; b.wait = rand() * 3; }); }); barks.forEach(k => { k.t = 0; k.who = null; k.sp.visible = false; }); LIFE.said = {}; LIFE.bangT = -99; LIFE.sayT = 0; },
 };
@@ -3089,7 +3225,7 @@ function updateAmbience(dt) {
   if (best) { if (RADIO.on !== best.st) setRadio(best.st); LIFE.spk = best; const v = .3 * Math.pow(1 - bd / 32, 1.4); if (Math.abs(v - LIFE.vol) > .008) { LIFE.vol = v; radioVolume(v); } }
   else if (LIFE.spk || RADIO.on >= 0) { LIFE.spk = null; LIFE.vol = 0; radioVolume(0); setRadio(-1); }
 }
-function updateLife(dt) { updateBirds(dt); updateSmoke(dt); updateTraffic3(dt); updateProps3(dt); updateBarks(dt); updateAmbience(dt); }
+function updateLife(dt) { LIFE.frame = (LIFE.frame + 1) | 0; updateBirds(dt); updateSmoke(dt); updateTraffic3(dt); updateProps3(dt); updateBarks(dt); updateAmbience(dt); }
 
 /* =====================================================================
    11. THE CITY AT WORK — turf, raids, spawns, traffic, pay. There are no rounds: the world starts and keeps going.
@@ -3118,19 +3254,25 @@ function onEvent(e, mine) {
   else if (k === 'ch') { const a = GAME.unref(e[2]); if (a === P) { SFX.chain(); banner(e[3] ? 'Chain saved' : 'Chain snatched', '+$' + (e[3] ? CFG.pay.save : CFG.pay.chain), 1.8, 'gold'); } }
   else if (k === 'db') { const a = GAME.unref(e[2]); if (a) banner('Drive-by inbound', (a.team === P.team ? 'Your crew is' : CREWS[a.team].name + ' is') + ' rolling through', 2.6, 't' + a.team); }
   else if (k === 'rd') { const z = ZONES[e[3]]; if (z && (e[2] === P.team || ZS[e[3]].owner === P.team || hyp(z.x - P.x, z.z - P.z) < 170)) note(e[2] === P.team ? 'Your crew is moving on ' + z.name : CREWS[e[2]].name + ' is moving on ' + z.name, 'k' + e[2]); }
-  else if (k === 'ti') note('Turf income · ' + e[2] + (e[2] === 1 ? ' turf' : ' turfs') + ' · +$' + e[3], 'g');
+  else if (k === 'ti') note('Hourly income · ' + e[2] + (e[2] === 1 ? ' neighbourhood' : ' neighbourhoods') + ' · +$' + e[3], 'g');
+  else if (k === 'hz') { const z = ZONES[e[2]]; if (e[3] === P.team) { banner('Hold broken', 'Their grip on ' + z.name + ' is gone · take the ring', 3, 't' + P.team); SFX.cap(true); } }
+  else if (k === 'hw') { const z = ZONES[e[2]]; note(CREWS[e[3]].name + ' is hitting your turf in ' + z.name, 'k' + e[3]); }
+  else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
+  else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd') evNews(e, mine);
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
 }
 GAME.pay = (a, n) => { if (!a || n <= 0) return; if (a === P) { P.earn += n; gain(n); } else if (a.kind === 'rp') a.earn = (a.earn | 0) + n; };
 GAME.onKill = (k, v, wid, head) => {
   v.deaths = (v.deaths | 0) + 1;
+  if (v.boss && !v.boss.over) GAME.bossDown(v, k);
   if (k && k !== v) {
-    if (rival(k, v)) { k.kills = (k.kills | 0) + 1; GAME.pay(k, CFG.pay.kill + (head ? CFG.pay.head : 0)); addPickup('chain', v.x, groundAt(v.x, v.z, v.y + .5, 'p'), v.z, v.team); if (k.kind !== 'bot' && copNear(v.x, v.z, 50)) GAME.crime(k, 8); }
+    if (rival(k, v)) { k.kills = (k.kills | 0) + 1; GAME.pay(k, CFG.pay.kill + (head ? CFG.pay.head : 0)); addPickup('chain', v.x, groundAt(v.x, v.z, v.y + .5, 'p'), v.z, v.team); if (k.kind !== 'bot' && copNear(v.x, v.z, 50)) GAME.crime(k, 8);
+      const zi = hoodAt(v.x, v.z); if (zi >= 0 && ZS[zi].owner === v.team) GAME.hurtHood(zi, k, k.kind === 'bot' ? 3 : 6); if (k.kind !== 'bot') GAME.notor(k, v.team, 12); }   // every one of theirs you drop on their own ground loosens their hold, and they remember who did it
     else if (k.kind !== 'bot') { if (v.team === TEAM_CIV) GAME.crime(k, 15); else if (v.team === TEAM_COP) { k.kills = (k.kills | 0) + 1; GAME.crime(k, 30, 3); } }   // bystanders pay nothing and cost plenty
   }
   if (v.kind === 'bot' && v.team !== TEAM_CIV && v.wpn !== 'pistol' && v.wpn !== 'fist' && rand() < .5) addPickup(v.wpn, v.x + rs(1.6), groundAt(v.x, v.z, v.y + .5, 'p'), v.z + rs(1.6), -1);
   if (v.kind === 'bot' && isCrew(v.team) && !v.temp) G.respawnQ[v.team].push(G.time + lerp(CFG.botRespawn[0], CFG.botRespawn[1], rand()));
-  if (v.kind !== 'bot') GAME.clearHeat(v);                                                    // the police stop looking for the dead
+  if (v.kind !== 'bot') { GAME.clearHeat(v); GAME.clearGang(v); }                              // the police and the crews stop looking for the dead
   if (v.team !== TEAM_CIV) GAME.ev('k', GAME.ref(k), GAME.ref(v), wcode(wid), head ? 1 : 0);
 };
 GAME.playerDied = (src, wid, head) => {
@@ -3154,23 +3296,66 @@ GAME.respawn = home => {
   for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = Math.max(P.inv[id].res, d.mag * 2); } }
   if (P.nades < 1) P.nades = 1; $('dead').hidden = true;
 };
-// --- turf: the crew with the most people standing in a zone works on it. A held turf is first broken (it becomes nobody's),
-//     then taken; the holders showing up in force undo the work. Any number of crews can be in the same fight.
+// --- turf: the crew with the most people standing in a ring works on it. A held turf is first broken (it becomes nobody's),
+//     then taken; the holders showing up in force undo the work. How fast a hold breaks depends on how firm it is (ctrl):
+//     a neighbourhood whose crew has been bled on its own streets falls three times as fast as one nobody has touched.
 function updateZones(dt) {
   for (let i = 0; i < ZONES.length; i++) { const z = ZONES[i], s = ZS[i], n = s.n; for (let t = 0; t < NCREW; t++) n[t] = 0;
     eachActor(a => { if (a.dead || a.gone || !isCrew(a.team)) return; if (hyp(a.x - z.x, a.z - z.z) < z.r && a.y < 14) n[a.team]++; });
     let lead = -1, top = 0, second = 0, others = 0;
     for (let t = 0; t < NCREW; t++) { if (n[t] > top) { second = top; top = n[t]; lead = t; } else if (n[t] > second) second = n[t]; if (t !== s.owner) others += n[t]; }
     s.hot = s.owner >= 0 ? others > 0 : second > 0;
-    const push = Math.min(3, top - second), rate = push > 0 ? (1 + (push - 1) * .4) * dt / 9 : 0;
+    const push = Math.min(3, top - second), rate = push > 0 ? (1 + (push - 1) * .4) * dt / 9 : 0, weak = s.owner >= 0 && lead !== s.owner ? 1 + (1 - s.ctrl / 100) * 2 : 1;
     if (push > 0 && lead !== s.owner) {
       if (s.by !== lead && s.prog > 0) { s.prog -= rate * 1.5; if (s.prog <= 0) { s.prog = 0; s.by = lead; } }                 // first undo what another crew had started
-      else { s.by = lead; s.prog += rate;
+      else { s.by = lead; s.prog += rate * weak; s.calmT = G.time;
         if (s.prog >= 1) { s.prog = 0;
-          if (s.owner >= 0) { const was = s.owner; s.owner = -1; GAME.ev('zn', i, lead, was); }
-          else { s.owner = lead; s.by = -1; GAME.ev('z', i, lead); eachActor(a => { if (!a.dead && a.team === lead && a.kind !== 'bot' && hyp(a.x - z.x, a.z - z.z) < z.r) GAME.pay(a, CFG.pay.capture); }); } } }
+          if (s.owner >= 0) { const was = s.owner; s.owner = -1; s.ctrl = 0; GAME.ev('zn', i, lead, was); }
+          else { s.owner = lead; s.by = -1; s.ctrl = 50; GAME.ev('z', i, lead); eachActor(a => { if (!a.dead && a.team === lead && a.kind !== 'bot' && hyp(a.x - z.x, a.z - z.z) < z.r) GAME.pay(a, CFG.pay.capture); }); } } }
     } else if (s.prog > 0 && (push > 0 || top === 0)) { s.prog -= push > 0 ? rate * 1.5 : dt / 25; if (s.prog <= 0) { s.prog = 0; s.by = -1; } }   // the holders push back, or everyone has gone
+    // a hold firms up again while nobody troubles it, faster with the crew's own people standing in the ring
+    if (s.owner >= 0 && !s.hot && G.time - s.calmT > 20) s.ctrl = Math.min(100, s.ctrl + dt * (n[s.owner] > 0 ? .5 : .15));
   }
+}
+// someone from another crew did damage in a neighbourhood: its holder's grip slips
+GAME.hurtHood = (zi, by, amt) => {
+  if (zi < 0 || !by) return; const s = ZS[zi]; if (s.owner < 0 || (isCrew(by.team) && by.team === s.owner)) return;
+  const was = s.ctrl; s.ctrl = Math.max(0, s.ctrl - amt); s.calmT = G.time;
+  if (by.kind !== 'bot' || by.team === G.crew) { if (was > 0 && s.ctrl <= 0) GAME.ev('hz', zi, by.team); }
+  else if (s.owner === G.crew && was >= 50 && s.ctrl < 50 && G.time - s.warnT > 60) { s.warnT = G.time; GAME.ev('hw', zi, by.team); }
+};
+GAME.takeCash = (p, who) => { if (p.gone) return; removePickup(p); GAME.pay(who, p.amt || 300); };
+// --- notoriety: each crew keeps its own count of what a player has done to it. Skulls bring cars of shooters, as stars bring the police.
+const skullsOf = p => { let s = 0; while (s < 5 && p >= CFG.gang[s]) s++; return s; };
+const gangOf = a => { if (!a.gn) { a.gn = CREWS.map(() => 0); a.gnT = CREWS.map(() => -99); a.gsqT = CREWS.map(() => 0); } return a.gn; };
+GAME.notor = (who, t, pts) => {
+  if (!AUTH() || !who || who.kind === 'bot' || who.dead || who.gone || !isCrew(t) || t === who.team || G.phase !== 'play') return;
+  gangOf(who); who.gn[t] = Math.min(CFG.gang[4] + 40, who.gn[t] + pts); who.gnT[t] = G.time;
+};
+GAME.clearGang = a => { if (!a.gn) return; a.gn.fill(0); a.gnT.fill(-99); a.gsqT.fill(0); };
+function updateGangs() {   // four times a second
+  humans().forEach(a => { gangOf(a); if (a.dead) return;
+    for (let t = 0; t < NCREW; t++) { if (!(a.gn[t] > 0)) continue;
+      for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.team === t && b.tgt === a && G.time - b.seenT < 1.5) { a.gnT[t] = G.time; break; } }   // they still have eyes on you
+      if (G.time - a.gnT[t] > 15) a.gn[t] = Math.max(0, a.gn[t] - .25);                                                  // out of their sight a while, and they let it go
+      const sk = skullsOf(a.gn[t]); if (sk < 2) continue;
+      let squads = 0; for (let i = 0; i < cars.length; i++) if (cars[i].squad === a && cars[i].team === t && !cars[i].wreck) squads++;
+      if (squads < (sk >= 4 ? 2 : 1) && G.time > a.gsqT[t]) a.gsqT[t] = G.time + (spawnHitSquad(a, t, sk) ? (sk >= 4 ? 25 : 40) : 4); } });
+}
+// a car of a crew's shooters, a few blocks off, already on its way to whoever they are after
+function spawnHitSquad(a, t, sk) {
+  if (cars.length >= CAR_MAX - 2) return false;
+  let best = null, bs = -1e9;
+  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - a.x, z - a.z); if (d < 110 || d > 260 || nearHuman(x, z) < 95) continue; const sc = -Math.abs(d - 160) + rand() * 50; if (sc > bs) { bs = sc; best = [i, j]; } }
+  if (!best) return false;
+  const toward = g => hyp(RX(best[0] + g[0]) - a.x, RZ(best[1] + g[1]) - a.z), dir = GRID4.filter(g => best[0] + g[0] >= 0 && best[0] + g[0] <= NX && best[1] + g[1] >= 0 && best[1] + g[1] <= NZ).sort((p, q) => toward(p) - toward(q))[0];
+  lanePoint(best, [best[0] + dir[0], best[1] + dir[1]], 14, LANE, _lp); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 8)) return false;
+  const c = spawnCar(CREW_CARS[(rand() * 3) | 0], _lp.x, _lp.z, yawOf(dir[0], dir[1]), { color: CREW_PAINT[t], team: t }); if (!c) return false; c.temp = true; c.squad = a;
+  const guns = sk >= 4 ? ['rifle', 'smg', 'rifle', 'shotgun'] : ['smg', 'pistol', 'smg', 'shotgun'];
+  for (let k = 0; k < Math.min(c.spec.seats, sk >= 4 ? 4 : 3); k++) { const b = spawnBot(t, _lp.x, 0, _lp.z, { temp: true, wpn: guns[k] }); if (!b) break; b.car = c; b.seat = k; c.occ[k] = b; b.until = G.time + 150; b.skill = 1 + sk * .06; b.hunterOf = a; }
+  if (!c.occ[0]) { for (let k = 1; k < 4; k++) if (c.occ[k]) removeBot(c.occ[k]); removeCar(c); return false; }
+  const A = aiStart(c, 'cop', xingOf(a.x, a.z)); A.chase = a; A.gang = t; c.vx = dir[0] * 10; c.vz = dir[1] * 10;
+  GAME.ev('hs', GAME.ref(a), t); return true;
 }
 GAME.takeChain = (p, who) => { if (p.gone) return; removePickup(p); if (who.team === p.team) { GAME.pay(who, CFG.pay.save); GAME.ev('ch', GAME.ref(who), 1); } else { GAME.pay(who, CFG.pay.chain); GAME.ev('ch', GAME.ref(who), 0); } };
 // --- raids: now and then a crew sends most of its people at a turf it does not hold. Between raids each crew minds its own.
@@ -3190,6 +3375,7 @@ GAME.rob = (who, i) => {
   const r = ROBS[i]; if (!r || G.time < (G.robT[i] || 0) || who.dead) return;
   G.robT[i] = G.time + CFG.robEvery; const amt = Math.round(lerp(CFG.pay.rob[0], CFG.pay.rob[1], rand()) / 10) * 10;
   GAME.pay(who, amt); GAME.crime(who, 35, 2); GAME.ev('rb', GAME.ref(who), i, amt); GAME.noise(r.x, r.z, who, 30);
+  const zi = hoodAt(r.x, r.z); if (zi >= 0 && ZS[zi].owner >= 0 && ZS[zi].owner !== who.team) { GAME.hurtHood(zi, who, 12); GAME.notor(who, ZS[zi].owner, 10); }   // their block, their till
 };
 const tillOpen = i => AUTH() ? G.time >= (G.robT[i] || 0) : !!((G.robMask | 0) >> i & 1);
 GAME.onKnock = (p, c) => { if (c) SFX.crash(p.x, p.y, p.z, 7); if (!AUTH() && c && c === P.car) NET.req('kn', p.i, Math.round(c.vx), Math.round(c.vz)); };
@@ -3259,7 +3445,7 @@ function spawnCrewBot(team, forward) { const s = spawnPoint(team, forward); cons
 const crewSize = t => t === G.crew ? G.botsPer : G.botsPer + 1;
 // how busy the pavements are: full from morning to dusk, thinner through the evening, quiet but never empty at night
 const todBusy = () => { const h = G.tod; return h < 5 ? .5 : h < 7 ? lerp(.5, 1, (h - 5) / 2) : h < 19 ? 1 : h < 23 ? lerp(1, .6, (h - 19) / 4) : lerp(.6, .5, h - 23); };
-const walkersWanted = () => Math.round((G.civs + 4 * Math.min(3, humans().length - 1)) * todBusy());
+const walkersWanted = () => Math.round((G.civs + 4 * Math.min(3, humans().length - 1)) * todBusy() * (TOUCH.on && NET.mode !== 'host' ? .7 : 1));   // a phone playing alone runs a lighter crowd
 // --- people at work: a vendor at each stall and cart, clerks behind counters, hands in the yards. Each keeps hours, and is only there
 //     when a player is near enough for it to matter.
 const postOpen = p => { const h = G.tod; return p.role === ROLE.hand ? h > 6.5 && h < 20.5 : p.name === 'Vendor' ? h > 7 && h < 23.5 : true; };
@@ -3295,12 +3481,22 @@ function populate() {
   const want = walkersWanted();
   for (let k = Math.min(5, want - peds); k > 0; k--) spawnPed(false); if (peds > want + 2 && farPed) removeBot(farPed);       // the evening thins the crowd from its far edge
   if (traf < G.traffic + Math.min(2, humans().length - 1) && cars.length < CAR_MAX - 6) spawnTraffic();
-  staffPosts(false);
+  staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
   // cars: abandoned traffic is cleared away, parked cars come back to their spots
-  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin) continue; const far = nearHuman(c.x, c.z);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop) continue; const far = nearHuman(c.x, c.z);
     if (!c.home && c.idle > 45 && far > 70) removeCar(c); else if (c.temp && c.idle > 8 && far > 60) removeCar(c); else if (c.home && c.idle > 70 && far > 90 && hyp(c.x - c.home.x, c.z - c.home.z) > 12) removeCar(c); }
   G.homes.forEach(h => { if (h.car && !h.car.gone && !h.car.wreck) return; if (h.car) { h.car = null; h.t = G.time + 28; } if (G.time < h.t || nearHuman(h.spot.x, h.spot.z) < 70 || cars.some(c => hyp(c.x - h.spot.x, c.z - h.spot.z) < 6) || cars.length >= CAR_MAX - 4) return; h.car = parkCar(h.spot, h.type, h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : {}); });
+}
+// a few of each crew's people on its own corners, wherever a player is near: walk onto a rival's ground and they are there
+function streetCrews() {
+  let n = 0; const per = CREWS.map(() => 0);
+  for (let i = bots.length - 1; i >= 0; i--) { const b = bots[i]; if (!b.street || b.dead) continue; if (!b.boss && !b.guardOf && nearHuman(b.x, b.z) > 175) { removeBot(b); continue; } n++; per[b.team]++; }
+  if (n >= G.streetMax || G.time < G.streetT || !SPOTS.length) return; G.streetT = G.time + 1.2;
+  const hs = humans(), h = hs[(rand() * hs.length) | 0];
+  for (let k = 0; k < 12; k++) { const p = SPOTS[(rand() * SPOTS.length) | 0]; if (p.hood < 0 || p.k === 'wait') continue; const t = ZS[p.hood].owner; if (t < 0 || per[t] >= 7) continue;
+    const d = hyp(p.x - h.x, p.z - h.z); if (d > 125 || nearHuman(p.x, p.z) < 32 || (p.zone >= 0 && ZS[p.zone].hot)) continue; const q = freeSlot(p); if (q < 0 || seenByHuman(p.slots[q].x, p.y, p.slots[q].z)) continue;
+    const b = spawnBot(t, p.x, p.y, p.z, { temp: true }); if (!b) return; b.street = true; b.home = p; b.until = 1e9; takeSpot(b, p, q); b.act = STREET_ACTS[(rand() * STREET_ACTS.length) | 0]; return; }
 }
 // a four-kill streak buys this: a carload of your crew cruising round the nearest contested block
 GAME.callDriveBy = who => {
@@ -3325,15 +3521,16 @@ function resetWorld() {
   while (bots.length) removeBot(bots[0]); while (cars.length) removeCar(cars[0]); while (pickups.length) removePickup(pickups[0]); grenades.forEach(g => scene.remove(g.m)); grenades.length = 0; resetProps();
   carSeq = 0; botSeq = 0; pickSeq = 0; EVQ.length = 0; evSeq = 0; $('feed').textContent = '';
   // each crew starts with the two turfs nearest its yard; the mall and the park in the middle are anybody's
-  ZS.forEach((s, i) => { const o = TURF_START[ZONES[i].id]; s.owner = o === undefined ? -1 : o; s.by = -1; s.prog = 0; s.n.fill(0); s.hot = false; });
+  ZS.forEach((s, i) => { const o = TURF_START[ZONES[i].id]; s.owner = o === undefined ? -1 : o; s.by = -1; s.prog = 0; s.n.fill(0); s.hot = false; s.ctrl = s.owner >= 0 ? 100 : 0; s.calmT = -99; s.warnT = -99; });
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
-  Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), payT: CFG.turfEvery, polT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10 });
+  Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), hour: 17, polT: 0, gangT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10, streetT: 0, streetMax: TOUCH.on ? 8 : 12, evT: 35 });
   G.raidT[G.crew] += 40;                           // somebody else makes the first move
-  [P].forEach(GAME.clearHeat); LIFE.reset();
+  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
 }
 // only ever called on the machine that runs the world. `at`: where the first crowd should gather; by default, the player's own yard.
 function startWorld(at) {
   G.crew = P.team; resetWorld(); at = at || SPAWNS[P.team][0]; P.x = at.x; P.z = at.z;
+  const sv = loadSave(); if (sv && Array.isArray(sv.z) && sv.z.length === ZS.length) sv.z.forEach((q, i) => { const s = ZS[i], o = q[0] | 0; if (o < -1 || o >= NCREW) return; s.owner = o; s.ctrl = o >= 0 ? clamp(+q[1] || 50, 10, 100) : 0; });   // the city as this player left it
   const r = rng32((Math.random() * 1e9) | 0), street = PARK.filter(s => !s.lot), lots = PARK.filter(s => s.lot && !s.truck), used = [];
   const take = (list, n) => { for (let k = 0, guard = 0; k < n && guard < 400; guard++) { const s = list[(r() * list.length) | 0]; if (used.some(u => hyp(u.x - s.x, u.z - s.z) < 9)) continue; used.push(s); k++; G.homes.push({ spot: s, type: pick(r, STREET_CARS), team: -1, car: null, t: 0 }); } };
   take(street, 10); take(lots, 5);
@@ -3344,11 +3541,15 @@ function startWorld(at) {
   staffPosts(true);
   for (let k = walkersWanted(); k > 0; k--) spawnPed(true);
 }
+// every hour of the day each neighbourhood pays the crew that runs it, less for one it only half controls
+function payHour() { let n = 0, amt = 0; ZS.forEach((s, i) => { if (s.owner !== G.crew) return; n++; amt += ZONES[i].val * (.5 + .5 * s.ctrl / 100); }); amt = Math.round(amt / 10) * 10; if (amt > 0) { humans().forEach(a => GAME.pay(a, amt)); GAME.ev('ti', n, amt); } }
+const hourlyNow = () => { let amt = 0; ZS.forEach((s, i) => { if (s.owner === G.crew) amt += ZONES[i].val * (.5 + .5 * s.ctrl / 100); }); return Math.round(amt / 10) * 10; };
 function authTick(dt) {
   G.tod = (G.tod + dt * TOD_RATE) % 24;
   updateZones(dt); updateRaids(dt);
   G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); }
-  if (G.phase === 'play') { G.payT -= dt; if (G.payT <= 0) { G.payT = CFG.turfEvery; let n = 0; ZS.forEach(s => { if (s.owner === G.crew) n++; }); if (n) { humans().forEach(a => GAME.pay(a, n * CFG.pay.turf)); GAME.ev('ti', n, n * CFG.pay.turf); } } }
+  if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }
+  G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); }
   if (!DBG.freeze) for (let i = 0; i < bots.length; i++) updateBot(bots[i], dt);
   updateCarsAuth(dt); updateDriveBys();
   G.popT -= dt; if (G.popT <= 0) { G.popT = .5; populate();
@@ -3379,6 +3580,219 @@ const train = new T.Group(); { const b = new GeoBuf(); for (let k = 0; k < 3; k+
   const m = new T.Mesh(b.build(), lam({})); m.castShadow = true; train.add(m); const w = new T.Mesh(new T.BoxGeometry(2.96, .9, 44), new T.MeshBasicMaterial({ color: 0xffe9b0, transparent: true, opacity: 0 })); w.position.set(0, 2.2, 22.5); train.add(w); train.userData.win = w; scene.add(train); }
 function updateTrain(dt) { const span = CITY.d + 420, z = ((G.time * 15) % span) - 210; train.position.set(LINE.x - 2.4, LINE.y1 + .1, z); train.userData.win.material.opacity = ENV.night * .55;
   const d = hyp(LINE.x - EAR.x, z + 22 - EAR.z); if (AC && d < 70 && rand() < dt * 9) sNoise(.3, 160, .22 * (1 - d / 70), 'lowpass'); }
+
+/* =====================================================================
+   11b. EVENTS — jobs that turn up around the city for whoever is near: an armored truck on its round, a rival lieutenant
+        out in the open, a crew coming for your turf, a car the chop shop wants, a stash left lightly guarded, a street race.
+        The machine that runs the world starts and ends them and pays for them; everyone sees them on the map.
+   ===================================================================== */
+const EV_KINDS = ['truck', 'hit', 'war', 'chop', 'stash', 'race'];
+const EV_INFO = {
+  truck: { name: 'Armored truck', icon: '$', col: '#8fe36b', hex: 0x8fe36b, how: 'Shoot it to a stop, grab the cash' },
+  hit:   { name: 'Hit', icon: '✖', col: '#ff6a5a', hex: 0xff6a5a, how: 'Take out the lieutenant' },
+  war:   { name: 'Hood war', icon: '!', col: '#ffc83d', hex: 0xffc83d, how: 'Defend your turf' },
+  chop:  { name: 'Chop shop', icon: '⚙', col: '#9fd0e8', hex: 0x9fd0e8, how: 'Steal the car, bring it to Calder Auto Body' },
+  stash: { name: 'Stash run', icon: '◆', col: '#e8b8ff', hex: 0xe8b8ff, how: 'Grab the stash, bring it to your yard' },
+  race:  { name: 'Street race', icon: '⚑', col: '#f2efe6', hex: 0xf2efe6, how: 'Drive into the ring to start' },
+};
+const EVTS = []; let evtSeq = 0;
+const CHOP = GARAGES.find(g => g.team === undefined) || GARAGES[0];
+const EV_START = {}, EV_TICK = {};
+const someHuman = () => { const hs = humans().filter(a => !a.dead); return hs.length ? hs[(rand() * hs.length) | 0] : P; };
+const areaName = (x, z) => AREAS[clamp(Math.floor((z - EDGE) / PZ), 0, NZ - 1)][clamp(Math.floor((x - EDGE) / PX), 0, NX - 1)];
+// a crossing between d0 and d1 metres from `a` that no player is within `clear` of
+function xingNear(a, d0, d1, clear) { let best = null, bs = -1e9; for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - a.x, z - a.z); if (d < d0 || d > d1 || nearHuman(x, z) < clear) continue; const sc = rand() * 50 - Math.abs(d - (d0 + d1) / 2); if (sc > bs) { bs = sc; best = [i, j]; } } return best; }
+// a lane leaving crossing ij, pointing at `toward` if given; the spot is left in _lp
+function laneFrom(ij, toward) { const dirs = GRID4.filter(g => ij[0] + g[0] >= 0 && ij[0] + g[0] <= NX && ij[1] + g[1] >= 0 && ij[1] + g[1] <= NZ), dist = g => hyp(RX(ij[0] + g[0]) - toward.x, RZ(ij[1] + g[1]) - toward.z), dir = toward ? dirs.sort((p, q) => dist(p) - dist(q))[0] : dirs[(rand() * dirs.length) | 0]; lanePoint(ij, [ij[0] + dir[0], ij[1] + dir[1]], 14, LANE, _lp); return dir; }
+// a spot to stand in a neighbourhood some other crew runs, a fair way from every player
+function rivalSpot(a, kinds) { let best = null, bs = -1e9; for (let k = 0; k < 50; k++) { const p = SPOTS[(rand() * SPOTS.length) | 0]; if (p.hood < 0 || !kinds.includes(p.k)) continue; const t = ZS[p.hood].owner; if (t < 0 || t === G.crew) continue; const d = hyp(p.x - a.x, p.z - a.z); if (d < 120 || d > 300 || nearHuman(p.x, p.z) < 90 || p.who.some(w => w)) continue; const sc = rand() * 40 - Math.abs(d - 200); if (sc > bs) { bs = sc; best = p; } } return best; }
+// a few of the crew's people standing about a spot, for a lieutenant or a stash
+function guardsAt(p, t, n) { const out = []; for (let k = 0; k < n; k++) { const q = freeSlot(p), g = spawnBot(t, p.x + rs(3), p.y, p.z + rs(3), { temp: true, wpn: pick(rand, BOT_GUNS) }); if (!g) break; g.street = true; g.home = p; g.until = 1e9; g.skill = 1.1; g.guardOf = true; if (q >= 0) takeSpot(g, p, q); out.push(g); } return out; }
+function evStart(E) { E.id = ++evtSeq; E.t0 = G.time; EVTS.push(E); GAME.ev('en', E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone); return E; }
+function evEnd(E, ok, amt, who) {
+  const i = EVTS.indexOf(E); if (i < 0) return; EVTS.splice(i, 1); E.over = true;
+  if (ok && amt) humans().forEach(a => GAME.pay(a, amt));                                               // in co-op the whole crew is paid
+  (E.guards || []).forEach(g => { g.guardOf = false; g.until = G.time + 30; });
+  GAME.ev('ed', E.id, EV_KINDS.indexOf(E.k), ok ? 1 : 0, amt | 0, GAME.ref(who), E.team === undefined ? -1 : E.team, E.zone === undefined ? -1 : E.zone);
+}
+function resetEvents() { EVTS.length = 0; RACE.on = false; evMarks.forEach(m => { m.g.visible = false; m.id = 0; }); }
+function updateEvents() {   // four times a second, on the machine that runs the world
+  for (let i = EVTS.length - 1; i >= 0; i--) EV_TICK[EVTS[i].k](EVTS[i]);
+  if (G.phase !== 'play' || G.time < G.evT) return;
+  if (EVTS.length >= (humans().length >= 3 ? 3 : 2)) { G.evT = G.time + 10; return; }
+  const own = ZS.filter(s => s.owner === G.crew).length, w = { truck: 2, hit: 2, war: own ? 1.6 : 0, chop: 2, stash: 1.6, race: 1.4 };
+  EVTS.forEach(E => { w[E.k] = 0; });
+  let tot = 0; for (const q in w) tot += w[q]; let r = rand() * tot, k = 'truck'; for (const q in w) { r -= w[q]; if (r <= 0 && w[q] > 0) { k = q; break; } }
+  G.evT = G.time + (EV_START[k]() ? 50 + rand() * 40 : 8);
+}
+
+// --- an armored truck on its round with two guards. Shoot it until the back gives, then pick the cash up off the road.
+EV_START.truck = () => {
+  const a = someHuman(), ij = xingNear(a, 140, 280, 100); if (!ij || cars.length > CAR_MAX - 4) return false;
+  const dir = laneFrom(ij, null); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) return false;
+  const c = spawnCar('van', _lp.x, _lp.z, yawOf(dir[0], dir[1]), { color: 0x34503f }); if (!c) return false; c.temp = true; c.armored = true;
+  ['smg', 'shotgun'].forEach((w, k) => { const b = spawnBot(TEAM_COP, _lp.x, 0, _lp.z, { temp: true, wpn: w, name: 'Guard' }); if (!b) return; b.car = c; b.seat = k; c.occ[k] = b; b.unit = c; b.until = 1e9; b.skill = 1; b.guard = true; });   // guards ride the round; they do not join chases
+  if (!c.occ[0]) { for (let k = 1; k < 4; k++) if (c.occ[k]) removeBot(c.occ[k]); removeCar(c); return false; }
+  const A = aiStart(c, 'traffic'); A.cruise = 10; c.vx = dir[0] * 8; c.vz = dir[1] * 8;
+  c.ev = evStart({ k: 'truck', car: c, x: c.x, z: c.z, until: G.time + 170, cash: [] }); return true;
+};
+GAME.truckOpen = (c, src) => {
+  if (c.opened) return; c.opened = true; const E = c.ev, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw);
+  c.ai = null; c.inp.thr = 0; c.inp.steer = 0; c.inp.hb = true;
+  for (let k = 0; k < 4; k++) { const o = c.occ[k]; if (o && o.kind === 'bot') botExit(o, false); }
+  const bags = [];
+  for (let k = 0; k < 4; k++) { const back = c.spec.len / 2 + 1 + k * .7, side = (k % 2 ? 1 : -1) * (.5 + rand() * .6), x = c.x - fx * back + rx * side, z = c.z - fz * back + rz * side, p = addPickup('cash', x, groundAt(x, z, c.y + .6, 'p'), z, 2 + ((rand() * 3) | 0)); p.t = 90; bags.push(p); }
+  if (src && src.kind !== 'bot') GAME.crime(src, 25, 2);
+  if (E && !E.over) { E.open = true; E.by = src; E.cash = bags; E.until = G.time + 80; GAME.ev('eo', E.id); }
+};
+EV_TICK.truck = E => {
+  const c = E.car;
+  if (!E.open) { if (c.gone) return evEnd(E, false); E.x = c.x; E.z = c.z; if (G.time > E.until && nearHuman(c.x, c.z) > 90) { for (let k = 0; k < 4; k++) if (c.occ[k] && c.occ[k].kind === 'bot') removeBot(c.occ[k]); removeCar(c); evEnd(E, false); } return; }
+  E.cash = E.cash.filter(p => !p.gone); if (E.cash.length) { E.x = E.cash[0].x; E.z = E.cash[0].z; }
+  if (!E.cash.length || G.time > E.until) { E.cash.forEach(removePickup); evEnd(E, true, 0, E.by); }                     // the cash is paid as it is picked up
+};
+
+// --- a lieutenant of another crew, out on one of its corners with three of his people
+EV_START.hit = () => {
+  const p = rivalSpot(someHuman(), ['hang', 'dance', 'hoop']); if (!p) return false; const t = ZS[p.hood].owner;
+  const boss = spawnBot(t, p.x, p.y, p.z, { temp: true, wpn: pick(rand, ['rifle', 'shotgun', 'smg']), name: 'Lt. ' + pick(rand, HANDLES) }); if (!boss) return false;
+  boss.hp = 300; boss.skill = 1.4; boss.street = true; boss.home = p; boss.until = 1e9; takeSpot(boss, p, freeSlot(p));
+  const E = evStart({ k: 'hit', boss, guards: guardsAt(p, t, 3), team: t, zone: p.hood, x: p.x, z: p.z, until: G.time + 260 }); boss.boss = E; return true;
+};
+GAME.bossDown = (v, k) => {
+  const E = v.boss, human = !!k && (k === P || k.kind === 'rp');
+  if (human) { GAME.hurtHood(E.zone, k, 25); GAME.notor(k, E.team, 25); }
+  evEnd(E, human, human ? CFG.ev.hit : 0, k);
+};
+EV_TICK.hit = E => {
+  const b = E.boss; if (b.gone && !E.over) return evEnd(E, false); if (b.dead) return;
+  E.x = b.x; E.z = b.z;
+  if (G.time > E.until && nearHuman(b.x, b.z) > 80) { b.boss = null; b.until = 0; evEnd(E, false); }
+};
+
+// --- a hood war: another crew drives two carloads at one of your neighbourhoods. Kill them all, or hold out until they give up.
+EV_START.war = () => {
+  const mine = []; ZS.forEach((s, i) => { if (s.owner === G.crew && !s.hot) mine.push(i); }); if (!mine.length) return false;
+  const a = someHuman(); mine.sort((p, q) => hyp(ZONES[p].x - a.x, ZONES[p].z - a.z) - hyp(ZONES[q].x - a.x, ZONES[q].z - a.z));
+  const zi = rand() < .7 ? mine[0] : mine[(rand() * mine.length) | 0], z = ZONES[zi], rivals = CREWS.map((c, t) => t).filter(t => t !== G.crew), t = rivals[(rand() * rivals.length) | 0];
+  const E = { k: 'war', zone: zi, team: t, x: z.x, z: z.z, until: G.time + 210, bots: [] };
+  for (let n = 0; n < 2; n++) { const ij = xingNear(z, 150, 280, 90); if (!ij) continue; const dir = laneFrom(ij, z); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) continue;
+    const c = spawnCar(CREW_CARS[n % 3], _lp.x, _lp.z, yawOf(dir[0], dir[1]), { color: CREW_PAINT[t], team: t }); if (!c) continue; c.temp = true;
+    ['rifle', 'smg', 'shotgun', 'smg'].slice(0, c.spec.seats).forEach((w, k) => { const b = spawnBot(t, _lp.x, 0, _lp.z, { temp: true, wpn: w }); if (!b) return; b.car = c; b.seat = k; c.occ[k] = b; b.until = G.time + 280; b.skill = 1.15; b.goal = { zone: zi, team: t }; b.goalT = 1e9; b.war = E; E.bots.push(b); });
+    if (!c.occ[0]) { for (let k = 1; k < 4; k++) if (c.occ[k]) removeBot(c.occ[k]); removeCar(c); continue; }
+    const A = aiStart(c, 'crew', xingOf(z.x, z.z)); A.zone = zi; c.vx = dir[0] * 9; c.vz = dir[1] * 9; }
+  if (E.bots.length < 3) { E.bots.forEach(b => { const c = b.car; removeBot(b); if (c && !c.occ.some(o => o)) removeCar(c); }); return false; }
+  evStart(E); return true;
+};
+EV_TICK.war = E => {
+  const s = ZS[E.zone], live = E.bots.filter(b => !b.dead && !b.gone);
+  if (s.owner !== G.crew) return evEnd(E, false);
+  if (!live.length) { s.ctrl = Math.min(100, s.ctrl + 40); return evEnd(E, true, CFG.ev.war); }
+  if (G.time > E.until) { live.forEach(b => { b.until = G.time; b.goal = null; b.goalT = 0; b.war = null; }); return evEnd(E, true, CFG.ev.warHalf); }
+};
+
+// --- the chop shop wants a particular car: it is parked somewhere across town
+EV_START.chop = () => {
+  if (!CHOP || cars.length > CAR_MAX - 3) return false; const a = someHuman(), street = PARK.filter(s => !s.lot); let best = null, bs = -1e9;
+  for (let k = 0; k < 50; k++) { const s = street[(rand() * street.length) | 0], d = hyp(s.x - a.x, s.z - a.z); if (d < 140 || d > 320 || nearHuman(s.x, s.z) < 80 || hyp(s.x - CHOP.x, s.z - CHOP.z) < 150 || cars.some(c => hyp(c.x - s.x, c.z - s.z) < 7)) continue; const sc = rand() * 40 - Math.abs(d - 220); if (sc > bs) { bs = sc; best = s; } }
+  if (!best) return false;
+  const c = spawnCar(pick(rand, ['sport', 'lowrider', 'coupe', 'suv', 'pickup']), best.x, best.z, best.yaw, { color: pick(rand, PAINTS) }); if (!c) return false; c.asleep = true;
+  c.chop = evStart({ k: 'chop', car: c, x: c.x, z: c.z, until: G.time + 320, held: '' }); return true;
+};
+EV_TICK.chop = E => {
+  const c = E.car; if (c.gone || c.wreck || c.burn > 0) return evEnd(E, false);
+  const dr = c.occ[0], human = !!dr && (dr === P || dr.kind === 'rp'); E.x = human ? CHOP.x : c.x; E.z = human ? CHOP.z : c.z; E.held = human ? GAME.ref(dr) : '';
+  if (human && hyp(c.x - CHOP.x, c.z - CHOP.z) < 5.5 && carSpeed(c) < 3) {
+    const amt = Math.round(lerp(CFG.ev.chop[0], CFG.ev.chop[1], clamp(c.hp / c.spec.hp, 0, 1)) / 10) * 10; evEnd(E, true, amt, dr);
+    if (P.car === c) GAME.leaveCar(false); for (let k = 0; k < 4; k++) { const o = c.occ[k]; if (!o) continue; if (o.kind === 'bot') removeBot(o); else { c.occ[k] = null; o.car = null; } } removeCar(c); return; }
+  if (G.time > E.until && !human) { if (nearHuman(c.x, c.z) > 80) removeCar(c); else c.chop = null; evEnd(E, false); }
+};
+
+// --- a stash a crew has left on one of its corners with two or three people watching it: carry it home to your yard
+EV_START.stash = () => {
+  const p = rivalSpot(someHuman(), ['hang']); if (!p) return false; const t = ZS[p.hood].owner;
+  const bag = addPickup('bag', p.x, groundAt(p.x, p.z, p.y + .5, 'p'), p.z, t);
+  const E = evStart({ k: 'stash', team: t, zone: p.hood, bag, guards: guardsAt(p, t, 3), carrier: null, x: p.x, z: p.z, until: G.time + 330 }); bag.ev = E; return true;
+};
+GAME.takeBag = (p, who) => { if (p.gone) return; const E = p.ev; removePickup(p); if (!E || E.over) return; E.carrier = who; E.bag = null; GAME.notor(who, E.team, 20); GAME.ev('sc', E.id, GAME.ref(who)); };
+const yardOf = () => SPAWNS[G.crew][0];
+EV_TICK.stash = E => {
+  const c = E.carrier;
+  if (c) { if (c.gone || c.dead) { const b = addPickup('bag', c.x, groundAt(c.x, c.z, c.y + .5, 'p'), c.z, E.team); b.ev = E; E.bag = b; E.carrier = null; GAME.ev('sd', E.id); return; }
+    const y = yardOf(); E.x = y.x; E.z = y.z; if (hyp(c.x - y.x, c.z - y.z) < 9) { GAME.hurtHood(E.zone, c, 20); return evEnd(E, true, CFG.ev.stash, c); } return; }
+  if (E.bag && !E.bag.gone) { E.x = E.bag.x; E.z = E.bag.z; }
+  if (G.time > E.until) { if (E.bag) removePickup(E.bag); evEnd(E, false); }
+};
+
+// --- a street race: a ring at a crossing. Drive into it and a run of checkpoints opens up on your own screen.
+EV_START.race = () => { const ij = xingNear(someHuman(), 60, 210, 40); if (!ij) return false; evStart({ k: 'race', x: RX(ij[0]), z: RZ(ij[1]), ij, until: G.time + 200 }); return true; };
+EV_TICK.race = E => { if (G.time > E.until) evEnd(E, true, 0, null); };
+const RACE = { on: false, cps: [], i: 0, left: 0, out: 0, coolT: 0 };
+function startRace(E) {
+  const ij = E.ij, route = []; let cur = [ij[0], ij[1]], prev = null; const seen = new Set([cur.join()]);
+  for (let k = 0; k < 7; k++) { const opts = GRID4.map(g => [cur[0] + g[0], cur[1] + g[1], prev && g[0] === cur[0] - prev[0] && g[1] === cur[1] - prev[1]]).filter(q => q[0] >= 0 && q[0] <= NX && q[1] >= 0 && q[1] <= NZ && !seen.has(q[0] + ',' + q[1])); if (!opts.length) break;
+    let tot = 0; opts.forEach(o => tot += o[2] ? 2.5 : 1); let r = rand() * tot, nx = opts[0]; for (const o of opts) { r -= o[2] ? 2.5 : 1; if (r <= 0) { nx = o; break; } }
+    route.push([RX(nx[0]), RZ(nx[1])]); seen.add(nx[0] + ',' + nx[1]); prev = cur; cur = [nx[0], nx[1]]; }
+  if (route.length < 4) return;
+  let len = hyp(route[0][0] - E.x, route[0][1] - E.z); for (let k = 1; k < route.length; k++) len += hyp(route[k][0] - route[k - 1][0], route[k][1] - route[k - 1][1]);
+  Object.assign(RACE, { on: true, cps: route, i: 0, left: len / 18 + 12, out: 0 }); banner('Street race', 'Every checkpoint in ' + Math.round(RACE.left) + ' seconds', 2.6, 'gold'); SFX.streak();
+}
+function endRace(ok, why) { RACE.on = false; RACE.coolT = G.time + 8; if (ok) { const amt = CFG.ev.race; P.earn += amt; gain(amt); banner('Race won', '+$' + amt, 2.6, 'gold'); SFX.streak(); } else { banner('Race over', why, 2.2); SFX.deny(); } }
+function updateRace(dt) {   // on every machine, for its own player
+  if (!RACE.on) { if (!P.car || P.seat !== 0 || P.dead || G.time < RACE.coolT) return; for (const E of EVTS) if (E.k === 'race' && E.ij && hyp(P.car.x - E.x, P.car.z - E.z) < 8) { startRace(E); break; } return; }
+  RACE.left -= dt; if (P.dead) return endRace(false, 'Wasted');
+  if (!P.car) { RACE.out += dt; if (RACE.out > 6) return endRace(false, 'You left the car'); } else RACE.out = 0;
+  if (RACE.left <= 0) return endRace(false, 'Out of time');
+  const cp = RACE.cps[RACE.i], px = P.car ? P.car.x : P.x, pz = P.car ? P.car.z : P.z;
+  if (hyp(px - cp[0], pz - cp[1]) < 9) { RACE.i++; SFX.tick(); if (RACE.i >= RACE.cps.length) endRace(true); else SFX.cash(); }
+}
+
+// --- news of events, on every machine
+function evNews(e, mine) {
+  const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
+  if (k === 'en') { const team = e[6], zi = e[7];
+    if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
+    else note(I.name + ' · ' + areaName(e[4], e[5]) + ' · ' + I.how, 'g'); }
+  else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
+    if (kind === 'race') return;
+    if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
+    else if (ok && kind === 'truck') note('Armored truck · done', 'g');
+    else note(kind === 'war' ? CREWS[team].name + ' took ' + ZONES[zi].name : kind === 'hit' ? (who ? 'Somebody else got the lieutenant' : 'The lieutenant slipped away') : kind === 'truck' ? 'The armored truck got away' : kind === 'chop' ? 'The chop shop car is gone' : I.name + ' · missed', 'c'); }
+  else if (k === 'eo') note('Armored truck stopped · grab the cash', 'g');
+  else if (k === 'sc') { const a = GAME.unref(e[3]); if (a === P) banner('Stash grabbed', 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + ' has the stash', 'g'); }
+  else if (k === 'sd') note('The stash was dropped', 'c');
+}
+// --- what the host says about its events, and what a joined player makes of it
+const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
+  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.ij[0] * 16 + E.ij[1],
+  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.team === undefined ? -1 : E.team]);
+function evFromHost(list) {
+  const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
+  (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
+    if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+}
+// where an event's marker belongs on this machine: on the thing itself when it can be seen, else where the host says
+function evSpot(E, o) {
+  o.x = E.x; o.z = E.z; o.y = CURB;
+  const ref = E.ref !== undefined ? E.ref : E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : null;
+  if ((E.k === 'truck' && !E.open) || (E.k === 'chop' && !E.held)) { const c = carById(ref); if (c) { o.x = c.x; o.z = c.z; o.y = c.y; } }
+  else if (E.k === 'hit') { const b = botById(ref); if (b && !b.dead) { o.x = b.x; o.z = b.z; o.y = b.y; } }
+  return o;
+}
+const evMine = E => (E.k === 'stash' && E.carrier === P) || (E.k === 'chop' && P.car && (E.car ? E.car === P.car : P.car.id === E.ref));
+// --- markers: a tall beam in the event's colour with its sign floating above, and the race's checkpoints as rings on the road
+const evMarks = [0, 1, 2, 3].map(() => { const g = new T.Group(), bm = new T.Mesh(new T.CylinderGeometry(.55, .55, 60, 8, 1, true), new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .22, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide, fog: false })); bm.position.y = 30; g.add(bm);
+  const cv = texCanvas(128), sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, depthTest: false, fog: false })); sp.renderOrder = 8; g.add(sp); g.visible = false; scene.add(g); return { g, bm, sp, cv, id: 0, kind: '', x: 0, z: 0 }; });
+function evIcon(m, kind) { const I = EV_INFO[kind], x = m.cv.getContext('2d'); x.clearRect(0, 0, 128, 128); x.beginPath(); x.arc(64, 64, 52, 0, TAU); x.fillStyle = 'rgba(14,16,20,.82)'; x.fill(); x.lineWidth = 8; x.strokeStyle = I.col; x.stroke(); x.fillStyle = I.col; x.font = '700 64px "Saira Condensed", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(I.icon, 64, 68); m.sp.material.map.needsUpdate = true; m.bm.material.color.setHex(I.hex); m.kind = kind; }
+const raceRing = (() => { const g = new T.RingGeometry(5.2, 6.2, 40); g.rotateX(-PI / 2); return [0, 1].map(k => { const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: k ? 0xf2efe6 : 0xffc83d, transparent: true, opacity: k ? .35 : .8, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide })); const b = new T.Mesh(new T.CylinderGeometry(5.6, 5.6, 7, 28, 1, true), new T.MeshBasicMaterial({ color: k ? 0xf2efe6 : 0xffc83d, transparent: true, opacity: k ? .07 : .16, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide })); b.position.y = 3.5; m.add(b); m.visible = false; scene.add(m); return m; }); })();
+const _es = { x: 0, y: 0, z: 0 };
+function updateEventMarks(dt) {
+  const list = G.state === 'menu' ? [] : EVTS.filter(E => !(E.k === 'race' && RACE.on));
+  evMarks.forEach((m, i) => { const E = list[i]; if (!E) { m.g.visible = false; m.id = 0; return; }
+    evSpot(E, _es); if (m.id !== E.id) { m.id = E.id; m.x = _es.x; m.z = _es.z; evIcon(m, E.k); } else { const k = Math.min(1, dt * 6); m.x = lerp(m.x, _es.x, k); m.z = lerp(m.z, _es.z, k); }
+    m.g.visible = true; m.g.position.set(m.x, _es.y, m.z); const d = hyp(m.x - camera.position.x, m.z - camera.position.z); m.sp.position.y = 6 + Math.min(16, d * .04); m.sp.scale.setScalar(clamp(d * .055, 2.4, 18)); m.bm.material.opacity = .14 + .08 * Math.sin(G.time * 4 + i); });
+  raceRing.forEach((r, k) => { const cp = RACE.on ? RACE.cps[RACE.i + k] : null; r.visible = !!cp; if (cp) { r.position.set(cp[0], .08, cp[1]); r.rotation.y += dt * (k ? .3 : .8); } });
+}
 
 /* =====================================================================
    12. MULTIPLAYER — the same scheme as the Black Ops Clone engine. Everyone with the page open shares a small
@@ -3512,10 +3926,11 @@ function decCars(s, pk) {
   for (let i = cars.length - 1; i >= 0; i--) if (!live[cars[i].id]) { if (P.car === cars[i]) { P.car = null; setHorn(false); radioVolume(0); } removeCar(cars[i]); }
   for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.car && (r.car.gone || r.car.occ[r.seat] !== r)) r.car = null; }
 }
-const encPicks = () => pickups.map(p => B36(p.id, 3) + (p.type === 'chain' ? 'c' : String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : String(p.team))).join('');
+const PICK_TY = { chain: 'c', cash: '$', bag: 'b' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag' };
+const encPicks = () => pickups.map(p => B36(p.id, 3) + (PICK_TY[p.type] || String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : B36(p.team, 1))).join('');
 function decPicks(s) {
   const live = {};
-  for (let o = 0; o + PICK_W <= s.length; o += PICK_W) { const id = U36(s, o, 3), ty = s[o + 3], x = U36(s, o + 4, 3) / 16 - 8, z = U36(s, o + 7, 3) / 16 - 8, y = U36(s, o + 10, 2) / 8 - 4, tm = s[o + 12]; live[id] = 1; if (NET.pkGone[id] || pickups.some(p => p.id === id)) continue; addPickup(ty === 'c' ? 'chain' : WID[+ty] || 'pistol', x, y, z, tm === '-' ? -1 : +tm, id); }
+  for (let o = 0; o + PICK_W <= s.length; o += PICK_W) { const id = U36(s, o, 3), ty = s[o + 3], x = U36(s, o + 4, 3) / 16 - 8, z = U36(s, o + 7, 3) / 16 - 8, y = U36(s, o + 10, 2) / 8 - 4, tm = s[o + 12]; live[id] = 1; if (NET.pkGone[id] || pickups.some(p => p.id === id)) continue; addPickup(PICK_OF[ty] || WID[+ty] || 'pistol', x, y, z, tm === '-' ? -1 : parseInt(tm, 36), id); }
   for (let i = pickups.length - 1; i >= 0; i--) if (!live[pickups[i].id]) removePickup(pickups[i]);
 }
 // ---- the host: applies what the others report, then tells everyone the state of the world
@@ -3531,7 +3946,7 @@ NET.host = dt => {
       else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && r.heat > 0 && r.evade) { rc.hp = rc.spec.hp; rc.burn = 0; setPaint(rc, PAINTS[q[3] | 0]); GAME.clearHeat(r); } }
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
-      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else removePickup(p); } }
+      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else removePickup(p); } }
       else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4]; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), 10, 0, GAME.ref(r)); explode(x, y + .3, z, r, 1, 'nade'); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
@@ -3541,9 +3956,10 @@ NET.host = dt => {
   });
   cars.forEach(c => { if (c.kin && snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
   NET.sendT -= dt; if (NET.sendT > 0) return; NET.sendT = 1 / 10;
-  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0]); }
+  const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
+  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P)]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r)]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0')).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0) };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -3557,8 +3973,9 @@ function applyHost(s) {
   const W = s.W; if (!W) return;
   G.tod = W.d; if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; } G.robMask = W.r | 0; G.phase = 'play';
   if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }                 // everyone rides with the host's crew
-  if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 4 + 4 <= W.z.length; i++) { const z = ZS[i]; z.owner = U36(W.z, i * 4, 1) - 1; z.by = U36(W.z, i * 4 + 1, 1) - 1; z.prog = U36(W.z, i * 4 + 2, 1) / 35; z.hot = W.z[i * 4 + 3] === '1'; }
-  (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; P.heat = e[6] | 0; P.evade = !!e[7]; } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
+  if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
+  evFromHost(W.e);
+  (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; P.heat = e[6] | 0; P.evade = !!e[7]; P.gs = String(e[8] || ''); } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
   { const hr = NET.remotes[NET.hostPeer]; if (hr) hr.slot = 0; }
   decCars(s.cs || '', s.cp || ''); decBots(s.bs || '', s.bv || '', s.bc || ''); decPicks(s.pk || '');
   for (const id in NET.pkGone) if (G.time - NET.pkGone[id] > 4) delete NET.pkGone[id];
@@ -3635,7 +4052,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-2'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-3'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();
@@ -3680,9 +4097,11 @@ function blip(g, x, z, k, R, col, r, ring, clampEdge) {
 }
 function drawRadar() {
   const S = radar.width, R = S / 2, g = rctx, k = P.car ? .62 : 1; g.clearRect(0, 0, S, S); g.save(); g.translate(R, R);
-  g.save(); g.rotate(P.cyaw); g.scale(k / MS, k / MS); g.drawImage(mapCv, -(P.x + MO) * MS, -(P.z + MO) * MS); g.restore();
+  g.save(); g.rotate(P.cyaw); g.scale(k / MS, k / MS); g.drawImage(mapCv, -(P.x + MO) * MS, -(P.z + MO) * MS); hoodTint(g, x => (x - P.x) * MS, z => (z - P.z) * MS, MS, .17); g.restore();
   ZONES.forEach((z, i) => { const s = ZS[i], col = s.owner < 0 ? '#f2efe6' : CREWS[s.owner].css; radarXY(z.x, z.z, k, blipO); if (hyp(blipO[0], blipO[1]) < R + z.r * k) { g.beginPath(); g.arc(blipO[0], blipO[1], z.r * k, 0, TAU); g.fillStyle = s.owner < 0 ? 'rgba(242,239,230,.12)' : 'rgba(' + CREWS[s.owner].rgb + ',.2)'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = col; g.stroke(); }
     blip(g, z.x, z.z, k, R, col, 8, s.hot && Math.sin(G.time * 9) > 0 ? '#fff' : '#111', true); g.fillStyle = '#111'; g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(z.id, blipO[0], blipO[1] + .5); });
+  EVTS.forEach(E => { const I = EV_INFO[E.k]; evSpot(E, _ev); blip(g, _ev.x, _ev.z, k, R, I.col, 7.5, '#111', true); g.fillStyle = '#111'; g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(I.icon, blipO[0], blipO[1] + .5); });
+  if (RACE.on && RACE.cps[RACE.i]) blip(g, RACE.cps[RACE.i][0], RACE.cps[RACE.i][1], k, R, '#ffc83d', 6, '#fff', true);
   SHOPS.forEach(s => { if (s.team === undefined || s.team === P.team) { blip(g, s.x, s.z, k, R, '#8fe36b', 4.5, '#111'); } }); GARAGES.forEach(s => { if (s.team === undefined || s.team === P.team) blip(g, s.x, s.z, k, R, '#9fd0e8', 4, '#111'); });
   ROBS.forEach((s, i) => { if (tillOpen(i)) blip(g, s.x, s.z, k, R, '#ff5fa2', 3.5, '#111'); });
   pickups.forEach(p => { if (p.type === 'chain') blip(g, p.x, p.z, k, R, '#ffc83d', 2.5); });
@@ -3697,9 +4116,12 @@ function drawRadar() {
 function drawBigMap() {
   const c = $('mapc'), g = c.getContext('2d'), k = c.width / (CITY.w + 60), X = x => (x + MO) * k; g.fillStyle = '#0e1014'; g.fillRect(0, 0, c.width, c.height); g.drawImage(mapCv, 0, 0, mapCv.width, mapCv.height, 0, 0, mapCv.width * k / MS, mapCv.height * k / MS);
   const dot = (x, z, r, col, ring) => { g.beginPath(); g.arc(X(x), X(z), r, 0, TAU); g.fillStyle = col; g.fill(); if (ring) { g.lineWidth = 2; g.strokeStyle = ring; g.stroke(); } };
+  hoodTint(g, X, X, k, .22);
   ZONES.forEach((z, i) => { const s = ZS[i], col = s.owner < 0 ? '#f2efe6' : CREWS[s.owner].css; g.beginPath(); g.arc(X(z.x), X(z.z), z.r * k, 0, TAU); g.fillStyle = s.owner < 0 ? 'rgba(242,239,230,.15)' : 'rgba(' + CREWS[s.owner].rgb + ',.28)'; g.fill(); g.lineWidth = 2; g.strokeStyle = col; g.stroke(); dot(z.x, z.z, 11, col, '#111'); g.fillStyle = '#111'; g.font = '700 14px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(z.id, X(z.x), X(z.z) + 1); g.fillStyle = '#f2efe6'; g.font = '600 13px sans-serif'; g.fillText(z.name, X(z.x), X(z.z) + z.r * k + 10); });
   SHOPS.forEach(s => { if (s.team === undefined || s.team === P.team) dot(s.x, s.z, 5, '#8fe36b', '#111'); }); GARAGES.forEach(s => { if (s.team === undefined || s.team === P.team) dot(s.x, s.z, 5, '#9fd0e8', '#111'); });
   ROBS.forEach((s, i) => { if (tillOpen(i)) dot(s.x, s.z, 5, '#ff5fa2', '#111'); });
+  EVTS.forEach(E => { const I = EV_INFO[E.k]; evSpot(E, _ev); dot(_ev.x, _ev.z, 10, I.col, '#111'); g.fillStyle = '#111'; g.font = '700 13px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(I.icon, X(_ev.x), X(_ev.z) + 1); });
+  if (RACE.on) RACE.cps.slice(RACE.i).forEach((cp, q) => dot(cp[0], cp[1], q ? 4 : 7, '#ffc83d', '#111'));
   bots.forEach(b => { if (b.dead) return; if (b.team === P.team) dot(b.x, b.z, 3.5, CREWS[b.team].css); else if (b.team === TEAM_COP && P.heat > 0) dot(b.x, b.z, 4, '#5c98ff', '#fff'); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (!r.dead && r.team === P.team) dot(r.x, r.z, 5, CREWS[r.team].css, '#fff'); }
   dot(P.x, P.z, 6, '#fff', '#111');
   const key = [['#8fe36b', 'Guns'], ['#9fd0e8', 'Repairs and resprays'], ['#ff5fa2', 'A till worth robbing'], ['#fff', 'You']].concat(CREWS.map((q, t) => [q.css, q.name + (t === P.team ? ' · your crew' : '')]));
@@ -3717,13 +4139,24 @@ function drawBoard() {
   { const box = document.createElement('div'); let mine = 0; ZS.forEach(s => { if (s.owner === P.team) mine++; }); head(box, 'Turf', mine + ' of ' + ZONES.length);
     const tb = document.createElement('table'), hr = document.createElement('tr'); ['Turf', 'Held by'].forEach(x => cell(hr, 'th', x)); tb.appendChild(hr);
     ZONES.forEach((z, i) => { const s = ZS[i], tr = document.createElement('tr'); cell(tr, 'td', z.id + ' · ' + z.name); const c = cell(tr, 'td', s.owner < 0 ? 'Nobody' : CREWS[s.owner].name + (s.hot ? ' · under fire' : '')); if (s.owner >= 0) c.style.color = CREWS[s.owner].css; tb.appendChild(tr); }); box.appendChild(tb); el.appendChild(box); }
-  const f = document.createElement('div'); f.className = 'foot'; f.textContent = `No rounds, no clock. Four crews, ten turfs. Each turf your crew holds pays $${CFG.pay.turf} a minute; a rival is worth $${CFG.pay.kill} and their chain $${CFG.pay.chain}. Stars bring the police: stay out of their sight to shake them, or respray the car at a garage.`; el.appendChild(f);
+  const f = document.createElement('div'); f.className = 'foot'; f.textContent = `Every neighbourhood your crew runs pays each hour of the day: $${hourlyNow()} an hour right now. Drop a crew's people on their own streets, rob their tills and hit their events to loosen their hold, then take the ring. Skulls mean a crew is sending shooters after you; stars bring the police.`; el.appendChild(f);
 }
 const AREAS = [['North End', 'North End', 'Northgate', 'Northgate Yard', 'Midtown', 'Uptown', 'Port North'], ['Ember Row', 'The Courts', 'Uptown Market', 'Midtown', 'Civic Square', 'Calder Avenue', 'Tidewater Yard'], ['Ember Row', 'Library Hill', 'Lakeside Plaza', 'Calder Mall', 'Midtown', 'Calder Ave Station', 'Port North'],
   ['Ember Row Yard', 'Ember Row', 'The Corner', 'Founders Park', 'Southbank', 'Southbank', 'The Docks'], ['Ember Row', 'Calder Homes', 'Southbank', 'Southbank', 'Gas & Auto Row', 'The Foundry', 'The Docks'], ['West End', 'West End', 'Steeple Street', 'Southbank', 'The Steelyard', 'Steelyard', 'The Docks']];
 // the turf strip: one square per turf, in the colour of whoever holds it
 { const zs = $('turf').querySelector('.zs'); ZONES.forEach((z, i) => { const b = document.createElement('b'); b.id = 't-z' + i; b.textContent = z.id; zs.appendChild(b); }); }
-let radarT = 0, areaT = 0, areaNow = '', hereZone = -1;
+let radarT = 0, areaT = 0, areaNow = '', hereZone = -1, evlT = 0;
+const _ev = { x: 0, y: 0, z: 0 };
+// each block of the map washed in the colour of the crew that runs its neighbourhood. X, Z map world to the canvas; s is pixels per metre
+function hoodTint(g, X, Z, s, a) { for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const o = ZS[HOOD[j][i]].owner; if (o < 0) continue; g.fillStyle = 'rgba(' + CREWS[o].rgb + ',' + a + ')'; g.fillRect(X(RX(i)), Z(RZ(j)), PX * s, PZ * s); } }
+const mmss = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+// the jobs going on in the city right now, nearest first
+function drawEventList() {
+  const el = $('evl'); if (G.state === 'menu' || !EVTS.length) { if (!el.hidden) { el.hidden = true; hudCache.evl = ''; } return; }
+  const rows = EVTS.map(E => { evSpot(E, _ev); const mine = evMine(E), d = Math.round(hyp(_ev.x - P.x, _ev.z - P.z) / 10) * 10, I = EV_INFO[E.k]; return [d, I, (mine ? (E.k === 'stash' ? 'Carrying the stash · yard ' : 'Chop shop ') : '') + d + ' m', E.k === 'race' && RACE.on ? '' : mmss(Math.max(0, E.until - G.time)), E.k === 'war' && E.zone >= 0 ? ZONES[E.zone].name : I.name]; }).sort((p, q) => p[0] - q[0]);
+  const key = rows.map(r => r[1].icon + r[2] + r[3] + r[4]).join('|'); if (key === hudCache.evl) return; hudCache.evl = key; el.textContent = ''; el.hidden = false;
+  rows.forEach(r => { const d = document.createElement('div'), b = document.createElement('b'), n = document.createElement('span'), m = document.createElement('small'); b.textContent = r[1].icon; b.style.background = r[1].col; n.textContent = r[4]; m.textContent = r[2] + (r[3] ? ' · ' + r[3] : ''); d.append(b, n, m); el.appendChild(d); });
+}
 function updateHud(dt) {
   const d = WEAPONS[P.wpn], w = P.inv[P.wpn] || { mag: 0, res: 0 };
   setHud('h-cash', '$' + Math.max(0, Math.round(P.cash)).toLocaleString('en-US'));
@@ -3736,8 +4169,11 @@ function updateHud(dt) {
   { const h = P.heat | 0, key = h * 2 + (P.evade && h ? 1 : 0); if (hudCache.heat !== key) { const was = (hudCache.heat | 0) >> 1; hudCache.heat = key; const e = $('h-stars'); e.hidden = !h; e.textContent = '★'.repeat(h) + '☆'.repeat(5 - h); e.className = P.evade && h ? 'evade' : '';
       if (h > was) { SFX.star(); if (!was) note('Wanted: the police are on their way', 'p'); } else if (!h && was && !P.dead) { SFX.clear(); note('The police have lost you', 'g'); } } }
   hereZone = -1; ZONES.forEach((z, i) => { const s = ZS[i], here = !P.dead && hyp(P.x - z.x, P.z - z.z) < z.r, c = (s.owner >= 0 ? 't' + s.owner : '') + (s.hot ? ' hot' : '') + (here ? ' here' : ''); if (here) hereZone = i; if (hudCache['z' + i] !== c) { hudCache['z' + i] = c; $('t-z' + i).className = c; } });
-  { const show = hereZone >= 0 && G.phase === 'play'; if (hudCache.cap !== show) { hudCache.cap = show; $('cap').hidden = !show; }
-    if (show) { const s = ZS[hereZone], mine = s.owner === P.team, work = s.prog > .005 && s.by >= 0, f = $('cap-fill'), tr = $('cap-track');   // the bar fills in the colour of the crew at work on it, over the colour of whoever holds it
+  const hood = P.dead ? -1 : hoodAt(P.x, P.z); if (hood !== hudCache.hood) { hudCache.hood = hood; hudCache.hoodT = G.time; } if (hood >= 0 && Math.abs(ZS[hood].ctrl - (hudCache.ctrlSeen === undefined ? ZS[hood].ctrl : hudCache.ctrlSeen)) > .9) { hudCache.hoodT = G.time; } if (hood >= 0) hudCache.ctrlSeen = ZS[hood].ctrl;
+  { const ring = hereZone >= 0 && G.phase === 'play', grip = !ring && hood >= 0 && G.phase === 'play' && ZS[hood].owner >= 0 && G.time - hudCache.hoodT < 5, show = ring || grip; if (hudCache.cap !== show) { hudCache.cap = show; $('cap').hidden = !show; }
+    if (grip) { const s = ZS[hood], f = $('cap-fill'), tr = $('cap-track'), mine = s.owner === P.team; setHud('cap-label', (mine ? 'Your turf · ' : CREWS[s.owner].name + ' turf · ') + ZONES[hood].name + ' · ' + Math.round(s.ctrl) + '% hold');
+      const c = Math.round(s.ctrl), key = -1 - c - (s.owner + 1) * 1000; if (hudCache.capv !== key) { hudCache.capv = key; f.style.width = c + '%'; f.style.background = CREWS[s.owner].css; tr.style.background = 'rgba(10,12,16,.75)'; } }
+    else if (show) { const s = ZS[hereZone], mine = s.owner === P.team, work = s.prog > .005 && s.by >= 0, f = $('cap-fill'), tr = $('cap-track');   // the bar fills in the colour of the crew at work on it, over the colour of whoever holds it
       setHud('cap-label', (work && s.by === P.team ? (s.owner >= 0 ? 'Breaking their hold · ' : 'Taking · ') : work && mine ? 'Losing · ' : s.hot ? 'Contested · ' : mine ? 'Holding · ' : s.owner >= 0 ? CREWS[s.owner].name + ' turf · ' : 'Nobody holds · ') + ZONES[hereZone].name);
       const c = work ? Math.round(s.prog * 100) : 0, key = c + (s.by + 1) * 1000 + (s.owner + 1) * 10000; if (hudCache.capv !== key) { hudCache.capv = key; f.style.width = c + '%'; f.style.background = work ? CREWS[s.by].css : 'transparent'; tr.style.background = s.owner >= 0 ? 'rgba(' + CREWS[s.owner].rgb + ',.45)' : 'rgba(10,12,16,.75)'; } } }
   setHud('h-prompt', prompt && !shopOpen ? prompt.text : P.enter ? '' : '', true);
@@ -3752,23 +4188,195 @@ function updateHud(dt) {
   for (let i = feedRows.length - 1; i >= 0; i--) { const f = feedRows[i]; f.t -= dt; if (f.t < 1) f.row.style.opacity = String(Math.max(0, f.t)); if (f.t <= 0) { f.row.remove(); feedRows.splice(i, 1); } }
   if (P.dead) setHud('dead-sub', (P.deadMsg || '') + (G.phase === 'play' ? ' · back in ' + Math.max(0, Math.ceil(CFG.respawn - P.deadT)) : ''));
   // which part of town this is, shown for a moment when it changes
-  { const i = clamp(Math.floor((P.x - EDGE) / PX), 0, NX - 1), j = clamp(Math.floor((P.z - EDGE) / PZ), 0, NZ - 1), nm = AREAS[j][i]; if (nm !== areaNow) { areaNow = nm; const zi = ZONES.findIndex(z => z.name === nm || hyp(z.x - RX(i) - PX / 2, z.z - RZ(j) - PZ / 2) < 45), s = zi >= 0 ? ZS[zi] : null; $('h-area').innerHTML = ''; $('h-area').append(nm); const sm = document.createElement('small'); sm.textContent = s ? (s.owner < 0 ? 'Turf ' + ZONES[zi].id + ' · nobody holds it' : 'Turf ' + ZONES[zi].id + ' · ' + CREWS[s.owner].name) : 'Port Calder'; $('h-area').appendChild(sm); $('h-area').classList.add('on'); areaT = 3.2; } if (areaT > 0) { areaT -= dt; if (areaT <= 0) $('h-area').classList.remove('on'); } }
+  { const i = clamp(Math.floor((P.x - EDGE) / PX), 0, NX - 1), j = clamp(Math.floor((P.z - EDGE) / PZ), 0, NZ - 1), nm = AREAS[j][i]; if (nm !== areaNow) { areaNow = nm; const zi = HOOD[j][i], s = ZS[zi]; $('h-area').innerHTML = ''; $('h-area').append(nm); const sm = document.createElement('small'); sm.textContent = ZONES[zi].name + ' · ' + (s.owner < 0 ? 'nobody runs it' : s.owner === P.team ? 'your turf' : CREWS[s.owner].name + ' turf'); if (s.owner >= 0) sm.style.color = CREWS[s.owner].css; $('h-area').appendChild(sm); $('h-area').classList.add('on'); areaT = 3.2; } if (areaT > 0) { areaT -= dt; if (areaT <= 0) $('h-area').classList.remove('on'); } }
+  { const gs = AUTH() ? CREWS.map((c, t) => skullsOf(P.gn ? P.gn[t] : 0)).join('') : P.gs || ''; if (hudCache.gs !== gs) { const was = hudCache.gs || ''; hudCache.gs = gs; const e = $('h-gang'); e.textContent = ''; let any = false;
+      for (let t = 0; t < NCREW; t++) { const n = +gs[t] || 0; if (!n) continue; any = true; const sp = document.createElement('span'); sp.style.color = CREWS[t].css; sp.title = CREWS[t].name; sp.textContent = '☠\uFE0E'.repeat(n); e.appendChild(sp); if (n > (+was[t] || 0) && n >= 2 && !P.dead) note(CREWS[t].name + ' notoriety · ' + n + ' skulls', 'k' + t); }
+      e.hidden = !any; } }
+  { const on = RACE.on; if (hudCache.race !== on) { hudCache.race = on; $('h-race').hidden = !on; } if (on) setHud('h-race', 'Race · checkpoint ' + (RACE.i + 1) + ' of ' + RACE.cps.length + ' · ' + Math.max(0, Math.ceil(RACE.left)) + 's'); }
+  evlT -= dt; if (evlT <= 0) { evlT = .25; drawEventList(); }
   radarT -= dt; if (radarT <= 0) { radarT = 1 / 30; drawRadar(); if (!$('bigmap').hidden) drawBigMap(); }
   if (DBG.stats) setHud('h-dev', `fps ${DBG.fps.toFixed(0)}  calls ${renderer.info.render.calls}  tris ${(renderer.info.render.triangles / 1000).toFixed(0)}k\nbots ${bots.length}  cars ${cars.length}  people ${chars.length}\nnet ${NET.mode || 'solo'}  ${NET.bytes} B  slot ${NET.slot}\npos ${P.x.toFixed(1)} ${P.y.toFixed(1)} ${P.z.toFixed(1)}  ${G.tod.toFixed(1)}h`); else setHud('h-dev', '');
 }
+
+/* =====================================================================
+   13b. TOUCH — a stick, a look pad and buttons for phones and tablets. Every button can be dragged anywhere and resized, the
+        whole set made more or less see-through, and the layout is kept in this browser.
+        In Auto, the controls appear on a touch screen and step aside as soon as a mouse is used.
+   ===================================================================== */
+// id, label, when it shows (f on foot, c in a car, b both), what it does, and where it sits by default: anchored to the left (0), right (1)
+// or middle (.5) of the screen and the top (0) or bottom (1), offset and sized in units of the screen's shorter side (capped for tablets)
+const TC_DEF = [
+  ['stick', '', 'b', 'stick', 0, .3, 1, .28, .38],
+  ['fire', 'FIRE', 'b', 'fire', 1, .27, 1, .38, .23],
+  ['aim', 'AIM', 'f', 'aim', 1, .47, 1, .14, .15],
+  ['jump', 'JUMP', 'f', 'key:Space', 1, .1, 1, .14, .14],
+  ['use', 'USE', 'b', 'tap:KeyF', 1, .5, 1, .45, .14],
+  ['reload', 'RELOAD', 'b', 'tap:KeyR', 1, .09, 1, .42, .12],
+  ['swap', 'SWAP', 'b', 'swap', 1, .09, 1, .63, .12],
+  ['nade', 'NADE', 'f', 'tap:KeyG', 1, .64, 1, .3, .12],
+  ['gas', 'GAS', 'c', 'key:KeyW', 1, .12, 1, .16, .2],
+  ['brake', 'BRAKE', 'c', 'key:KeyS', 1, .34, 1, .14, .17],
+  ['drift', 'DRIFT', 'c', 'key:Space', 1, .53, 1, .14, .14],
+  ['horn', 'HORN', 'c', 'key:KeyH', 1, .66, 1, .3, .12],
+  ['radio', 'RADIO', 'c', 'tap:KeyQ', 1, .66, 1, .52, .11],
+  ['pause', '❚❚', 'b', 'pause', 0, .33, 0, .07, .1],
+  ['map', 'MAP', 'b', 'map', 0, .44, 0, .07, .1],
+  ['turf', 'TURF', 'b', 'board', 0, .55, 0, .07, .1],
+  ['cam', 'CAM', 'b', 'tap:KeyV', 1, .5, 0, .07, .1],
+  ['call', 'CALL', 'b', 'tap:KeyB', .5, 0, 0, .36, .13],
+];
+const TCD = {}; TC_DEF.forEach(d => { TCD[d[0]] = d; });
+const TOUCH = { on: false, fx: 0, fy: 0, ptr: {}, edit: false, sel: null, aim: false, ectx: 'f', el: {}, cfg: null, coarse: !!(window.matchMedia && matchMedia('(pointer: coarse)').matches) };
+const TC_CFG0 = { mode: 'auto', sens: 1, alpha: .6, assist: true, float: true, lay: {} };
+try { TOUCH.cfg = Object.assign({}, TC_CFG0, JSON.parse(localStorage.getItem('pc-touch') || '{}')); } catch (e) { TOUCH.cfg = Object.assign({}, TC_CFG0); }
+if (!TOUCH.cfg.lay || typeof TOUCH.cfg.lay !== 'object') TOUCH.cfg.lay = {};
+const saveTouch = () => { try { localStorage.setItem('pc-touch', JSON.stringify(TOUCH.cfg)); } catch (e) {} };
+const tLayer = document.createElement('div'); tLayer.id = 'touch'; tLayer.hidden = true; $('game').insertBefore(tLayer, $('hud'));
+TC_DEF.forEach(d => { const el = document.createElement('div'); el.className = 'tc tc-' + d[0]; el.dataset.tc = d[0]; el.dataset.ctx = d[2]; if (d[0] === 'stick') el.appendChild(document.createElement('i')); else el.textContent = d[1]; tLayer.appendChild(el); TOUCH.el[d[0]] = el; });
+// where a control's centre is and how big it is, in pixels
+const tUnit = () => Math.min(window.innerWidth, window.innerHeight, 480);
+function tPlace(id) {
+  const d = TCD[id], W = window.innerWidth, H = window.innerHeight, U = tUnit(), L = TOUCH.cfg.lay[id];
+  const size = (L ? L[2] : d[8]) * U, cx = L ? L[0] * W : d[4] === 0 ? d[5] * U : d[4] === 1 ? W - d[5] * U : W / 2 + d[5] * U, cy = L ? L[1] * H : d[6] === 0 ? d[7] * U : H - d[7] * U;
+  return [clamp(cx, size / 2, W - size / 2), clamp(cy, size / 2, H - size / 2), size];
+}
+function layoutTouch() {
+  TC_DEF.forEach(d => { const el = TOUCH.el[d[0]], q = tPlace(d[0]); el.style.left = (q[0] - q[2] / 2) + 'px'; el.style.top = (q[1] - q[2] / 2) + 'px'; el.style.width = el.style.height = q[2] + 'px'; el.style.fontSize = Math.max(10, q[2] * (d[0] === 'pause' ? .34 : .22)) + 'px'; });
+  tLayer.style.setProperty('--ta', TOUCH.cfg.alpha);
+}
+window.addEventListener('resize', layoutTouch); window.addEventListener('orientationchange', () => setTimeout(layoutTouch, 300));
+// turning the controls on or off; the first time, a phone gets the lighter graphics as well
+function setTouch(on) {
+  if (TOUCH.on === on) return; TOUCH.on = on; document.body.classList.toggle('touch', on); releaseAll();
+  if (on) { layoutTouch(); let pref = null; try { pref = localStorage.getItem('pc-gfx'); } catch (e) {} if (!pref && !GFX.low) { GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); } }
+  touchMenu(); updateTouchUi();
+}
+const wantTouch = () => TOUCH.cfg.mode === 'on' || (TOUCH.cfg.mode === 'auto' && TOUCH.coarse);
+// in Auto, whichever was used last wins: a finger brings the controls up, a mouse puts them away
+window.addEventListener('pointerdown', e => { if (TOUCH.cfg.mode !== 'auto' || TOUCH.edit) return; const finger = e.pointerType === 'touch' || e.pointerType === 'pen'; if (finger !== TOUCH.on) { TOUCH.coarse = finger; setTouch(finger); } }, true);
+// --- the controls in use
+function releaseAll() { for (const id in TOUCH.ptr) release(TOUCH.ptr[id]); TOUCH.ptr = {}; TOUCH.fx = TOUCH.fy = 0; }
+function tKey(code) { window.dispatchEvent(new KeyboardEvent('keydown', { code })); window.dispatchEvent(new KeyboardEvent('keyup', { code })); }
+function press(id, e) {
+  const how = TCD[id][3]; TOUCH.ptr[e.pointerId] = { k: how === 'fire' ? 'fire' : 'btn', id, x: e.clientX, y: e.clientY }; TOUCH.el[id].classList.add('down');
+  if (how === 'fire') { mouse.down = true; mouse.fresh = true; initAudio(); }
+  else if (how === 'aim') { TOUCH.aim = !TOUCH.aim; mouse.right = TOUCH.aim; TOUCH.el.aim.classList.toggle('on', TOUCH.aim); }
+  else if (how.startsWith('key:')) keys[how.slice(4)] = true;
+  else if (how.startsWith('tap:')) tKey(how.slice(4));
+  else if (how === 'swap') cycleWeapon(1);
+  else if (how === 'map') { const m = $('bigmap'); m.hidden = !m.hidden; if (!m.hidden) { $('board').hidden = true; drawBigMap(); } }
+  else if (how === 'board') { const b = $('board'); b.hidden = !b.hidden; if (!b.hidden) { $('bigmap').hidden = true; drawBoard(); } }
+  else if (how === 'pause') { releaseAll(); pause(); }
+}
+function release(p) {
+  if (!p) return;
+  if (p.k === 'stick') { TOUCH.fx = TOUCH.fy = 0; const el = TOUCH.el.stick; el.classList.remove('down'); el.firstChild.style.transform = ''; if (p.float) layoutTouch(); return; }
+  if (p.k === 'fire') mouse.down = false;
+  if (p.id) { const how = TCD[p.id][3]; if (how.startsWith('key:')) keys[how.slice(4)] = false; if (p.id !== 'aim') TOUCH.el[p.id].classList.remove('down'); else TOUCH.el.aim.classList.remove('down'); }
+}
+function stickStart(e, at) {
+  const el = TOUCH.el.stick, r = el.getBoundingClientRect(), cx = at ? at[0] : r.left + r.width / 2, cy = at ? at[1] : r.top + r.height / 2;
+  const p = TOUCH.ptr[e.pointerId] = { k: 'stick', cx, cy, rad: r.width / 2, float: !!at };
+  if (at) { el.style.left = (cx - r.width / 2) + 'px'; el.style.top = (cy - r.height / 2) + 'px'; }
+  el.classList.add('down'); stickMove(p, e);
+}
+function stickMove(p, e) {
+  let dx = e.clientX - p.cx, dy = e.clientY - p.cy; const m = p.rad * .78, d = hyp(dx, dy); if (d > m) { dx *= m / d; dy *= m / d; }
+  TOUCH.fx = dx / m; TOUCH.fy = dy / m; if (hyp(TOUCH.fx, TOUCH.fy) < .12) TOUCH.fx = TOUCH.fy = 0;
+  TOUCH.el.stick.firstChild.style.transform = `translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)`;
+}
+function look(dx, dy) {
+  if (G.state !== 'playing') return; const k = TOUCH.cfg.sens * .0058 * (firstPerson() || P.ads > .5 ? camera.fov / 72 : 1);
+  P.cyaw -= dx * k; P.cpitch = clamp(P.cpitch - dy * k, -1.25, 1.35); P.idleCam = 0;
+}
+tLayer.addEventListener('pointerdown', e => {
+  e.preventDefault(); try { tLayer.setPointerCapture(e.pointerId); } catch (x) {}
+  const el = e.target.closest('[data-tc]'), id = el ? el.dataset.tc : null;
+  if (TOUCH.edit) { if (id) { tSelect(id); TOUCH.ptr[e.pointerId] = { k: 'drag', id, x: e.clientX, y: e.clientY }; } return; }
+  if (id === 'stick') return stickStart(e, null);
+  if (id) return press(id, e);
+  if (TOUCH.cfg.float && e.clientX < window.innerWidth * .42 && e.clientY > window.innerHeight * .28) return stickStart(e, [e.clientX, e.clientY]);   // a thumb anywhere low on the left is the stick
+  TOUCH.ptr[e.pointerId] = { k: 'look', x: e.clientX, y: e.clientY };
+}, { passive: false });
+tLayer.addEventListener('pointermove', e => {
+  const p = TOUCH.ptr[e.pointerId]; if (!p) return; e.preventDefault();
+  if (p.k === 'stick') return stickMove(p, e);
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (p.k === 'look' || p.k === 'fire') look(dx, dy);                                                     // a thumb on FIRE can steer the aim while it shoots
+  else if (p.k === 'drag') tDrag(p.id, dx, dy);
+}, { passive: false });
+const tUp = e => { const p = TOUCH.ptr[e.pointerId]; if (!p) return; delete TOUCH.ptr[e.pointerId]; if (p.k === 'drag') saveTouch(); else release(p); };
+tLayer.addEventListener('pointerup', tUp); tLayer.addEventListener('pointercancel', tUp); tLayer.addEventListener('lostpointercapture', tUp);
+tLayer.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('touchmove', e => { if (TOUCH.on && G.state === 'playing') e.preventDefault(); }, { passive: false });   // no page scroll or pinch zoom mid-game
+// a little help with aim on a touch screen: while firing or aiming, the view leans toward the nearest enemy close to the crosshair
+function touchAssist(dt) {
+  if (!TOUCH.on || !TOUCH.cfg.assist || G.state !== 'playing' || P.dead || !(mouse.down || mouse.right)) return;
+  const d = WEAPONS[P.wpn]; if (d.melee) return;
+  const ox = camera.position.x, oy = camera.position.y, oz = camera.position.z, cp = Math.cos(P.cpitch), fx = -Math.sin(P.cyaw) * cp, fy = Math.sin(P.cpitch), fz = -Math.cos(P.cyaw) * cp;
+  let best = null, ba = 1e9;
+  for (let i = 0; i < bots.length; i++) { const a = bots[i]; if (a.dead || a.gone) continue; if (!((isCrew(a.team) && a.team !== P.team) || (a.team === TEAM_COP && P.heat > 0) || a.tgt === P)) continue;
+    const tx = a.x - ox, ty = chestY(a) - oy, tz = a.z - oz, dist = hyp(tx, ty, tz); if (dist < 1.5 || dist > d.range[1] * 1.2) continue;
+    const ang = Math.acos(clamp((tx * fx + ty * fy + tz * fz) / dist, -1, 1)); if (ang > Math.max(.11, Math.atan(1.4 / dist)) || ang >= ba) continue;
+    if (los(P.x, P.y + 1.5, P.z, a.x, chestY(a), a.z, 's')) { ba = ang; best = a; } }
+  if (!best) return;
+  const tx = best.x - ox, tz = best.z - oz, k = Math.min(1, dt * (mouse.right ? 7 : 4.5));
+  P.cyaw = lerpAng(P.cyaw, yawOf(tx, tz), k); P.cpitch = lerp(P.cpitch, Math.atan2(chestY(best) - oy, hyp(tx, tz)), k);
+}
+// which controls show: the foot set or the car set, CALL when a drive-by is ready, USE lit when it would do something
+function updateTouchUi() {
+  const show = TOUCH.on && (G.state === 'playing' || TOUCH.edit); if (tLayer.hidden === show) tLayer.hidden = !show; if (!show) return;
+  const car = TOUCH.edit ? TOUCH.ectx === 'c' : !!P.car, cls = (car ? 'car' : 'foot') + (TOUCH.edit ? ' edit' : '') + (P.driveby || TOUCH.edit ? ' call' : '') + (P.dead && !TOUCH.edit ? ' dead' : '');
+  if (tLayer.className !== cls) tLayer.className = cls;
+  if ((P.car || P.dead) && TOUCH.aim) { TOUCH.aim = false; mouse.right = false; TOUCH.el.aim.classList.remove('on'); }
+  const go = !TOUCH.edit && (!!P.car || shopOpen || (prompt && !!prompt.act)); TOUCH.el.use.classList.toggle('go', go); TOUCH.el.use.textContent = P.car && !TOUCH.edit ? 'EXIT' : 'USE';
+}
+// --- moving and resizing the controls
+function tSelect(id) { TOUCH.sel = id; TC_DEF.forEach(d => TOUCH.el[d[0]].classList.toggle('sel', d[0] === id)); const q = tPlace(id); $('te-size').value = String((q[2] / tUnit()).toFixed(2)); $('te-what').textContent = (TCD[id][1] || 'Stick') + ' · drag to move · slider to resize'; }
+function tKeep(id, cx, cy, s) { TOUCH.cfg.lay[id] = [+(cx / window.innerWidth).toFixed(4), +(cy / window.innerHeight).toFixed(4), +s.toFixed(3)]; }
+function tDrag(id, dx, dy) { const q = tPlace(id); tKeep(id, q[0] + dx, q[1] + dy, q[2] / tUnit()); layoutTouch(); }
+function touchEdit(on) {
+  TOUCH.edit = on; $('tedit').hidden = !on; releaseAll();
+  if (on) { TOUCH.wasState = G.state; $('overlay').hidden = true; TOUCH.ectx = 'f'; $('te-alpha').value = String(TOUCH.cfg.alpha); $('te-ctx').textContent = 'Showing: on foot'; tSelect('fire'); layoutTouch(); }
+  else { TC_DEF.forEach(d => TOUCH.el[d[0]].classList.remove('sel')); saveTouch(); $('overlay').hidden = false; }
+  updateTouchUi();
+}
+$('te-size').addEventListener('input', e => { const id = TOUCH.sel; if (!id) return; const q = tPlace(id); tKeep(id, q[0], q[1], clamp(+e.target.value, .06, .5)); layoutTouch(); });
+$('te-alpha').addEventListener('input', e => { TOUCH.cfg.alpha = clamp(+e.target.value, .15, 1); layoutTouch(); });
+$('te-ctx').addEventListener('click', () => { TOUCH.ectx = TOUCH.ectx === 'f' ? 'c' : 'f'; $('te-ctx').textContent = TOUCH.ectx === 'f' ? 'Showing: on foot' : 'Showing: in a car'; updateTouchUi(); });
+$('te-reset').addEventListener('click', () => { TOUCH.cfg.lay = {}; TOUCH.cfg.alpha = TC_CFG0.alpha; $('te-alpha').value = String(TOUCH.cfg.alpha); layoutTouch(); if (TOUCH.sel) tSelect(TOUCH.sel); saveTouch(); });
+$('te-done').addEventListener('click', () => touchEdit(false));
+['pointerdown', 'pointermove', 'pointerup'].forEach(t => $('tedit').addEventListener(t, e => e.stopPropagation()));
+// --- the touch part of the menu
+function touchMenu() {
+  const c = TOUCH.cfg; $('row-touch').hidden = !(TOUCH.on || TOUCH.coarse || c.mode === 'on'); $('set-touch').value = c.mode; $('set-tsens').value = String(c.sens); $('set-assist').value = c.assist ? '1' : '0'; $('set-float').value = c.float ? '1' : '0';
+  $('touch-help').hidden = !TOUCH.on; document.querySelector('.keys').hidden = TOUCH.on; $('fs-btn').hidden = !TOUCH.on || !document.documentElement.requestFullscreen;
+}
+$('set-touch').addEventListener('change', e => { TOUCH.cfg.mode = e.target.value; saveTouch(); setTouch(wantTouch()); touchMenu(); });
+$('set-tsens').addEventListener('input', e => { TOUCH.cfg.sens = clamp(+e.target.value, .3, 3); saveTouch(); });
+$('set-assist').addEventListener('change', e => { TOUCH.cfg.assist = e.target.value === '1'; saveTouch(); });
+$('set-float').addEventListener('change', e => { TOUCH.cfg.float = e.target.value === '1'; saveTouch(); });
+$('te-open').addEventListener('click', () => { if (!TOUCH.on) setTouch(true); touchEdit(true); });
+$('fs-btn').addEventListener('click', () => { const d = document.documentElement; if (!d.requestFullscreen) return; d.requestFullscreen({ navigationUI: 'hide' }).then(() => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (x) {} }, () => {}); });
+// tapping a prompt does what it says; a tap anywhere on the map or the turf board closes it; shop items are bought with a tap
+$('h-prompt').addEventListener('click', () => { if (TOUCH.on && prompt && prompt.act) prompt.act(); });
+$('bigmap').addEventListener('click', () => { if (TOUCH.on) $('bigmap').hidden = true; }); $('board').addEventListener('click', () => { if (TOUCH.on) $('board').hidden = true; });
+$('shop-list').addEventListener('click', e => { const li = e.target.closest('li'); if (!li || !li.dataset.key) return; buy(li.dataset.key); });
+setTouch(wantTouch()); touchMenu(); layoutTouch();
 
 /* =====================================================================
    14. INPUT, MENUS, LOOP
    ===================================================================== */
 let wasLocked = false;
 const locked = () => document.pointerLockElement === canvas;
-function requestLock() { if (TEST) return; try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+function requestLock() { if (TEST || TOUCH.on) return; try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
 let SENS = .0022; try { const s = +localStorage.getItem('pc-sens'); if (s > .0004 && s < .01) SENS = s; } catch (e) {}
 function showOverlay(mode) {
   const o = $('overlay'); o.hidden = false; $('hud').hidden = mode !== 'paused'; $('o-stats').hidden = true; $('leave').hidden = mode !== 'paused';
   const inGame = mode === 'paused'; o.querySelector('.crews').hidden = inGame; $('row-lobby').hidden = inGame; $('co-status').hidden = inGame; $('set-box').hidden = inGame; $('set-bots').disabled = $('set-cops').disabled = false; if (inGame) $('co-roster').hidden = true;
   if (mode === 'paused') { $('o-eyebrow').textContent = 'Paused'; $('o-text').textContent = NET.mode ? 'The city keeps moving while this menu is open.' : 'The city waits.'; $('deploy').textContent = 'Resume'; $('deploy').hidden = false;
-    let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span><span>Deaths <b>${P.deaths | 0}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span>`; return; }
+    let turf = 0; ZS.forEach(z => { if (z.owner === P.team) turf++; }); $('o-stats').hidden = false; $('o-stats').innerHTML = `<span>Cash <b>$${Math.max(0, Math.round(P.cash)).toLocaleString('en-US')}</b></span><span>Turf <b>${turf} of ${ZONES.length}</b></span><span>Hourly <b>$${hourlyNow().toLocaleString('en-US')}</b></span><span>Kills <b>${P.kills | 0}</b></span>`; $('row-save').hidden = true; return; }
+  $('row-save').hidden = false; saveLine();
   $('deploy').textContent = 'Play solo'; $('deploy').hidden = !!NET.lob; crewLock(false);
   if (mode === 'lost') { $('o-eyebrow').textContent = 'Session closed'; $('o-text').textContent = 'The host left, so the session closed. Open a new lobby or play solo. Your cash and guns are kept.'; }
   else { $('o-eyebrow').textContent = 'Open world · four crews · solo or co-op'; $('o-text').textContent = MENU_TEXT; }
@@ -3784,21 +4392,61 @@ function wearCrew(t) { P.team = clamp(t | 0, 0, NCREW - 1); for (let q = 0; q < 
 const savedCrew = () => { try { const v = localStorage.getItem('pc-crew'); if (v !== null && v !== '' && +v >= 0 && +v < NCREW) return +v | 0; } catch (e) {} return -1; };
 const ownCrew = () => { const c = savedCrew(); if (c >= 0 && c !== P.team) wearCrew(c); };   // back to the crew this player picks for themselves
 function setCrew(t) { wearCrew(t); try { localStorage.setItem('pc-crew', String(P.team)); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); }
-// cash and guns are kept in this browser between sessions: with no rounds, there is nothing else to reset them
+// --- progress. Cash, guns, armor and the city's turf are written to this browser a moment after anything changes, and, on the Claude
+//     page, to the player's own account as well, so they follow the player to any device signed in to it. A save code carries them
+//     anywhere else. Turf keeps paying while the player is away, up to a limit.
 function loadSave() { try { const s = JSON.parse(localStorage.getItem('pc-save') || 'null'); if (s && isFinite(s.c)) return s; } catch (e) {} return null; }
-function saveGame() { if (G.state === 'menu') return; try { localStorage.setItem('pc-save', JSON.stringify({ c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades })); } catch (e) {} }
+function saveData() {
+  const old = loadSave() || {}, world = AUTH() && G.phase === 'play';                                 // the city is only this player's to save when their machine runs it
+  return { v: 3, t: Date.now(), c: Math.max(0, Math.round(P.cash)), w: Object.keys(P.inv).filter(id => !WEAPONS[id].melee && id !== 'pistol'), n: P.nades | 0, a: Math.round(P.armor), cr: P.team, z: world ? ZS.map(s => [s.owner, Math.round(s.ctrl)]) : old.z || null };
+}
+function writeSave(d) { try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {} CLOUD.put(d); }
+function saveGame() { if (G.state === 'menu' || !SAVE.live) return; SAVE.lastC = Math.round(P.cash); writeSave(saveData()); }
+const SAVE = { live: false, lastC: -1 };
+const CLOUD = { ref: null, busy: false, pend: null, last: '' };
+const later = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+CLOUD.init = async () => {
+  try { if (!window.claude || !window.claude.use) return; const u = await later(window.claude.use('user'), 12000), db = u && await later(window.claude.use('db'), 12000); if (!u || !db) return;
+    const id = await later(u.id(), 8000); if (!id) return; const ref = db.doc('data/users/' + id + '/save'), snap = await later(ref.get(), 12000); if (!snap) return;
+    CLOUD.ref = ref; if (snap.exists) CLOUD.adopt(snap.data()); else { const l = loadSave(); if (l) CLOUD.put(l); } saveLine();
+  } catch (e) {}
+};
+// the account and this browser compare notes: whichever saved last wins, and the other catches up
+CLOUD.adopt = d => {
+  if (!d || !isFinite(d.c)) return; const l = loadSave(); if (l && (l.t || 0) >= (d.t || 0)) { if ((l.t || 0) > (d.t || 0)) CLOUD.put(l); return; }
+  try { localStorage.setItem('pc-save', JSON.stringify(d)); } catch (e) {}
+  if (G.state !== 'menu' && SAVE.live) { P.bank = clamp(Math.round(d.c), 0, 1e7); (d.w || []).forEach(w => { if (WEAPONS[w] && !WEAPONS[w].melee && !P.inv[w]) giveWeapon(w); }); note('Progress brought over from your account', 'g'); }
+};
+CLOUD.put = d => { if (!CLOUD.ref) return; CLOUD.pend = d; if (!CLOUD.busy) CLOUD.flush(); };
+CLOUD.flush = async () => {   // one write at a time, only when something other than the clock changed, at most every ten seconds
+  CLOUD.busy = true;
+  try { while (CLOUD.pend && CLOUD.ref) { const d = CLOUD.pend; CLOUD.pend = null; const key = JSON.stringify(Object.assign({}, d, { t: 0 })); if (key === CLOUD.last) continue;
+      try { await CLOUD.ref.set(d); CLOUD.last = key; } catch (e) { const c = e && e.code; if (c === 'invalid_argument' || c === 'revoked' || c === 'not_granted' || c === 'capability_disabled' || c === 'capability_removed' || c === 'quota_exceeded') { CLOUD.ref = null; saveLine(); break; } CLOUD.pend = CLOUD.pend || d; }
+      await new Promise(r => setTimeout(r, 10000)); } } finally { CLOUD.busy = false; }
+};
+function saveLine() { const e = $('save-line'); if (!e) return; const s = loadSave(); e.textContent = (s ? '$' + Math.round(s.c).toLocaleString('en-US') + ' saved · ' : '') + (CLOUD.ref ? 'kept in your Claude account, on every device you sign in on' : 'kept in this browser · a save code moves it to another device'); }
+// a save code: the save itself, readable by this game alone, with a check so a typo is caught
+const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+const sum36 = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = (h * 33 + s.charCodeAt(i)) >>> 0; return h.toString(36); };
+function saveCode() { const d = loadSave() || { c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }, j = JSON.stringify({ c: d.c, w: d.w || [], n: d.n | 0, a: d.a | 0, cr: d.cr | 0, z: d.z || null, t: d.t || Date.now() }); return 'PC-' + b64e(j) + '-' + sum36(j); }
+function readCode(code) { const m = /^PC-([A-Za-z0-9_-]+)-([0-9a-z]+)$/.exec(String(code || '').replace(/\s+/g, '')); if (!m) return null; try { const j = b64d(m[1]); if (sum36(j) !== m[2]) return null; const d = JSON.parse(j); return d && isFinite(d.c) && d.c >= 0 ? d : null; } catch (e) { return null; } }
 const readSettings = () => { G.botsPer = +$('set-bots').value || 4; G.cops = $('set-cops').value !== '0'; };
 function beginPlay() {
   const sv = loadSave(); P.name = myName(); wearCrew(P.team); resetLoadout(); if (sv) { (sv.w || []).forEach(id => { if (WEAPONS[id] && !WEAPONS[id].melee) giveWeapon(id); }); P.nades = clamp(sv.n | 0, 1, 4); }
-  Object.assign(P, { bank: sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
+  // what the player's turf made while they were away: an hour of income for every real hour, at most eight
+  let away = 0; if (sv && sv.t && Array.isArray(sv.z)) { const hrs = Math.min(CFG.offline.cap, (Date.now() - sv.t) / 3.6e6); if (hrs > .25) { let per = 0; sv.z.forEach((q, i) => { if (q && q[0] === sv.cr && ZONES[i]) per += ZONES[i].val * (.5 + .5 * clamp(+q[1] || 0, 0, 100) / 100); }); away = Math.round(per * CFG.offline.rate * hrs / 10) * 10; } }
+  Object.assign(P, { bank: (sv ? clamp(Math.round(sv.c), 0, 1e7) : CFG.startCash) + away, armor: sv ? clamp(sv.a | 0, 0, 100) : 0, earn: 0, spent: 0, kills: 0, deaths: 0, streak: 0, driveby: false, dead: false, shots: 0, car: null, enter: null, heat: 0, wp: 0, evade: false, rob: null, siren: false }); P.cash = P.bank;
   hudCache.heat = 0; $('h-stars').hidden = true; closeShop(); $('dead').hidden = true; $('board').hidden = true; $('bigmap').hidden = true;
   GAME.respawn(true); G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock();
   banner('Port Calder', 'You run with ' + CREWS[P.team].name + ' · the city is open', 3.5, 't' + P.team);
-  P.hintAt = G.time; P.hints = [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Stand in a ring your crew does not hold to take the turf: each one pays'], [22, 'Pink dots are tills to rob · pale blue dots fix and respray a car']];
+  P.hintAt = G.time; P.hints = TOUCH.on ? [[5, 'Left thumb moves · drag on the right to look · USE takes a car'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']]
+    : [[5, 'F takes any car · Tab shows turf · M opens the map'], [13, 'Every block is somebody\'s turf: bleed a crew on its own streets, then take its ring'], [22, 'Icons on the map are jobs: trucks, hits, stashes, races']];
+  SAVE.live = true; if (away > 0) { P.hints.unshift([3.6, 'While you were away your turf made $' + away.toLocaleString('en-US')]); gain(away); } saveGame();
 }
 function startAttract() { readSettings(); startWorld({ x: ZONES[1].x + 18, z: ZONES[1].z }); G.phase = 'attract'; P.dead = true; P.deadT = 99; hideChar(meChar); }   // the menu looks out over The Corner, so that is where the city gathers
 function pause() { if (G.state !== 'playing') return; G.state = 'paused'; mouse.down = mouse.right = false; for (const k in keys) keys[k] = false; saveGame(); showOverlay('paused'); }
-function leaveSession() { saveGame(); if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
+function leaveSession() { saveGame(); SAVE.live = false; if (NET.mode) NET.stop(); if (document.pointerLockElement) document.exitPointerLock(); G.state = 'menu'; ownCrew(); showOverlay('menu'); startAttract(); }
 $('deploy').addEventListener('click', () => {
   initAudio();
   if (G.state === 'paused') { G.state = 'playing'; $('overlay').hidden = true; $('hud').hidden = false; wasLocked = false; requestLock(); return; }
@@ -3869,7 +4517,13 @@ Object.keys(TELEPORTS).forEach(id => $('dv-tp').add(new Option(id, id)));
 const devOn = (id, fn) => $(id).addEventListener('click', fn);
 devOn('dv-cash', () => { P.earn += 5000; });
 devOn('dv-star', () => { if (AUTH()) GAME.crime(P, 0, Math.min(5, (P.heat | 0) + 1)); }); devOn('dv-clear', () => { if (AUTH()) GAME.clearHeat(P); });
-devOn('dv-wipe', () => { try { localStorage.removeItem('pc-save'); } catch (e) {} resetLoadout(); P.bank = CFG.startCash; P.earn = 0; P.spent = 0; }); devOn('dv-guns', () => { WID.forEach(id => giveWeapon(id)); P.nades = 4; }); devOn('dv-heal', () => { P.hp = CFG.player.hp; P.armor = 100; }); devOn('dv-streak', () => { P.driveby = true; });
+devOn('dv-wipe', () => { try { localStorage.removeItem('pc-save'); } catch (e) {} CLOUD.put({ v: 3, t: Date.now(), c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }); resetLoadout(); P.bank = CFG.startCash; P.earn = 0; P.spent = 0; });
+// the save buttons on the menu
+$('sv-copy').addEventListener('click', () => { const code = saveCode(), done = () => { $('save-line').textContent = 'Save code copied. On the other device: Load save code, then paste it.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done, () => window.prompt('Your save code. Copy it:', code)); else window.prompt('Your save code. Copy it:', code); });
+$('sv-load').addEventListener('click', () => { const code = window.prompt('Paste a save code'); if (code === null) return; const d = readCode(code); if (!d) { $('save-line').textContent = 'That save code did not work. Check it was copied whole.'; return; }
+  d.v = 3; d.t = Date.now(); writeSave(d); $('save-line').textContent = 'Loaded · $' + Math.round(d.c).toLocaleString('en-US') + (d.w && d.w.length ? ' and ' + d.w.length + (d.w.length === 1 ? ' gun' : ' guns') : '') + '. Play to pick it up.'; if (!NET.mode) startAttract(); });
+$('sv-reset').addEventListener('click', () => { if (!window.confirm('Start over? Your cash, guns and turf go back to the beginning. This cannot be undone.')) return; try { localStorage.removeItem('pc-save'); } catch (e) {} CLOUD.put({ v: 3, t: Date.now(), c: CFG.startCash, w: [], n: 1, a: 0, cr: P.team, z: null }); saveLine(); if (!NET.mode) startAttract(); }); devOn('dv-guns', () => { WID.forEach(id => giveWeapon(id)); P.nades = 4; }); devOn('dv-heal', () => { P.hp = CFG.player.hp; P.armor = 100; }); devOn('dv-streak', () => { P.driveby = true; });
 devOn('dv-spawncar', () => { if (!AUTH()) return; const fx = -Math.sin(P.cyaw), fz = -Math.cos(P.cyaw); spawnCar($('dv-car').value, P.x + fx * 6, P.z + fz * 6, P.cyaw, {}); });
 devOn('dv-go', () => { const t = TELEPORTS[$('dv-tp').value]; if (P.car) GAME.leaveCar(false); P.x = t[0]; P.y = P.camY = t[1]; P.z = t[2]; P.vy = 0; });
 $('dv-tod').addEventListener('input', e => { if (AUTH()) G.tod = +e.target.value; const h = +e.target.value; $('dv-todv').textContent = Math.floor(h) + ':' + String(Math.round(h % 1 * 60)).padStart(2, '0'); });
@@ -3880,7 +4534,7 @@ window.addEventListener('keydown', e => { if (e.code === 'Backquote' && G.state 
 /* ---- the loop ---- */
 function step(dt) {
   G.time += dt;
-  if (G.state !== 'menu') updatePlayer(dt);
+  if (G.state !== 'menu') { updatePlayer(dt); updateRace(dt); }
   if (NET.mode === 'client') NET.client(dt); else { authTick(dt); if (NET.mode === 'host' && NET.room) NET.host(dt); }
   updateGrenades(dt);
 }
@@ -3888,7 +4542,8 @@ let todT = 0, slowT = 0, menuA = 0, saveT = 15;
 function visuals(dt, now) {
   todT -= dt; if (todT <= 0) { todT = .2; applyTod(G.tod); }
   if (G.state === 'menu') { menuA += dt * .05; const z = ZONES[1], r = 62; camera.position.set(z.x + 40 + Math.sin(menuA) * r, 26 + Math.sin(menuA * .7) * 5, z.z + Math.cos(menuA) * r); camera.rotation.set(-.3, menuA + .5, 0); if (Math.abs(camera.fov - 62) > .1) { camera.fov = 62; camera.updateProjectionMatrix(); } skyDome.position.copy(camera.position); EAR.x = camera.position.x; EAR.y = 200; EAR.z = camera.position.z; vmRoot.visible = false; }
-  else { updateCamera(dt); updatePlayerLook(dt); }
+  else { touchAssist(dt); updateCamera(dt); updatePlayerLook(dt); }
+  updateTouchUi();
   updateSun(G.state === 'menu' ? camera.position.x - Math.sin(menuA + .5) * 50 : P.x, 0, G.state === 'menu' ? camera.position.z - Math.cos(menuA + .5) * 50 : P.z);
   lifePoses(dt);
   for (let i = 0; i < bots.length; i++) botVisual(bots[i], dt);
@@ -3896,7 +4551,7 @@ function visuals(dt, now) {
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
-  updateLife(dt);
+  updateLife(dt); updateEventMarks(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -3908,7 +4563,7 @@ function frame(now) {
   const live = G.state === 'playing' || G.state === 'menu' || (NET.mode && (G.state === 'paused' || G.state === 'dev'));
   if (live) step(dt);
   visuals(live ? dt : 0, now);
-  if (G.state === 'playing') { saveT -= raw; if (saveT <= 0) { saveT = 15; saveGame(); } }
+  if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash); if (c !== SAVE.lastC) { SAVE.lastC = c; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
   // a machine that cannot keep up drops to the lighter settings by itself, once
   if (G.state === 'playing' && !GFX.low && !GFX.auto && !TEST) { if (DBG.fps < 27) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 5) { GFX.auto = true; GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); banner('Graphics set to Low', 'to keep the game smooth · change it in the pause menu', 3.5); } }
   renderer.clear(); renderer.render(scene, camera);
@@ -3917,12 +4572,12 @@ function frame(now) {
 // a host whose tab is hidden would freeze the city for everyone, so a worker keeps the world ticking while the page is out of sight
 let bgWorker = null, bgLast = 0;
 function bgTick() { if (!document.hidden || !NET.mode) return; const now = performance.now(); let left = Math.min(.3, (now - bgLast) / 1000); bgLast = now; while (left > .001) { const d = Math.min(.05, left); step(d); left -= d; } }
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
-applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect();
+applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
 if (TEST) window.__pc = { G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, explode, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
-  initAudio, RADIO, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
+  damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);
 
 })();

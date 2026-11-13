@@ -130,7 +130,7 @@ function updateRob(dt) {
 function openShop(s) { shopOpen = s; $('shop-title').textContent = s.name; renderShop(); $('shop').hidden = false; SFX.tick(); }
 function closeShop() { shopOpen = null; $('shop').hidden = true; }
 function renderShop() { const ol = $('shop-list'); ol.textContent = ''; SHOP.forEach(it => { const li = document.createElement('li'), own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
-    li.className = own || full ? 'own' : P.cash < it.cost ? 'no' : ''; const b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); b.textContent = it.key; a.textContent = it.label; c.textContent = own ? 'Owned' : full ? 'Full' : '$' + it.cost; li.append(b, a, c); ol.appendChild(li); }); }
+    li.className = own || full ? 'own' : P.cash < it.cost ? 'no' : ''; li.dataset.key = it.key; const b = document.createElement('b'), a = document.createElement('span'), c = document.createElement('span'); b.textContent = it.key; a.textContent = it.label; c.textContent = own ? 'Owned' : full ? 'Full' : '$' + it.cost; li.append(b, a, c); ol.appendChild(li); }); }
 function buy(key) {
   const it = SHOP.find(q => q.key === key); if (!it) return;
   const own = WEAPONS[it.what] && P.inv[it.what], full = (it.what === 'armor' && P.armor >= 100) || (it.what === 'nade' && P.nades >= 4);
@@ -142,14 +142,15 @@ function buy(key) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain') { if (AUTH()) GAME.takeChain(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } }
+    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot
 function updateOnFoot(dt) {
-  const fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), d = WEAPONS[P.wpn], w = P.inv[P.wpn];
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight) && fwd > 0 && !aiming && P.reloadT <= 0;
-  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
+  let fwd = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0), str = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
+  if (TOUCH.on && (TOUCH.fx || TOUCH.fy)) { fwd = -TOUCH.fy; str = TOUCH.fx; push = Math.min(1, hyp(fwd, str)); }   // the stick: a little push walks, all the way runs, pinned forward sprints
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (keys.ShiftLeft || keys.ShiftRight || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
+  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   const acc = Math.min(1, dt * (P.onGround ? 11 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
   if (keys.Space && P.onGround && !P.jumpHeld && P.knock <= 0) { P.vy = CFG.player.jump; P.onGround = false; P.jumpHeld = true; } if (!keys.Space) P.jumpHeld = false;
@@ -177,6 +178,7 @@ function updateInCar(dt) {
   if (c.gone) { P.car = null; return; }
   if (P.seat === 0 && c.mine !== false) {
     const inp = c.inp; inp.thr = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0); inp.steer = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); inp.hb = !!keys.Space;
+    if (TOUCH.on) { inp.steer = clamp(inp.steer + TOUCH.fx * 1.15, -1, 1); if (!keys.KeyW && !keys.KeyS && Math.abs(TOUCH.fy) > .3) inp.thr = clamp(-TOUCH.fy * 1.3, -1, 1); }   // the stick steers, and up or down on it drives when GAS and BRAKE are not held
     stepCar(c, dt, inp);
     if (c.cop) { if (keys.KeyH && !P.hornHeld) P.siren = !P.siren; c.horn = P.siren ? 1 : 0; setHorn(false); } else { c.horn = keys.KeyH ? 1 : 0; setHorn(!!keys.KeyH); } P.hornHeld = !!keys.KeyH;
     GAME.roadkill(c, P);

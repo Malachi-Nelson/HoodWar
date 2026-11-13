@@ -144,6 +144,11 @@ function navPath(a, b, civ) {
   return null;
 }
 const zoneNode = ZONES.map(z => nearestNode(z.x, CURB, z.z, false));
+// --- neighbourhoods: every block belongs to the turf nearest it, so the whole map is somebody's ground (or nobody's). The ring is the
+//     neighbourhood's stronghold; whoever holds it runs the streets around it and is paid for them.
+const HOOD = []; for (let j = 0; j < NZ; j++) { HOOD.push([]); for (let i = 0; i < NX; i++) { const cx = RX(i) + PX / 2, cz = RZ(j) + PZ / 2; let best = 0, bd = 1e9; ZONES.forEach((z, k) => { const d = hyp(z.x - cx, z.z - cz); if (d < bd) { bd = d; best = k; } }); HOOD[j].push(best); } }
+const hoodAt = (x, z) => { const i = Math.floor((x - EDGE) / PX), j = Math.floor((z - EDGE) / PZ); return i < 0 || j < 0 || i >= NX || j >= NZ ? -1 : HOOD[j][i]; };
+ZONES.forEach((z, k) => { z.blocks = HOOD.reduce((n, row) => n + row.filter(q => q === k).length, 0); z.val = CFG.hourly[z.id] || 100; });
 // --- places to be. Each one is checked against the finished city: moved out of anything solid, tied to the walking graph, and given
 //     its standing spots. One that cannot be reached is dropped.
 { const free = (x, z, y) => !pushOut(x, z, .3, y + .6, y + 1.6, 'p');
@@ -167,7 +172,7 @@ const zoneNode = ZONES.map(z => nearestNode(z.x, CURB, z.z, false));
     if (p.node < 0 || (!staff && (NAV[p.node].iso || hyp(NAV[p.node].x - p.fx, NAV[p.node].z - p.fz) > 34 || Math.abs(NAV[p.node].y - p.y) > 1.2 || !walkClear(NAV[p.node], { x: p.fx, y: p.y, z: p.fz })))) { POI.splice(i, 1); continue; }
     if (p.k === 'work') { if (pushOut(p.bx, p.bz, .34, p.y + .6, p.y + 1.6, 'p')) { p.bx = COL.x; p.bz = COL.z; } p.bnode = nearestNode(p.bx, p.y, p.bz, true); if (p.bnode < 0 || NAV[p.bnode].iso) { POI.splice(i, 1); continue; } }
     p.cap = p.slots.length; p.who = p.slots.map(() => null); }
-  POI.forEach((p, i) => { p.i = i; p.zone = ZONES.findIndex(z => hyp(z.x - p.x, z.z - p.z) < z.r + 5); p.npc = null; p.t = 0; }); }
+  POI.forEach((p, i) => { p.i = i; p.zone = ZONES.findIndex(z => hyp(z.x - p.x, z.z - p.z) < z.r + 5); p.hood = hoodAt(p.x, p.z); p.npc = null; p.t = 0; }); }
 const POSTS = POI.filter(p => p.k === 'post' || p.k === 'work'), SPOTS = POI.filter(p => p.k !== 'post' && p.k !== 'work');
 // --- the driving graph is the street grid itself: crossings (i, j), i = 0..NX, j = 0..NZ
 const xingOf = (x, z) => [clamp(Math.round((x - EDGE) / PX), 0, NX), clamp(Math.round((z - EDGE) / PZ), 0, NZ)];

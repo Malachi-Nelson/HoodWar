@@ -130,10 +130,11 @@ function decCars(s, pk) {
   for (let i = cars.length - 1; i >= 0; i--) if (!live[cars[i].id]) { if (P.car === cars[i]) { P.car = null; setHorn(false); radioVolume(0); } removeCar(cars[i]); }
   for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.car && (r.car.gone || r.car.occ[r.seat] !== r)) r.car = null; }
 }
-const encPicks = () => pickups.map(p => B36(p.id, 3) + (p.type === 'chain' ? 'c' : String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : String(p.team))).join('');
+const PICK_TY = { chain: 'c', cash: '$', bag: 'b' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag' };
+const encPicks = () => pickups.map(p => B36(p.id, 3) + (PICK_TY[p.type] || String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : B36(p.team, 1))).join('');
 function decPicks(s) {
   const live = {};
-  for (let o = 0; o + PICK_W <= s.length; o += PICK_W) { const id = U36(s, o, 3), ty = s[o + 3], x = U36(s, o + 4, 3) / 16 - 8, z = U36(s, o + 7, 3) / 16 - 8, y = U36(s, o + 10, 2) / 8 - 4, tm = s[o + 12]; live[id] = 1; if (NET.pkGone[id] || pickups.some(p => p.id === id)) continue; addPickup(ty === 'c' ? 'chain' : WID[+ty] || 'pistol', x, y, z, tm === '-' ? -1 : +tm, id); }
+  for (let o = 0; o + PICK_W <= s.length; o += PICK_W) { const id = U36(s, o, 3), ty = s[o + 3], x = U36(s, o + 4, 3) / 16 - 8, z = U36(s, o + 7, 3) / 16 - 8, y = U36(s, o + 10, 2) / 8 - 4, tm = s[o + 12]; live[id] = 1; if (NET.pkGone[id] || pickups.some(p => p.id === id)) continue; addPickup(PICK_OF[ty] || WID[+ty] || 'pistol', x, y, z, tm === '-' ? -1 : parseInt(tm, 36), id); }
   for (let i = pickups.length - 1; i >= 0; i--) if (!live[pickups[i].id]) removePickup(pickups[i]);
 }
 // ---- the host: applies what the others report, then tells everyone the state of the world
@@ -149,7 +150,7 @@ NET.host = dt => {
       else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && r.heat > 0 && r.evade) { rc.hp = rc.spec.hp; rc.burn = 0; setPaint(rc, PAINTS[q[3] | 0]); GAME.clearHeat(r); } }
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
-      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else removePickup(p); } }
+      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else removePickup(p); } }
       else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4]; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), 10, 0, GAME.ref(r)); explode(x, y + .3, z, r, 1, 'nade'); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
@@ -159,9 +160,10 @@ NET.host = dt => {
   });
   cars.forEach(c => { if (c.kin && snapAt(c.buf, _so)) { c.x = _so.x; c.y = _so.y; c.z = _so.z; c.yaw = _so.yaw; const vf = _so.vf || 0; c.vx = -Math.sin(c.yaw) * vf; c.vz = -Math.cos(c.yaw) * vf; c.spin += vf * dt / c.geo.wr; c.slip = c.rslip || 0; } });
   NET.sendT -= dt; if (NET.sendT > 0) return; NET.sendT = 1 / 10;
-  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0]); }
+  const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
+  const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P)]]; for (const k in NET.remotes) { const r = NET.remotes[k]; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r)]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0')).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0) };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -175,8 +177,9 @@ function applyHost(s) {
   const W = s.W; if (!W) return;
   G.tod = W.d; if (W.o) { G.botsPer = W.o[0]; G.cops = !!W.o[1]; } G.robMask = W.r | 0; G.phase = 'play';
   if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }                 // everyone rides with the host's crew
-  if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 4 + 4 <= W.z.length; i++) { const z = ZS[i]; z.owner = U36(W.z, i * 4, 1) - 1; z.by = U36(W.z, i * 4 + 1, 1) - 1; z.prog = U36(W.z, i * 4 + 2, 1) / 35; z.hot = W.z[i * 4 + 3] === '1'; }
-  (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; P.heat = e[6] | 0; P.evade = !!e[7]; } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
+  if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
+  evFromHost(W.e);
+  (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; P.heat = e[6] | 0; P.evade = !!e[7]; P.gs = String(e[8] || ''); } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
   { const hr = NET.remotes[NET.hostPeer]; if (hr) hr.slot = 0; }
   decCars(s.cs || '', s.cp || ''); decBots(s.bs || '', s.bv || '', s.bc || ''); decPicks(s.pk || '');
   for (const id in NET.pkGone) if (G.time - NET.pkGone[id] > 4) delete NET.pkGone[id];
@@ -253,7 +256,7 @@ NET.connect = async () => {
   let lobby = null; try { lobby = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) {}
   const off = 'Multiplayer is not available in this view. Solo play works.';
   if (!lobby) { $('co-status').textContent = off; return; }
-  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-2'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
+  let rm = lobby; try { if (lobby.join) rm = await lobby.join('port-calder-3'); } catch (e) {}      // the name changes with the wire format, so an old tab and a new one never share a room
   NET.room = rm; $('co-status').textContent = 'Looking for other players…'; NET.say();
   rm.onPeers(() => { if (!NET.mode) NET.lobby(); }, () => { NET.room = null; NET.lob = null; ['co-ready', 'co-start', 'co-leave'].forEach(id => $(id).hidden = true); $('co-host').hidden = $('co-join').hidden = false; $('co-host').disabled = $('co-join').disabled = true; $('deploy').hidden = false; $('co-roster').hidden = true; $('co-status').className = 'status'; $('co-status').textContent = off; if (NET.mode) { NET.mode = null; G.state = 'menu'; showOverlay('lost'); } });
   NET.lobby();

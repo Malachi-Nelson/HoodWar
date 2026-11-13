@@ -161,6 +161,9 @@ function crewBrain(b) {
   const saw = botLook(b);
   if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || (b.seat !== 0 && (!c.occ[0] || c.occ[0].team !== b.team)) || (c.ai && (c.ai.done || c.ai.jams > 3)) || c.hp < c.spec.hp * .2) { if (carSpeed(c) < 9 || c.burn > 0) botExit(b, false); } return; }
   if (saw || b.tgt) return;
+  if (b.hunterOf) { const a = b.hunterOf;   // sent after someone: keep looking for them until they are dead or the crew loses interest
+    if (a.gone || a.dead || !(a.gn && a.gn[b.team] >= CFG.gang[0])) b.hunterOf = null;
+    else if (!b.hunt && hyp(a.x - b.x, a.z - b.z) < 160) { b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = true; b.path = null; if (!botPathTo(b, a.x, a.y, a.z, false)) b.hunt = false; return; } }
   if (!b.goal || G.time > b.goalT || (b.arrived && rand() < .03 && (b.goal.zone < 0 || (ZS[b.goal.zone].owner === b.team && !ZS[b.goal.zone].hot)))) pickGoal(b);
   const z = goalAt(b.goal), dist = hyp(z.x - b.x, z.z - b.z);
   if (dist < z.r * .75) { b.arrived = true; b.wantCar = null; }
@@ -273,6 +276,26 @@ function civAct(b, dt) {
   if (b.path) { if (botFollow(b, b.fleeT > 0 ? 6.4 : b.walk, dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
+// --- street crews: a crew's people on its own corners. They pass the time at a spot until somebody from another crew shows up,
+//     fight, then drift back to where they were.
+const STREET_ACTS = [ACT.talk, ACT.talk, ACT.smoke, ACT.phone, ACT.lean, 0];
+function streetBrain(b) {
+  const saw = botLook(b);
+  if (saw || b.tgt || b.hunt) { if (b.poi) leavePoi(b); return; }
+  if (b.poi || !b.home) return;
+  const p = b.home, k = freeSlot(p); if (k < 0) return;                                                 // somebody has their spot: stand about where they are
+  const path = hyp(p.fx - b.x, p.fz - b.z) > 5 ? navPath(nearestNode(b.x, b.y, b.z, true), p.node, false) : null;
+  p.who[k] = b; b.poi = p; b.slot = k; b.at = path ? 0 : 1; b.path = path; b.pi = 0; b.poiT = G.time + 40;
+}
+function streetAct(b, dt) {
+  b.aim = Math.max(0, b.aim - dt * 2); b.pitch = lerp(b.pitch, 0, Math.min(1, dt * 5));
+  const p = b.poi; if (!p) { botWalk(b, b.x, b.z, 0, dt); b.act = 0; return; }
+  if (b.at === 2) { civStand(b, dt, p.slots[b.slot].yaw); if (G.time > b.chatT) { b.chatT = G.time + 5 + rand() * 10; b.act = p.k === 'hang' || p.k === 'browse' ? STREET_ACTS[(rand() * STREET_ACTS.length) | 0] : ACT_AT[p.k][0]; } return; }
+  b.act = 0;
+  if (b.at === 0) { if (botFollow(b, 2.4, dt)) { b.path = null; b.at = 1; } }
+  else if (botWalk(b, p.fx, p.fz, 2.2, dt) < .6 || G.time > b.poiT) takeSpot(b, p, b.slot);
+  if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
+}
 // a loud thing happened at (x,z): bystanders run, people at work get down, crew who have nothing better to do come and look
 GAME.noise = (x, z, src, r) => {
   r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false; const rc = r > 45 ? r : 32;   // people on the pavement mind a gunshot down the street less than one beside them
@@ -286,14 +309,17 @@ function updateBot(b, dt) {
   if (b.dead) { b.deadT += dt; b.spd = 0; return; }
   if (b.knock > 0) { b.knockT -= dt; if (b.knockT <= 0) b.knock = 0; b.vx *= Math.max(0, 1 - dt * 3); b.vz *= Math.max(0, 1 - dt * 3); moveEntity(b, b.vx * dt, b.vz * dt, dt, .32, 'p', 1.75); b.spd = 0; b.aim = 0; return; }
   b.brainT -= dt; const civ = b.team === TEAM_CIV;
-  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else crewBrain(b); }
+  if (b.brainT <= 0) { b.brainT = .22 + rand() * .12; if (civ) civBrain(b); else if (b.team === TEAM_COP) copBrain(b); else if (b.street && !b.car) streetBrain(b); else crewBrain(b); }
   if (b.dead) return;
-  if (civ) civAct(b, dt); else crewAct(b, dt);
+  if (civ) civAct(b, dt); else if (b.street && !b.tgt && !b.hunt && !b.car) streetAct(b, dt); else crewAct(b, dt);
 }
 // what a bot looks like from its state; runs for every bot on every machine
 function botVisual(b, dt) {
   const ch = b.ch; if (!ch) return;
-  if ((b.dead && b.deadT > 7) || hyp(b.x - camera.position.x, b.z - camera.position.z) > 300) { hideChar(ch); return; }
+  const far = hyp(b.x - camera.position.x, b.z - camera.position.z);
+  if ((b.dead && b.deadT > 7) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
+  ch.acc = (ch.acc || 0) + dt; if (far > 70 && ch.shown && ((LIFE.frame + ch.idx) & (far > 140 ? 3 : 1))) return;   // far enough that nobody can tell it is posed half as often
+  dt = Math.min(.2, ch.acc); ch.acc = 0;
   let seat = null, twist = 0, x = b.x, y = b.y, z = b.z;
   if (b.car) { seat = b.seat === 0 ? 'drive' : 'ride'; seatPos(b.car, b.seat, _sp); x = _sp.x; y = _sp.y; z = _sp.z; if (b.aim > .5 && b.ayaw !== undefined) twist = clamp(angTo(b.car.yaw, b.ayaw), -1.5, 1.5); }
   poseChar(ch, { x, y, z, yaw: b.car ? b.car.yaw : b.yaw, pitch: b.pitch, spd: b.spd, air: !b.onGround && !b.car, wpn: b.team === TEAM_CIV ? null : b.wpn, aim: b.aim, reload: b.reloadT > 0, seat, twist, dead: b.dead ? b.deadT : -1, knock: b.knock, sprint: b.spd > 5.9, act: b.car ? 0 : b.act, shoot: b.shootK || 0 }, dt);
