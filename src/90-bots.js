@@ -42,7 +42,7 @@ const _cand = [];
 function botLook(b) {
   // someone minding their own turf only looks as far as the street; someone on a raid, in a fight or just shot at looks the length of the block
   const ex = b.x, ey = eyeY(b), ez = b.z, keen = !!b.tgt || b.hunt || G.time - (b.hurtT || -99) < 14 || (isCrew(b.team) && !!b.goal && b.goal.zone >= 0 && ZS[b.goal.zone].owner !== b.team), range = b.car ? 60 : keen ? 120 : 58; _cand.length = 0;
-  eachActor(a => { if (a === b || a.dead || a.gone || !hostile(b, a)) return; if (a === P && (DBG.notarget || P.safeT > 0 || G.state === 'menu')) return; if (a.safe) return; const d = hyp(a.x - ex, a.z - ez); if (d < range) _cand.push([d * (a === b.tgt ? .6 : 1), a]); });
+  eachActor(a => { if (a === b || a.dead || a.gone || !hostile(b, a)) return; if (a === P && (DBG.notarget || P.safeT > 0 || G.state === 'menu')) return; if (a.safe || a.down) return; const d = hyp(a.x - ex, a.z - ez); if (d < range) _cand.push([d * (a === b.tgt ? .6 : 1), a]); });
   _cand.sort((p, q) => p[0] - q[0]);
   for (let i = 0; i < _cand.length && i < 3; i++) { const a = _cand[i][1]; if (los(ex, ey, ez, a.x, chestY(a), a.z, 'a')) { if (b.tgt !== a) b.react = (.3 + rand() * .45) / b.skill; b.tgt = a; b.seenT = G.time; b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = false; return true; } }
   if (b.tgt && (b.tgt.dead || b.tgt.gone || G.time - b.seenT > 6)) b.tgt = null;
@@ -298,6 +298,7 @@ function streetAct(b, dt) {
 }
 // a loud thing happened at (x,z): bystanders run, people at work get down, crew who have nothing better to do come and look
 GAME.noise = (x, z, src, r) => {
+  if (GAME.heard) GAME.heard(x, z);
   r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false; const rc = r > 45 ? r : 32;   // people on the pavement mind a gunshot down the street less than one beside them
   for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.dead) continue; const d = hyp(b.x - x, b.z - z); if (d > r) continue; if (b.team === TEAM_COP) law = true;
     if (b.team === TEAM_CIV) { if (d > rc) continue; if (b.car) { if (b.car.ai) b.car.ai.panic = 6; } else if (b.post) { if (b.scare !== ACT.handsup || G.time > b.scareT) b.scare = ACT.cower; b.scareT = Math.max(b.scareT, G.time + 3.5 + rand() * 3.5); if (b.path) b.path = null; }

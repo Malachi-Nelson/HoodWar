@@ -74,8 +74,8 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
-#h-net{top:70px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
-#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
+#h-net{top:50px;left:calc(50% + 46px);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
+#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;width:max-content;max-width:min(50vw,560px);text-align:center;line-height:1.25}
 /* top-left: the jobs going on in the city */
 #evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
 #evl div{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;background:rgba(10,12,16,.62);padding:4px 10px 4px 4px}
@@ -137,7 +137,9 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 .tc-fire.down{background:rgba(226,59,46,.6)}
 .tc-use.go{border-color:var(--gold);background:rgba(255,200,61,.34)}
 .tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}.tc-up{border-color:rgba(143,227,107,.9)}.tc-down{border-color:rgba(127,184,255,.9)}.tc-rocket{border-color:rgba(255,200,61,.95);background:rgba(217,165,33,.25)}
-.tc-pause,.tc-map,.tc-turf,.tc-cam{border-radius:10px}
+.tc-pause,.tc-map,.tc-turf,.tc-cam,.tc-ping{border-radius:10px}
+#mates{left:18px;top:42%;display:flex;flex-direction:column;gap:4px;width:150px;pointer-events:none}#mates div{background:rgba(10,12,16,.6);padding:3px 7px;display:grid;grid-template-columns:1fr auto;gap:0 6px;align-items:center}#mates b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#mates small{font-size:11px;color:var(--ash);text-align:right}#mates i{grid-column:1/-1;height:4px;background:rgba(255,255,255,.15);display:block}#mates u{display:block;height:100%;background:var(--cash)}#mates .dn{outline:2px solid var(--blood);animation:mdn .6s infinite alternate}#mates .dn u{background:var(--blood)}#mates .dd{opacity:.5}@keyframes mdn{to{background:rgba(120,20,16,.6)}}
+body.touch #mates{top:auto;bottom:calc(var(--u, 4px) * 46 + 12px);left:8px;width:118px}body.touch #mates b{font-size:12px}
 .tc-stick{background:rgba(10,12,16,.22);border-style:dashed}
 .tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .tc-stick.down{border-style:solid}
@@ -193,7 +195,7 @@ body.touch #turf{top:6px}
 body.touch #turf .zs{gap:2px}
 body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
 body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
-body.touch #h-net{top:calc(5.2vmin + 26px);font-size:11px}
+body.touch #h-net{top:calc(5.2vmin + 10px);left:calc(50% + 32px);font-size:11px}
 body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
 body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
 body.touch #feed div{white-space:normal;text-align:right}
@@ -321,6 +323,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
     <div id="h-net" class="sh" hidden></div>
+    <div id="mates" hidden aria-label="Your side"></div>
     <div id="h-race" class="sh" hidden></div>
     <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>
@@ -414,7 +417,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 21:12 UTC', PROTO = 'v9';
+  const BUILD = 'build 13 Nov 21:35 UTC', PROTO = 'v9';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -2557,10 +2560,10 @@ function killBot(b, src, wid, head) {
   GAME.onKill(src, b, wid, head);
 }
 function hurtPlayer(dmg, src, wid, head) {
-  if (P.dead || DBG.god || P.safeT > 0 || G.state === 'menu') return;
+  if (P.dead || DBG.god || P.safeT > 0 || G.state === 'menu' || P.down) return;
   let d = dmg; if (P.armor > 0) { const ab = Math.min(P.armor, d * .7); P.armor -= ab; d -= ab; }
   P.hp -= d; P.lastHit = G.time; SFX.hurt(); if (src && src.x !== undefined) dmgArrow(src.x, src.z);
-  if (P.hp <= 0) { P.hp = 0; GAME.playerDied(src, wid, head); }
+  if (P.hp <= 0) { if (canGoDown()) { goDown(src, wid, head); return; } P.hp = 0; GAME.playerDied(src, wid, head); }   // online, with a teammate still up: down, not out
 }
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
@@ -2639,11 +2642,11 @@ let pickSeq = 0;
 function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
   // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
-  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag' || type === 'loot') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : type === 'loot' ? 0xffc83d : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag' || type === 'loot' || type === 'hbag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : type === 'loot' || type === 'hbag' ? 0xffc83d : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
-  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' || type === 'loot' ? 1e9 : 40, g, amt: type === 'cash' || type === 'loot' ? (team | 0) * 100 : 0 }; /* loot: a heist's money bag (team: hundreds of dollars) */ if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
-  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag' && q.type !== 'loot'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' || type === 'loot' || type === 'hbag' ? 1e9 : 40, g, amt: type === 'cash' || type === 'loot' || type === 'hbag' ? (team | 0) * 100 : 0 }; /* loot: a heist's money bag (team: hundreds of dollars) */ if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag' && q.type !== 'loot' && q.type !== 'hbag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
   return p;
 }
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }
@@ -2672,7 +2675,7 @@ const ACTS = [
   ['guns', 'Guns (gunship)', 'GUNS', 'a', 1, ['Mouse0'], ['Pad5']], ['rockets', 'Rockets (gunship)', 'ROCKETS', 'a', 1, ['Mouse2', 'KeyG'], ['Pad4']],
   ['use', 'Use · get in or out', 'USE', 'fca', 0, ['KeyF', 'KeyE'], ['Pad3']], ['reload', 'Reload', 'RELOAD', 'fca', 0, ['KeyR'], ['Pad2']],
   ['view', 'Camera', 'CAM', 'fca', 0, ['KeyV'], ['Pad13']], ['phone', 'Phone', 'PHONE', 'fca', 0, ['KeyT', 'ArrowUp'], ['Pad12']],
-  ['driveby', 'Call a drive-by', 'CALL', 'fca', 0, ['KeyB'], ['Pad14']],
+  ['driveby', 'Call a drive-by', 'CALL', 'fca', 0, ['KeyB'], ['Pad14']], ['ping', 'Mark a spot for your side (ping)', 'PING', 'fca', 0, ['KeyZ', 'Mouse1'], ['Pad11']],
   ['map', 'Map (hold)', 'MAP', 'fca', 1, ['KeyM'], ['Pad8']], ['board', 'Players and turf (hold)', 'TURF', 'fca', 1, ['Tab'], []], ['pause', 'Pause', 'PAUSE', 'fca', 0, ['KeyP'], ['Pad9']],
 ];
 const ACT_BY = {}; ACTS.forEach(a => { ACT_BY[a[0]] = a; });
@@ -2735,9 +2738,10 @@ function actDown(id, src) {
   if (id === 'pause') { if (shopOpen) closeShop(); else if (locked()) document.exitPointerLock(); else pause(); return; }
   if (P.dead) return;
   switch (id) {
-    case 'fire': case 'cfire': case 'guns': mouse.down = true; mouse.fresh = true; initAudio(); return;
+    case 'fire': case 'cfire': case 'guns': if (P.down) return; mouse.down = true; mouse.fresh = true; initAudio(); return;
+    case 'ping': pingHere(); return;
     case 'ads': if ((src === 'touch' ? CTL.tads : CTL.ads) === 'toggle') setAds(!mouse.right); else { mouse.right = true; markAds(); } return;
-    case 'use': if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); return;
+    case 'use': if (P.down) { bleedOut(); return; } if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); return;
     case 'reload': startReload(); return;
     case 'nade': throwGrenade(); return;
     case 'next': case 'cnext': cycleWeapon(1); return;
@@ -2873,7 +2877,7 @@ function keysHelp() {
   const rows = [[k('fwd', 'left', 'back', 'right'), 'Move · drive'], ['Mouse', 'Look · ' + k('fire') + ' fires · ' + k('ads') + ' aims down sights'], [k('use'), 'Get in or out · carjack · shop · rob a till'],
     [k('sprint') + ' · ' + k('jump'), 'Sprint · jump / handbrake'], ['1–0 · ' + k('next'), 'Weapons (7 Glocks · 8 M60 · 9 launcher · 0 bazooka)'], [k('reload') + ' · ' + k('nade'), 'Reload · grenade'],
     [k('view') + ' · ' + k('behind'), 'Camera · look behind'], [k('radio') + ' · ' + k('horn'), 'Radio · horn, or siren in a police car'], [k('board') + ' · ' + k('map'), 'Players and turf · map'],
-    [k('driveby') + ' · ' + k('phone'), 'Call a drive-by (4-kill streak) · phone'],
+    [k('driveby') + ' · ' + k('phone'), 'Call a drive-by (4-kill streak) · phone'], [k('ping'), 'Mark a spot, an enemy or a car for your side (ping)'],
     ['Flying', k('afwd', 'aleft', 'aback', 'aright') + ' fly · ' + k('up') + ' up · ' + k('down') + ' down · mouse turns · ' + k('guns') + ' guns · ' + k('rockets') + ' rockets'],
     ['Controller', 'Works when connected · Controls changes any key or button']];
   dl.textContent = ''; rows.forEach(r => { const d = document.createElement('div'), t = document.createElement('dt'), v = document.createElement('dd'); t.textContent = r[0]; v.textContent = r[1]; d.append(t, v); dl.appendChild(d); });
@@ -3248,7 +3252,7 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
-  { const bp = bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
+  { const bp = revivePrompt() || bankPrompt() || bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
@@ -3304,15 +3308,16 @@ function gunItems(pg) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
+    if (p.type === 'hbag') { if (P.bag || P.down) continue; if (AUTH()) GAME.takeHBag(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } }
+    else if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot
 function updateOnFoot(dt) {
   let fwd = (isHeld('fwd') ? 1 : 0) - (isHeld('back') ? 1 : 0), str = (isHeld('right') ? 1 : 0) - (isHeld('left') ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
   { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = -sy; str = sx; push = Math.min(1, hyp(fwd, str)); } }   // a stick: a little push walks, all the way runs; on a touch screen, pinned forward sprints
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
-  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0 && !P.bag;
+  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1) * (P.bag ? .8 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   if (P.chute) { const k = 6.5 / (sp || 1); wx *= k; wz *= k; P.vy = Math.max(P.vy, -4.6); }   // under a canopy: a slow drift down, steered
   const acc = Math.min(1, dt * (P.onGround ? 11 : P.chute ? 1.6 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
@@ -3330,10 +3335,10 @@ function updateOnFoot(dt) {
   // weapon
   if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && !sprint && (autoNow() || mouse.fresh)) tryFire();
+  if (mouse.down && !sprint && !P.down && (autoNow() || mouse.fresh)) tryFire();
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
-  if (P.rob) updateRob(dt); findPrompt(); collectPickups();
+  if (P.rob) updateRob(dt); hackTick(dt); reviveTick(dt); findPrompt(); collectPickups();
   if (shopOpen && shopOpen.kind === 'gun' && hyp(shopOpen.x - P.x, shopOpen.z - P.z) > 3.4) closeShop();
 }
 // --- at the wheel, or riding
@@ -3359,6 +3364,7 @@ function updateInCar(dt) {
 function updatePlayer(dt) {
   P.fireT -= dt; P.switchT -= dt; P.safeT -= dt; P.kick = Math.max(0, P.kick - dt * 1.3); if (P.punchT > 0) P.punchT -= dt;
   if (P.dead) { P.deadT += dt; P.spd = 0; if (P.deadT >= CFG.respawn && G.phase === 'play') GAME.respawn(); return; }
+  if (P.down > 0) downTick(dt);
   if (P.enter) updateEnter(dt); else if (P.car) updateInCar(dt); else updateOnFoot(dt);
   if (G.time - P.lastHit > CFG.player.regenDelay && P.hp < maxHp()) P.hp = Math.min(maxHp(), P.hp + CFG.player.regenRate * dt);
   P.cash = (P.bank === undefined ? CFG.startCash : P.bank) + P.earn - P.spent;
@@ -3449,7 +3455,7 @@ const _cand = [];
 function botLook(b) {
   // someone minding their own turf only looks as far as the street; someone on a raid, in a fight or just shot at looks the length of the block
   const ex = b.x, ey = eyeY(b), ez = b.z, keen = !!b.tgt || b.hunt || G.time - (b.hurtT || -99) < 14 || (isCrew(b.team) && !!b.goal && b.goal.zone >= 0 && ZS[b.goal.zone].owner !== b.team), range = b.car ? 60 : keen ? 120 : 58; _cand.length = 0;
-  eachActor(a => { if (a === b || a.dead || a.gone || !hostile(b, a)) return; if (a === P && (DBG.notarget || P.safeT > 0 || G.state === 'menu')) return; if (a.safe) return; const d = hyp(a.x - ex, a.z - ez); if (d < range) _cand.push([d * (a === b.tgt ? .6 : 1), a]); });
+  eachActor(a => { if (a === b || a.dead || a.gone || !hostile(b, a)) return; if (a === P && (DBG.notarget || P.safeT > 0 || G.state === 'menu')) return; if (a.safe || a.down) return; const d = hyp(a.x - ex, a.z - ez); if (d < range) _cand.push([d * (a === b.tgt ? .6 : 1), a]); });
   _cand.sort((p, q) => p[0] - q[0]);
   for (let i = 0; i < _cand.length && i < 3; i++) { const a = _cand[i][1]; if (los(ex, ey, ez, a.x, chestY(a), a.z, 'a')) { if (b.tgt !== a) b.react = (.3 + rand() * .45) / b.skill; b.tgt = a; b.seenT = G.time; b.lsx = a.x; b.lsy = a.y; b.lsz = a.z; b.hunt = false; return true; } }
   if (b.tgt && (b.tgt.dead || b.tgt.gone || G.time - b.seenT > 6)) b.tgt = null;
@@ -3705,6 +3711,7 @@ function streetAct(b, dt) {
 }
 // a loud thing happened at (x,z): bystanders run, people at work get down, crew who have nothing better to do come and look
 GAME.noise = (x, z, src, r) => {
+  if (GAME.heard) GAME.heard(x, z);
   r = r || 42; if (G.time - (GAME.noiseT || 0) < .25 && r < 50) return; GAME.noiseT = G.time; let law = false; const rc = r > 45 ? r : 32;   // people on the pavement mind a gunshot down the street less than one beside them
   for (let i = 0; i < bots.length; i++) { const b = bots[i]; if (b.dead) continue; const d = hyp(b.x - x, b.z - z); if (d > r) continue; if (b.team === TEAM_COP) law = true;
     if (b.team === TEAM_CIV) { if (d > rc) continue; if (b.car) { if (b.car.ai) b.car.ai.panic = 6; } else if (b.post) { if (b.scare !== ACT.handsup || G.time > b.scareT) b.scare = ACT.cower; b.scareT = Math.max(b.scareT, G.time + 3.5 + rand() * 3.5); if (b.path) b.path = null; }
@@ -4123,7 +4130,8 @@ function onEvent(e, mine) {
   else if (k === 'wn') { const a = GAME.unref(e[2]); if (P.team === TEAM_COP && a && a !== P) note('Dispatch · ' + nameOf(a) + ' is wanted · ' + '★'.repeat(e[3]), 'g'); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
-  else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st') heistNews(e);
+  else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st' || k === 'bg' || k === 'bl' || k === 'bd' || k === 'bx' || k === 'pp' || k === 'pz') heistNews(e);
+  else if (k === 'rv' || k === 'pg' || k === 'dn') coopNews(e);
   else if (k === 'gs') { const a = GAME.unref(e[2]); if (a === P) banner('Gunship stolen', 'The airport police are coming', 2.6, 'gold'); else if (a) note(nameOf(a) + ' stole the airport gunship', 'g'); }
   else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + ' is on the helipad at ' + e[3] + ' · it is on your map', 'g'); } }
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
@@ -4161,7 +4169,7 @@ GAME.respawn = home => {
   if (P.team === TEAM_COP) { const S = SPAWNS[TEAM_COP], s = home ? S[2] : S.reduce((b, q) => hyp(q.x - P.x, q.z - P.z) < hyp(b.x - P.x, b.z - P.z) ? q : b, S[0]); SPAWNS.cop = [s]; }   // an officer comes back at the nearer station house
   let zi = -1, bd = hyp(SPAWNS[P.team][0].x - P.x, SPAWNS[P.team][0].z - P.z); if (!home) ZS.forEach((z, i) => { if (z.owner !== P.team || z.hot) return; const d = hyp(ZONES[i].x - P.x, ZONES[i].z - P.z); if (d < bd) { bd = d; zi = i; } });
   if (!home) { const fee = Math.min(200, Math.floor(Math.max(0, P.cash) * .01) * 10); if (fee > 0) { P.spent += fee; P.cash -= fee; note('Patched up · −$' + fee, 'g'); } }
-  const s = (zi >= 0 && zoneSpawn(zi)) || (P.team === TEAM_COP ? baseSpawnAt(SPAWNS.cop[0]) : baseSpawn(P.team)); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
+  const ms = home ? null : mateSpawn(), s = ms || (zi >= 0 && zoneSpawn(zi)) || (P.team === TEAM_COP ? baseSpawnAt(SPAWNS.cop[0]) : baseSpawn(P.team)); if (ms) note('Back with ' + nameOf(ms.mate), 'g'); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
   for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = Math.max(P.inv[id].res, d.mag * 2); } }
   if (P.nades < 1) P.nades = 1; $('dead').hidden = true;
   if (P.team === TEAM_COP) { giveWeapon('smg'); if ((P.rank | 0) >= 4) giveWeapon('rifle'); P.armor = 100; if (P.nades < 2) P.nades = 2; }   // the armory kits out an officer every time
@@ -4355,7 +4363,7 @@ function populate() {
   staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
   // cars: abandoned traffic is cleared away, parked cars come back to their spots
-  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv || c.pa || (c.spec.air && !c.landed)) continue; const far = nearHuman(c.x, c.z);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv || c.pa || c.getaway || (c.spec.air && !c.landed)) continue; const far = nearHuman(c.x, c.z);
     if (!c.home && c.idle > 45 && far > 70) removeCar(c); else if (c.temp && c.idle > 8 && far > 60) removeCar(c); else if (c.home && c.idle > 70 && far > 90 && hyp(c.x - c.home.x, c.z - c.home.z) > 12) removeCar(c); }
   G.homes.forEach(h => { if (h.car && !h.car.gone && !h.car.wreck) return; if (h.car) { h.car = null; h.t = G.time + 28; } if (G.time < h.t || nearHuman(h.spot.x, h.spot.z) < 70 || cars.some(c => hyp(c.x - h.spot.x, c.z - h.spot.z) < 6) || cars.length >= CAR_MAX - 4) return; h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : {}); });
 }
@@ -4396,7 +4404,7 @@ function resetWorld() {
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
   Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), hour: 17, polT: 0, gangT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10, streetT: 0, streetMax: TOUCH.on ? 8 : 12, evT: 35 });
   if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
-  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
+  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents(); G.prep = { car: 0, gear: 0, scout: 0 }; G.prepMask = 0; P.bag = 0; P.hack = null;
 }
 // where cars stand parked: some street spots and car park bays, each crew's cars at its yard, the airport's helicopters on their pads
 function planHomes() {
@@ -4681,33 +4689,40 @@ function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
-    else if (kind === 'bank' || kind === 'jewel') { banner(I.name, kind === 'bank' ? 'Calder Savings on Calder Avenue · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'bank' || kind === 'jewel' || kind === 'cargo') { const E = EVTS.find(q => q.id === e[2]); banner(kind === 'bank' ? JOBS.bank.name : I.name, kind === 'bank' ? (E && E.quiet ? 'Quiet · walk in like a customer, guns away' : 'Loud · everyone in, the alarm goes as you enter') : kind === 'cargo' ? 'The airport cargo yard · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'prep') { const E = EVTS.find(q => q.id === e[2]), S = PREPS[E && E.sub] || PREPS.car; banner('Setup · ' + S.name, S.how, 3.2, 'gold'); SFX.tick(); }
     else if (kind === 'smug') return;
     else note(I.name + ' · ' + areaName(e[4], e[5]) + ' · ' + I.how, 'g'); }
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
     if (kind === 'smug') { if (who === P) { if (ok) { banner('Product sold', 'The buyer paid · check your cash', 2.8, 'gold'); SFX.streak(); } else banner('Run failed', 'The product is gone', 2.4); } return; }
-    if ((kind === 'bank' || kind === 'jewel') && !ok) { banner(I.name, 'It fell apart · no payout', 2.6); return; }
-    if ((kind === 'bank' || kind === 'jewel') && ok) { banner(kind === 'bank' ? 'Bank job done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
+    if (kind === 'prep') { if (ok) { banner('Setup done', '+$' + amt.toLocaleString('en-US') + ' · see Phone › Heists for what is left', 2.8, 'gold'); SFX.streak(); } else banner('Setup failed', 'Try it again from the phone', 2.4); return; }
+    if ((kind === 'bank' || kind === 'jewel' || kind === 'cargo') && !ok) { banner(kind === 'bank' ? JOBS.bank.name : I.name, 'It fell apart · no payout', 2.6); return; }
+    if ((kind === 'bank' || kind === 'jewel' || kind === 'cargo') && ok) { banner(kind === 'bank' ? 'Bank job done' : kind === 'cargo' ? 'Cargo Score done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
     else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
     else note(kind === 'war' ? CREWS[team].name + ' took ' + ZONES[zi].name : kind === 'hit' ? (who ? 'Somebody else got the lieutenant' : 'The lieutenant slipped away') : kind === 'truck' ? 'The armored truck got away' : kind === 'chop' ? 'The chop shop car is gone' : I.name + ' · missed', 'c'); }
   else if (k === 'eo') note('Armored truck stopped · grab the cash', 'g');
-  else if (k === 'sc') { const a = GAME.unref(e[3]); if (a === P) banner('Stash grabbed', 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + ' has the stash', 'g'); }
+  else if (k === 'sc') { const a = GAME.unref(e[3]), E = EVTS.find(q => q.id === e[2]), gear = E && E.k === 'prep'; if (a === P) banner(gear ? 'Gear grabbed' : 'Stash grabbed', gear ? 'Get it to the getaway spot behind the bank' : 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + (gear ? ' has the gear' : ' has the stash'), 'g'); }
   else if (k === 'sd') note('The stash was dropped', 'c');
   else if (k === 'db2') note('The deal went bad · guns out', 'c');
   else if (k === 'dl') note(e[3] ? 'The product is on the ground · grab it' : 'The money is on the ground · grab it', 'g');
 }
 // --- what the host says about its events, and what a joined player makes of it
-const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
-  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]);
+const evWire = () => EVTS.map(E => { const b = [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time))];
+  if (E.k === 'bank' || E.k === 'cargo') { const gc = getaway(E), car = []; humans().forEach(h => { if (h.bag) car.push(GAME.ref(h), Math.round(h.bag / 100)); });   // and who is carrying a bag of it
+    return b.concat([E.stage, E.stage === 1 ? Math.round((E.quiet ? E.sus : E.drill || 0) * 100) : E.stage === 2 ? Math.max(0, Math.ceil(E.lockT - G.time)) : Math.round(E.loaded / 100), [E.quiet ? 1 : 0, E.alarm ? 1 : 0, E.jam ? 1 : 0, gc ? gc.id : 0].concat(car)]); }
+  if (E.k === 'prep') return b.concat([PREP_IDS.indexOf(E.sub), E.sub === 'scout' ? E.mask | 0 : E.sub === 'gear' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.car ? E.car.id : 0]);
+  return b.concat([  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
+  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]); });
 function evFromHost(list) {
-  const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
+  const was = {}, bags = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
   (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
     if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null;
-    if (k === 'bank') { E.stage = q[5]; if (E.stage === 1) E.drill = q[6] / 100; else E.take = q[6] * 100; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+    if (k === 'bank' || k === 'cargo') { const x = q[7] || []; E.stage = q[5]; E.prog = q[6]; E.quiet = !!x[0]; E.alarm = !!x[1]; E.jam = !!x[2]; E.gc = x[3] | 0; E.drill = E.sus = E.lockT = undefined; if (E.stage === 1) { if (E.quiet) E.sus = q[6] / 100; else E.drill = q[6] / 100; } else if (E.stage === 2) E.lockT = G.time + q[6]; else E.loaded = q[6] * 100; for (let i = 4; i + 1 < x.length; i += 2) bags[x[i]] = x[i + 1] * 100; }
+    if (k === 'prep') { E.sub = PREP_IDS[q[5]] || 'car'; if (E.sub === 'scout') E.mask = q[6] | 0; else if (E.sub === 'gear') E.carrier = q[6] ? GAME.unref(q[6]) : null; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+  if (NET.mode === 'client') { P.bag = bags['p' + NET.slot] || 0; for (const k in NET.remotes) { const r = NET.remotes[k]; r.bag = bags['p' + r.slot] || 0; } }
 }
 // where an event's marker belongs on this machine: on the thing itself when it can be seen, else where the host says
 function evSpot(E, o) {
@@ -4811,7 +4826,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
-  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
+  if (pg && pg.slice(0, 4) === 'jobs') return jobItems(pg); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (P.team === TEAM_COP) return copItems(r, cd);
@@ -4883,6 +4898,7 @@ function homieBrain(b) {
     let k = -1; for (let q = 1; q < c.spec.seats; q++) if (!c.occ[q] && !bots.some(o => o !== b && o.wantCar === c && o.wantSeat === q)) { k = q; break; }
     if (k > 0 && d < 40 && (!c.spec.air || c.landed)) { b.wantCar = c; b.wantSeat = k; b.carT = G.time; b.carChk = 0; b.path = null; b.tgt = null; return; } }
   else if (b.wantCar) b.wantCar = null;
+  if (b.goPing && !saw) { if (G.time > b.goPing.until || hyp(b.x - b.goPing.x, b.z - b.goPing.z) < 3 || a.car) b.goPing = null; else { if (!b.path || G.time > (b.repathT || 0)) { b.repathT = G.time + 2; if (!botPathTo(b, b.goPing.x, CURB, b.goPing.z, false)) b.goPing = null; } return; } }   // a ping sends them on ahead
   if (d > 120 || (d > 60 && (!a.car || carSpeed(a.car) < 4))) { homieCatchUp(b, a); return; }
   if (saw || (b.tgt && !b.tgt.dead && G.time - b.seenT < 2)) return;
   b.tgt = null; b.hunt = false;
@@ -4993,63 +5009,214 @@ function careerTick(dt) {
 }
 
 /* =====================================================================
-   11c. HEISTS AND THE PRODUCT TRADE — the bank on Calder Avenue and the jewelers in the mall, done by everyone in the session
-        together; and a lab of your own whose product you smuggle across town to a buyer. Started from the phone (or the lab's
-        own door). The machine that runs the world runs them as events, so they are in everyone's list and on everyone's map.
+   11c. HEISTS AND THE PRODUCT TRADE — the bank on Calder Avenue, the airport's cargo yard and the jewelers in the mall, done by
+        everyone in the session together; and a lab of your own whose product you smuggle across town to a buyer.
+        The bank takes setting up first: a getaway car stolen off a crew and parked behind the bank, the drill and charges taken
+        off another, and the bank cased from the inside. Then in loud (alarm, guards, drill the vault, keep it running) or quiet
+        (guns away, hack the time lock in the back office before a guard sees what you are doing). The money comes out in bags:
+        one on each back, slow going, and every bag has to reach the getaway car, and the car the drop, for it to count.
+        The machine that runs the world runs all of it as events, so they are in everyone's list and on everyone's map.
    ===================================================================== */
-const JOBS = { bank: { name: 'Bank job', cost: 2500, rank: 4, cool: 600, bag: 3500 }, jewel: { name: 'Jewelry store', cost: 1000, rank: 2, cool: 420 } };
+const JOBS = { bank: { name: 'Calder Savings Score', cost: 2500, rank: 4, cool: 600, bag: 3500, quiet: 1.4 }, cargo: { name: 'Cargo Score', cost: 4000, rank: 6, cool: 700, bag: 6000 }, jewel: { name: 'Jewelry store', cost: 1000, rank: 2, cool: 420 } };
+const PREPS = { car: { name: 'Getaway car', how: 'Steal a fast car off a crew and park it behind Calder Savings', pay: 750 }, gear: { name: 'Drill and charges', how: 'Take the crate of gear off a crew and bring it to the getaway spot', pay: 750 }, scout: { name: 'Case the bank', how: 'Stand at the three marked spots in and around the bank, guns away, no stars', pay: 500 } }, PREP_IDS = ['car', 'gear', 'scout'];
 const LAB = { price: 25000, cap: 20, unit: 600, hour: 100 };   // a lab: what it costs, what it holds, what a unit sells for, seconds to make one
-EV_KINDS.push('bank', 'jewel', 'smug');
+EV_KINDS.push('bank', 'jewel', 'smug', 'prep', 'cargo');
 Object.assign(EV_INFO, {
-  bank:  { name: 'Bank job', icon: '$', col: '#ffc83d', hex: 0xffc83d, how: 'Calder Savings: drill the vault, bag the cash, lose the police, reach the drop' },
+  bank:  { name: 'Bank job', icon: '$', col: '#ffc83d', hex: 0xffc83d, how: 'Calder Savings: open the vault, bag the cash, load the getaway car, reach the drop' },
   jewel: { name: 'Jewelry store', icon: '◇', col: '#9fd0ff', hex: 0x9fd0ff, how: 'Gold Rush Jewelers in the mall: smash the cases and get out' },
   smug:  { name: 'Smuggling run', icon: '▣', col: '#c8ff7d', hex: 0xc8ff7d, how: 'Drive the van to the buyer' },
+  prep:  { name: 'Heist setup', icon: '★', col: '#ffd27d', hex: 0xffd27d, how: 'Set up the bank job' },
+  cargo: { name: 'Cargo Score', icon: '▲', col: '#ffb347', hex: 0xffb347, how: 'Airport cargo yard: crack the gold container, load the gold, get it out' },
 });
-CFG.rp.job.bank = 1000; CFG.rp.job.jewel = 500; CFG.rp.job.smug = 300;
+CFG.rp.job.bank = 1200; CFG.rp.job.jewel = 500; CFG.rp.job.smug = 300; CFG.rp.job.prep = 250; CFG.rp.job.cargo = 1400;
+G.prep = { car: 0, gear: 0, scout: 0 };
 const zoneById = id => ZONES.find(z => z.id === id);
 // the drop, or the buyer: somewhere a long way across town from where the job was
 function dropFar(x, z) { const all = [CHOP, zoneById('E'), zoneById('J'), zoneById('I'), zoneById('B'), zoneById('A')].filter(Boolean).map(q => ({ x: q.x, z: q.z })), far = all.filter(q => hyp(q.x - x, q.z - z) > 230); const list = far.length ? far : all; return list[(rand() * list.length) | 0]; }
-const jobOn = () => EVTS.find(E => E.k === 'bank' || E.k === 'jewel') || null;
+const jobOn = () => EVTS.find(E => E.k === 'bank' || E.k === 'jewel' || E.k === 'cargo') || null;
+const heistBusy = () => EVTS.find(E => E.k === 'bank' || E.k === 'jewel' || E.k === 'cargo' || E.k === 'prep') || null;
+const bagJob = () => EVTS.find(E => E.k === 'bank' || E.k === 'cargo') || null;
+const wpnOfH = h => h === P ? P.wpn : h.wpn || 'fist';
 G.jobT = {};
-// the last leg of a heist: anyone in the crew at the drop, with the police off them, ends it and everyone is paid a share
+// the last leg of the jewelers: anyone in the crew at the fence, with the police off them, ends it and everyone is paid a share
 function dropLeg(E) {
   const hs = humans().filter(h => !h.dead), h = hs.find(q => hyp(q.x - E.x, q.z - E.z) < 10); if (!h) return;
   if (h.heat > 0) { if (G.time - (E.warnT || -9) > 6) { E.warnT = G.time; GAME.ev('hj', E.id, 9); } return; }
   G.jobT[E.k] = G.time + JOBS[E.k].cool; evEnd(E, true, Math.round(E.take / Math.max(1, humans().length) / 10) * 10, h);
 }
-function jobFail(E) { (E.bags || []).forEach(b => { if (!b.gone) removePickup(b); }); G.jobT[E.k] = G.time + JOBS[E.k].cool / 2; evEnd(E, false); }
+function jobFail(E) { (E.bags || []).forEach(b => { if (!b.gone) removePickup(b); }); humans().forEach(h => { h.bag = 0; }); G.jobT[E.k] = G.time + JOBS[E.k].cool / 2; evEnd(E, false); }
 
-// --- the bank: get in and the alarm goes; stand at the vault while the drill runs; bag the cash; get it to the drop clean
-EV_START.bank = () => {
-  if (!BANK || jobOn() || G.time < (G.jobT.bank || 0)) return false;
-  evStart({ k: 'bank', stage: 0, x: BANK.door.x, z: BANK.door.z, until: G.time + 900, drill: 0, take: 0, bags: [], guards: [] }); return true;
-};
+// --- inside the bank: three guard posts, the time-lock panel in the back office, three spots to case, and where the getaway car waits
+const BK2 = BANK ? (() => { const B = BANK, tx = B.x1 + 9, s = PARK.filter(q => !q.lot && !q.truck).sort((a, b) => hyp(a.x - tx, a.z - B.cz) - hyp(b.x - tx, b.z - B.cz))[0];
+  return { posts: [[B.x0 + 4, B.cz + 3.5], [B.x0 + 11.5, B.cz - 2.5], [B.vx - 3, B.cz + 3]], panel: { x: B.vx - 2.2, z: B.z1 - 1.25 }, spots: [{ x: B.x0 + 5.5, z: B.z0 + 1.7 }, { x: B.x0 + 7.2, z: B.z1 - 2.6 }, { x: B.x1 + 2.6, z: B.cz }],
+    away: s ? { x: s.x, z: s.z, yaw: s.yaw } : { x: B.door.x - 10, z: B.cz, yaw: 0 } }; })() : null;
+// the airport's cargo yard: the gold is in the end container of the west row
+const CARGO = { hack: { x: 950.6, z: 493.6 }, door: { x: 948.5, z: 493.6 }, posts: [[947, 470], [949, 512], [940, 488], [966, 506]] };
 const inBank = h => !!BANK && h.x > BANK.x0 && h.x < BANK.x1 && h.z > BANK.z0 && h.z < BANK.z1 && h.y < 4;
+const inStaff = h => !!BANK && h.x > BANK.x0 + 9.2 && h.x < BANK.vx && h.z > BANK.z0 && h.z < BANK.z1 && h.y < 4;
+const getaway = E => { const c = E.k === 'bank' ? (G.prep.car ? carById(G.prep.car) : null) : E.gc ? carById(E.gc) : null; return c && !c.wreck && !c.gone ? c : null; };
+const prepMask = () => { const c = G.prep.car ? carById(G.prep.car) : null; return (c && !c.wreck ? 1 : 0) | (G.prep.gear ? 2 : 0) | (G.prep.scout ? 4 : 0); };
+function postGuards(E, posts, until, face) { posts.forEach((q, k) => { const g = spawnBot(TEAM_COP, q[0], CURB, q[1], { temp: true, wpn: k === 1 ? 'smg' : k === 3 ? 'shotgun' : 'pistol', name: 'Guard' }); if (g) { g.until = until; g.skill = 1.15; g.hp = g.hp0 = 130; g.stay = { x: q[0], z: q[1] }; if (face) { g.watch = yawOf(face.x - q[0], face.z - q[1]); g.yaw = g.watch; } E.guards.push(g); } }); }
+
+// --- the bank. who: the player who started it; quiet: the way in
+EV_START.bank = (who, quiet) => {
+  if (!BANK || heistBusy() || G.time < (G.jobT.bank || 0)) return false;
+  quiet = !!quiet; if (quiet ? !G.prep.scout : !G.prep.gear) return false;
+  const E = evStart({ k: 'bank', stage: 0, quiet, alarm: false, sus: 0, x: BANK.door.x, z: BANK.door.z, until: G.time + 1080, drill: 0, jam: false, jamAt: .3 + rand() * .15, take: 0, loaded: 0, bags: [], guards: [], lockT: 0 });
+  postGuards(E, BK2.posts, G.time + 1080, BANK.door); return true;
+};
 EV_TICK.bank = E => {
-  const hs = humans().filter(h => !h.dead);
-  if (E.stage === 0) { if (hs.some(inBank)) { E.stage = 1; E.x = BANK.vault.x; E.z = BANK.vault.z;
-      hs.forEach(h => { if (hyp(h.x - BANK.door.x, h.z - BANK.door.z) < 80) GAME.crime(h, 60, 3); });
-      for (let k = 0; k < 3; k++) { const g = spawnBot(TEAM_COP, BANK.x0 + 4 + k * 2.6, CURB, BANK.cz + (k - 1) * 3.5, { temp: true, wpn: k === 1 ? 'smg' : 'pistol', name: 'Guard' }); if (g) { g.until = G.time + 400; g.skill = 1.15; g.hp = 130; E.guards.push(g); } }
-      GAME.ev('hj', E.id, 1); } }
-  else if (E.stage === 1) { const at = hs.filter(h => hyp(h.x - BANK.vault.x, h.z - BANK.vault.z) < 2.8);
-    if (at.length) { E.drill = Math.min(1, E.drill + .25 / 45 * (1 + .3 * (at.length - 1))); hs.forEach(h => { if (inBank(h)) GAME.crime(h, 0, 3); }); }
-    if (E.drill >= 1) { E.stage = 2; E.x = (BANK.vx + BANK.x1) / 2; E.z = BANK.cz; E.openT = G.time; const n = Math.min(8, 2 + 2 * hs.length);
-      for (let k = 0; k < n; k++) { const p = addPickup('loot', BANK.vx + 1.9 + (k % 4) * 1.35, CURB + .25, BANK.cz - 1.3 + Math.floor(k / 4) * 2.6, JOBS.bank.bag / 100); p.ev = E; E.bags.push(p); }
-      GAME.ev('hj', E.id, 2); } }
-  else if (E.stage === 2) { if (!E.bags.some(b => !b.gone) || (G.time - E.openT > 75 && E.take > 0)) { E.bags.forEach(b => { if (!b.gone) removePickup(b); }); E.stage = 3; const d = dropFar(BANK.door.x, BANK.door.z); E.x = d.x; E.z = d.z; GAME.ev('hj', E.id, 3); } }
-  else if (E.stage === 3) dropLeg(E);
+  const hs = humans().filter(h => !h.dead && !h.down);
+  bankWatch(E, hs);
+  if (E.stage === 0) { if (hs.some(inBank)) { E.stage = 1; const t = E.quiet ? BK2.panel : BANK.vault; E.x = t.x; E.z = t.z; if (!E.quiet) bankAlarm(E, 3); GAME.ev('hj', E.id, E.quiet ? 4 : 1); } }
+  else if (E.stage === 1 && !E.quiet) {   // the drill: someone at the vault keeps it turning; now and then it jams and someone has to start it again
+    const at = hs.filter(h => hyp(h.x - BANK.vault.x, h.z - BANK.vault.z) < 2.8);
+    if (at.length && !E.jam) { E.drill = Math.min(1, E.drill + .25 / 45 * (1 + .3 * (at.length - 1))); hs.forEach(h => { if (inBank(h)) GAME.crime(h, 0, 3); }); if (E.drill >= E.jamAt && E.drill < 1) { E.jam = true; GAME.ev('hj', E.id, 6); } }
+    if (E.drill >= 1) openVault(E, BANK.vx + 1.9, BANK.cz, JOBS.bank.bag); }
+  else if (E.stage === 2) { if (G.time >= E.lockT) openVault(E, BANK.vx + 1.9, BANK.cz, Math.round(JOBS.bank.bag * (E.alarm ? 1 : JOBS.bank.quiet))); }
+  else if (E.stage === 3) bagStage(E, BANK.door);
+  else if (E.stage === 4) haulLeg(E);
+  carryTick(E);
   if (G.time > E.until) jobFail(E);
 };
+// quiet: a guard who sees a gun out, someone behind the counter or at the vault, or anyone in a car in the lobby grows suspicious;
+// a guard hurt, a shot near the bank or suspicion run out and the alarm goes
+function bankWatch(E, hs) {
+  if (E.alarm || E.stage > 3) return;
+  if (E.guards.some(g => g.dead || g.gone || g.hp < (g.hp0 || 130) - 1) || E.noisy) return bankAlarm(E, 3);
+  if (!E.quiet) return;
+  let see = 0;
+  E.guards.forEach(g => hs.forEach(h => { if (!inBank(h) && hyp(h.x - BANK.door.x, h.z - BANK.door.z) > 7) return; const vx = h.x - g.x, vz = h.z - g.z, d = hyp(vx, vz); if (d > 13 || (g.watch !== undefined && d > 1.5 && (-Math.sin(g.watch) * vx - Math.cos(g.watch) * vz) / d < .36) || !los(g.x, eyeY(g), g.z, h.x, h.y + 1.2, h.z, 'a')) return;   // a guard watches the way they face, toward the door
+    let k = 0; if (!WEAPONS[wpnOfH(h)].melee) k += 1; if (inStaff(h)) k += .7; if (hyp(h.x - BANK.vault.x, h.z - BANK.vault.z) < 4) k += .8; if (h.car) k += 1; if (h.bag) k += 1; see = Math.max(see, k); }));
+  E.sus = clamp(E.sus + (see > 0 ? see * .25 / 3.2 : -.25 / 14), 0, 1);
+  if (E.sus >= 1) bankAlarm(E, 3);
+}
+function bankAlarm(E, stars) { E.alarm = true; E.sus = 1; humans().forEach(h => { if (!h.dead && hyp(h.x - BANK.door.x, h.z - BANK.door.z) < 95) GAME.crime(h, 60, stars); }); if (E.quiet) GAME.ev('hj', E.id, 1); }
+GAME.heard = (x, z) => { const E = EVTS.find(q => q.k === 'bank' && q.quiet && !q.alarm); if (E && BANK && hyp(x - (BANK.x0 + BANK.x1) / 2, z - BANK.cz) < 32) E.noisy = true; };
+// the vault (or the container) opens: bags of money on the floor, more the more of you there are
+function openVault(E, x0, z0, each) {
+  E.stage = 3; E.openT = G.time; E.x = x0 + 2; E.z = z0; const n = Math.min(8, 2 + 2 * humans().length);
+  for (let k = 0; k < n; k++) { const p = addPickup('hbag', x0 + (k % 4) * 1.35, CURB + .25, z0 - 1.3 + Math.floor(k / 4) * 2.6, Math.round(each / 100)); p.ev = E; E.bags.push(p); }
+  if (E.k === 'bank' && E.quiet && !E.alarm) E.silentT = G.time + 45;   // a quiet job buys you a head start, not a free ride
+  GAME.ev('hj', E.id, 2);
+}
+// bags out: the marker sits on the getaway car while there are bags to load; when they are all out (or time has run on), the drop
+function bagStage(E, door) {
+  const gc = getaway(E); if (gc) { E.x = gc.x; E.z = gc.z; }
+  if (E.silentT && !E.alarm && G.time > E.silentT) { bankAlarm(E, 2); GAME.ev('hj', E.id, 8); }
+  const left = E.bags.filter(b => !b.gone).length, secured = E.loaded > 0 || humans().some(h => h.bag);
+  if (!left || (G.time - E.openT > 100 && secured)) { E.bags.forEach(b => { if (!b.gone) removePickup(b); }); E.bags = []; E.stage = 4; const d = dropFar(door.x, door.z); E.x = d.x; E.z = d.z; GAME.ev('hj', E.id, 3); }
+}
+// who carries what: a bag is dropped by anyone who goes down, and goes into the getaway car when its carrier reaches it
+function carryTick(E) {
+  let gc = getaway(E);
+  humans().forEach(h => { if (!h.bag) return;
+    if (h.dead || h.down) { const b = addPickup('hbag', h.x + rs(.6), groundAt(h.x, h.z, h.y + .5, 'p'), h.z + rs(.6), Math.round(h.bag / 100)); b.ev = E; E.bags.push(b); h.bag = 0; GAME.ev('bd', E.id, GAME.ref(h)); return; }
+    if (!gc && E.k === 'cargo') { const c = h.car && h.car.occ[0] && h.car.occ[0].kind !== 'bot' ? h.car : cars.find(q => !q.wreck && q.occ[0] && (q.occ[0] === P || q.occ[0].kind === 'rp') && hyp(q.x - h.x, q.z - h.z) < 4.5); if (c) { E.gc = c.id; gc = c; GAME.ev('hj', E.id, 11, c.id); } }
+    if (gc && (h.car === gc || hyp(h.x - gc.x, h.z - gc.z) < 4.5) && E.stage >= 3) { E.loaded += h.bag; GAME.ev('bl', E.id, GAME.ref(h), h.bag, E.loaded); h.bag = 0; } });
+  if (E.loaded > 0 && !gc) { GAME.ev('bx', E.id, E.loaded); E.loaded = 0; }
+}
+// the drop: the getaway car (with what is loaded) and anyone still carrying a bag, there together with the police off them
+function haulLeg(E) {
+  const hs = humans().filter(h => !h.dead), at = hs.filter(q => hyp(q.x - E.x, q.z - E.z) < 12); if (!at.length) return;
+  if (at.some(q => q.heat > 0)) { if (G.time - (E.warnT || -9) > 6) { E.warnT = G.time; GAME.ev('hj', E.id, 9); } return; }
+  const gc = getaway(E), inCar = gc && hyp(gc.x - E.x, gc.z - E.z) < 16 ? E.loaded : 0, near = hs.filter(q => hyp(q.x - E.x, q.z - E.z) < 30), take = inCar + near.reduce((m, q) => m + (q.bag | 0), 0);
+  if (take <= 0) { if (G.time - (E.warnT || -9) > 8) { E.warnT = G.time; GAME.ev('hj', E.id, 10); } return; }
+  near.forEach(q => { q.bag = 0; }); if (inCar) E.loaded = 0;
+  G.jobT[E.k] = G.time + JOBS[E.k].cool; E.take = take; evEnd(E, true, Math.round(take / Math.max(1, humans().length) / 10) * 10, at[0]);
+}
+GAME.takeHBag = (p, who) => { if (p.gone || who.bag || who.dead || who.down) return; const E = p.ev; removePickup(p); if (!E || E.over) return; who.bag = p.amt; const i = E.bags.indexOf(p); if (i >= 0) E.bags.splice(i, 1); GAME.ev('bg', E.id, GAME.ref(who), p.amt); };
 GAME.takeLoot = (p, who) => { if (p.gone) return; removePickup(p); const E = p.ev; if (E && !E.over) { E.take += p.amt; GAME.ev('lt', E.id, GAME.ref(who), p.amt, E.take); } };
+// the quiet way: the time lock is hacked from the panel in the back office; then it counts down and opens the vault by itself
+GAME.hack = who => { const E = bagJob(); if (!E) return;
+  if (E.k === 'bank' && E.stage === 1 && E.quiet) { E.stage = 2; E.lockT = G.time + 20; E.x = BANK.vault.x; E.z = BANK.vault.z; GAME.ev('hj', E.id, 5, GAME.ref(who)); }
+  else if (E.k === 'cargo' && E.stage === 1) openVault(E, CARGO.door.x - 4.2, CARGO.door.z, JOBS.cargo.bag); };
+GAME.drillOn = who => { const E = EVTS.find(q => q.k === 'bank'); if (!E || !E.jam) return; E.jam = false; E.jamAt = E.drill + .26 + rand() * .16; GAME.ev('hj', E.id, 7, GAME.ref(who)); };
+
+// --- the cargo yard: no setting up, all noise. The yard is airport police ground; the gold goes into whatever you drive or fly in.
+EV_START.cargo = () => {
+  if (heistBusy() || G.time < (G.jobT.cargo || 0)) return false;
+  const E = evStart({ k: 'cargo', stage: 0, x: CARGO.hack.x, z: CARGO.hack.z, until: G.time + 1080, take: 0, loaded: 0, bags: [], guards: [], gc: 0 });
+  postGuards(E, CARGO.posts, G.time + 1080); return true;
+};
+EV_TICK.cargo = E => {
+  const hs = humans().filter(h => !h.dead && !h.down);
+  if (E.stage === 0) { if (hs.some(h => hyp(h.x - CARGO.hack.x, h.z - CARGO.hack.z) < 34)) { E.stage = 1; hs.forEach(h => { if (hyp(h.x - CARGO.hack.x, h.z - CARGO.hack.z) < 90) GAME.crime(h, 50, 3); }); GAME.ev('hj', E.id, 12); } }
+  else if (E.stage === 1) hs.forEach(h => { if (hyp(h.x - CARGO.hack.x, h.z - CARGO.hack.z) < 40) GAME.crime(h, 0, 3); });
+  else if (E.stage === 3) bagStage(E, CARGO.door);
+  else if (E.stage === 4) haulLeg(E);
+  carryTick(E);
+  if (G.time > E.until) jobFail(E);
+};
+
+// --- setups for the bank: one at a time, for the whole session
+EV_START.prep = (who, sub) => {
+  if (!BANK || heistBusy() || !PREPS[sub] || (sub === 'car' ? prepMask() & 1 : G.prep[sub])) return false; const a = who || someHuman();
+  if (sub === 'car') { const p = rivalSpot(a, ['hang']); if (!p) return false; const t = ZS[p.hood].owner, s = PARK.filter(q => !q.lot && !q.truck && hyp(q.x - p.x, q.z - p.z) < 45 && !cars.some(c => hyp(c.x - q.x, c.z - q.z) < 6)).sort((q, r) => hyp(q.x - p.x, q.z - p.z) - hyp(r.x - p.x, r.z - p.z))[0]; if (!s) return false;
+    const c = spawnCar(pick(rand, ['super', 'sport', 'muscle']), s.x, s.z, s.yaw, { color: 0x1b1e24 }); if (!c) return false; c.temp = true; c.prep = true; c.asleep = true;
+    evStart({ k: 'prep', sub, car: c, team: t, zone: p.hood, guards: guardsAt(p, t, 3), x: c.x, z: c.z, until: G.time + 420 }); return true; }
+  if (sub === 'gear') { const p = rivalSpot(a, ['hang']); if (!p) return false; const t = ZS[p.hood].owner, bag = addPickup('bag', p.x, groundAt(p.x, p.z, p.y + .5, 'p'), p.z, t);
+    const E = evStart({ k: 'prep', sub, bag, team: t, zone: p.hood, guards: guardsAt(p, t, 4), carrier: null, x: p.x, z: p.z, until: G.time + 420 }); bag.ev = E; return true; }
+  evStart({ k: 'prep', sub, mask: 0, hold: [0, 0, 0], x: BK2.spots[0].x, z: BK2.spots[0].z, until: G.time + 360 }); return true;
+};
+EV_TICK.prep = E => {
+  if (E.sub === 'car') { const c = E.car; if (!c || c.gone || c.wreck || c.burn > 0) return prepEnd(E, false);
+    const dr = c.occ[0], human = !!dr && (dr === P || dr.kind === 'rp'); if (human) { E.x = BK2.away.x; E.z = BK2.away.z; } else { E.x = c.x; E.z = c.z; }
+    if (hyp(c.x - BK2.away.x, c.z - BK2.away.z) < 9 && carSpeed(c) < 3) { G.prep.car = c.id; c.getaway = true; c.temp = false; c.prep = false; c.home = null; return prepEnd(E, true, human ? dr : null); }
+    if (G.time > E.until && !human) prepEnd(E, false); return; }
+  if (E.sub === 'gear') { const c = E.carrier;
+    if (c) { if (c.gone || c.dead || c.down) { const b = addPickup('bag', c.x, groundAt(c.x, c.z, c.y + .5, 'p'), c.z, E.team); b.ev = E; E.bag = b; E.carrier = null; GAME.ev('sd', E.id); return; }
+      const gc = G.prep.car ? carById(G.prep.car) : null, t = gc && !gc.wreck ? gc : BK2.away; E.x = t.x; E.z = t.z;
+      if (hyp(c.x - t.x, c.z - t.z) < 6) { G.prep.gear = 1; return prepEnd(E, true, c); } return; }
+    if (E.bag && !E.bag.gone) { E.x = E.bag.x; E.z = E.bag.z; }
+    if (G.time > E.until) { if (E.bag) removePickup(E.bag); prepEnd(E, false); } return; }
+  const hs = humans().filter(h => !h.dead && !(h.heat > 0) && !h.car && WEAPONS[wpnOfH(h)].melee);   // casing: walk in like a customer
+  BK2.spots.forEach((s, i) => { if (E.mask >> i & 1) return; if (hs.some(h => hyp(h.x - s.x, h.z - s.z) < 1.7 && Math.abs(h.y - CURB) < 1.6)) { E.hold[i] += .25; if (E.hold[i] >= 2.5) { E.mask |= 1 << i; GAME.ev('pz', E.id, i, E.mask); } } });
+  const nx = BK2.spots.findIndex((s, i) => !(E.mask >> i & 1)); if (nx >= 0) { E.x = BK2.spots[nx].x; E.z = BK2.spots[nx].z; }
+  if (E.mask === 7) { G.prep.scout = 1; return prepEnd(E, true, null); }
+  if (G.time > E.until) prepEnd(E, false);
+};
+function prepEnd(E, ok, who) { if (!ok && E.sub === 'car' && E.car && !E.car.gone) E.car.temp = true; evEnd(E, ok, ok ? PREPS[E.sub].pay : 0, who); if (ok) GAME.ev('pp', PREP_IDS.indexOf(E.sub), prepMask()); }
+
 // the strongroom door: shut and solid until the drill is through, then it swings open
 const vaultDoor = (() => { if (!BANK) return null; const g = new T.Group(), m = new T.Mesh(new T.CylinderGeometry(1.25, 1.25, .5, 24), new T.MeshLambertMaterial({ color: 0x9aa2aa })); m.rotation.z = PI / 2; m.position.set(0, 0, 1.15); g.add(m);
   const hub = new T.Mesh(new T.CylinderGeometry(.35, .35, .7, 12), new T.MeshLambertMaterial({ color: 0x6a7078 })); hub.rotation.z = PI / 2; hub.position.set(-.1, 0, 1.15); g.add(hub);
   g.position.set(BANK.vx + .45, CURB + 1.3, BANK.cz - 1.15); scene.add(g); BANK.vbox = solid(BANK.vx, BANK.vx + .9, CURB, CURB + 2.7, BANK.cz - 1.15, BANK.cz + 1.15); return g; })();
 let vaultA = 0;
+// the time-lock panel on the back-office wall, the three spots to case (while that setup is on), a bag on every carrier's back,
+// and a sign over the getaway car
+const lockPanel = BK2 ? (() => { const m = new T.Mesh(new T.BoxGeometry(.8, .6, .08), new T.MeshBasicMaterial({ color: 0x3fd07a })); m.position.set(BK2.panel.x, CURB + 1.4, BANK.z1 - .55); scene.add(m); return m; })() : null;
+const caseRings = BK2 ? BK2.spots.map(q => { const m = mark(q.x, q.z, 0xffd27d, 1.5); m.visible = false; return m; }) : [];
+const bagMeshes = [0, 1, 2, 3, 4, 5].map(() => { const m = new T.Mesh(bagGeo, bagMat); m.visible = false; m.scale.setScalar(1.25); scene.add(m); return m; });
+const awaySign = (() => { const cv = texCanvas(256, 64), x = cv.getContext('2d'); x.fillStyle = 'rgba(14,16,20,.8)'; x.fillRect(0, 8, 256, 48); x.strokeStyle = '#ffc83d'; x.lineWidth = 4; x.strokeRect(2, 10, 252, 44); x.fillStyle = '#ffc83d'; x.font = '700 34px "Saira Condensed", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('GETAWAY', 128, 33);
+  const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, depthTest: false, fog: false })); sp.renderOrder = 8; sp.visible = false; scene.add(sp); return sp; })();
 function heistVisuals(dt) {
-  if (vaultDoor) { const E = EVTS.find(q => q.k === 'bank'), open = !!E && E.stage >= 2; vaultA = lerp(vaultA, open ? 1.75 : 0, Math.min(1, dt * 1.6)); vaultDoor.rotation.y = -vaultA;
-    BANK.vbox.off = vaultA > .6; }   // shut, it is part of the wall
+  const E = EVTS.find(q => q.k === 'bank');
+  if (vaultDoor) { const open = !!E && E.stage >= 3; vaultA = lerp(vaultA, open ? 1.75 : 0, Math.min(1, dt * 1.6)); vaultDoor.rotation.y = -vaultA; BANK.vbox.off = vaultA > .6; }   // shut, it is part of the wall
+  if (lockPanel) lockPanel.material.color.setHex(!E ? 0x3fd07a : E.alarm ? 0xe23b2e : E.stage === 2 ? 0xffc83d : E.stage >= 3 ? 0x8fe36b : 0x3fd07a);
+  const pr = EVTS.find(q => q.k === 'prep' && q.sub === 'scout'); caseRings.forEach((m, i) => { m.visible = !!pr && !((pr.mask | 0) >> i & 1); });
+  let n = 0; const back = (a, x, y, z, yaw) => { if (n >= bagMeshes.length) return; const m = bagMeshes[n++]; m.visible = true; m.position.set(x + Math.sin(yaw) * .3, y + 1.15, z + Math.cos(yaw) * .3); m.rotation.set(0, yaw, .2); };
+  if (P.bag && !P.car && !P.dead && G.state !== 'menu' && !firstPerson()) back(P, P.x, P.y, P.z, P.yaw);
+  for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.bag && !r.car && !r.dead) back(r, r.x, r.y, r.z, r.yaw); }
+  for (let i = n; i < bagMeshes.length; i++) bagMeshes[i].visible = false;
+  const gc = G.prep.car && G.state !== 'menu' ? carById(G.prep.car) : null; awaySign.visible = !!gc && !gc.wreck; if (awaySign.visible) { const d = hyp(gc.x - camera.position.x, gc.z - camera.position.z); awaySign.position.set(gc.x, gc.y + 2.6 + Math.min(4, d * .03), gc.z); awaySign.scale.set(clamp(d * .06, 2.2, 9), clamp(d * .06, 2.2, 9) / 4, 1); }
   jewelCases();
+}
+// the bank's and the cargo yard's prompts: hack the panel, start the drill again
+function bankPrompt() {
+  const E = bagJob(); if (!E || P.car) return null;
+  if (P.hack) return { text: 'Hacking… ' + Math.round(P.hack.t / P.hack.need * 100) + '% · stay at the panel' };
+  if (E.k === 'bank' && E.quiet && (E.stage | 0) === 1 && hyp(P.x - BK2.panel.x, P.z - BK2.panel.z) < 1.5) return { text: '<b>F</b>Hack the time lock', act: () => { P.hack = { t: 0, need: 7, x: BK2.panel.x, z: BK2.panel.z }; SFX.tick(); } };
+  if (E.k === 'cargo' && (E.stage | 0) === 1 && hyp(P.x - CARGO.hack.x, P.z - CARGO.hack.z) < 1.7) return { text: '<b>F</b>Crack the container lock', act: () => { P.hack = { t: 0, need: 10, x: CARGO.hack.x, z: CARGO.hack.z }; SFX.tick(); } };
+  if (E.k === 'bank' && E.jam && hyp(P.x - BANK.vault.x, P.z - BANK.vault.z) < 2.8) return { text: '<b>F</b>Start the drill again', act: () => { if (AUTH()) GAME.drillOn(P); else { NET.req('hd'); E.jam = false; } SFX.tick(); } };
+  return null;
+}
+// a hack runs while you stand at the panel; walk off, go down or get hurt badly and it stops
+function hackTick(dt) {
+  const H = P.hack; if (!H) return; const E = bagJob();
+  if (!E || P.dead || P.down || P.car || hyp(P.x - H.x, P.z - H.z) > 2) { P.hack = null; return; }
+  H.t += dt; P.shootT = Math.max(P.shootT, .2); if (H.t < H.need) return;
+  P.hack = null; SFX.cap(true); if (AUTH()) GAME.hack(P); else NET.req('hk');
 }
 
 // --- the jewelers: smash the cases (the alarm goes at the first), then get the take to the fence clean
@@ -5115,15 +5282,26 @@ function labPrompt() {
   return null;
 }
 
-// --- the phone's pages for these: jobs to start, the lab
-function jobItems() {
-  const on = jobOn(), out = [];
-  Object.keys(JOBS).forEach(k => { const J = JOBS[k];
-    out.push(on ? { label: J.name, sub: on.k === k ? 'On now · see the job line at the top' : 'Another job is on', off: true } : J.rank > (P.rank || 1) ? { label: J.name, sub: 'Opens at rank ' + J.rank, off: true, lock: 'Opens at rank ' + J.rank }
-      : { label: J.name, sub: (k === 'bank' ? 'Drill the vault at Calder Savings · everyone in the session goes in' : 'Smash the cases at ' + (JOBS && JEWEL ? JEWEL.name : 'the jewelers') + ' · quick and loud') + ' · setup', cost: J.cost, act: () => startJob(k) }); });
+// --- the phone's pages for these: the heists and their setups, the lab
+function jobItems(pg) {
+  const busy = heistBusy(), r = P.rank || 1, out = [], cash = n => '$' + n.toLocaleString('en-US');
+  if (pg === 'jobs-bank') {
+    const m = AUTH() ? prepMask() : (G.prepMask | 0), done = [m & 1, m & 2, m & 4];
+    out.push({ label: JOBS.bank.name, sub: 'Setups last the session · loud needs the gear, quiet needs the bank cased · bags only count in the getaway car', off: true, own: true });
+    PREP_IDS.forEach((id, i) => { const S = PREPS[id]; out.push(done[i] ? { label: 'Setup · ' + S.name, sub: 'Done', off: true, own: true } : busy ? { label: 'Setup · ' + S.name, sub: busy.k === 'prep' && busy.sub === id ? 'On now' : 'Something else is on', off: true } : { label: 'Setup · ' + S.name, sub: S.how + ' · pays ' + cash(S.pay), act: () => startPrep(id) }); });
+    const fin = (quiet, ok, why) => ({ label: quiet ? 'Go in quiet' : 'Go in loud', sub: !ok ? why : quiet ? 'Guns away past the guards, hack the time lock · bags worth 40% more' : 'Alarm, guards and the police from the start · drill the vault', cost: ok ? JOBS.bank.cost : 0, off: !ok, act: ok ? () => startJob('bank', quiet ? 1 : 0) : null });
+    if (r < JOBS.bank.rank) out.push({ label: 'The job itself', sub: 'Opens at rank ' + JOBS.bank.rank, off: true, lock: 'Opens at rank ' + JOBS.bank.rank });
+    else if (busy) out.push({ label: 'The job itself', sub: busy.k === 'bank' ? 'On now · see the job line at the top' : 'Something else is on', off: true });
+    else out.push(fin(false, !!done[1], 'Needs the drill and charges'), fin(true, !!done[2], 'Needs the bank cased'));
+    return out.concat([{ label: '‹ Back', act: () => { shopOpen.page = 'jobs'; renderShop(); } }]);
+  }
+  out.push({ label: JOBS.bank.name + ' ›', sub: (r < JOBS.bank.rank ? 'Opens at rank ' + JOBS.bank.rank + ' · ' : '') + 'Set it up, then in loud or quiet · everyone in the session goes in', act: () => { shopOpen.page = 'jobs-bank'; renderShop(); } });
+  const one = (k, sub) => { const J = JOBS[k]; out.push(busy ? { label: J.name, sub: busy.k === k ? 'On now · see the job line at the top' : 'Something else is on', off: true } : J.rank > r ? { label: J.name, sub: 'Opens at rank ' + J.rank, off: true, lock: 'Opens at rank ' + J.rank } : { label: J.name, sub, cost: J.cost, act: () => startJob(k, 0) }); };
+  one('cargo', 'Airport cargo yard: crack the gold container under fire, load it into anything you can drive or fly'); one('jewel', 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers') + ' · quick and loud');
   return out.concat([back()]);
 }
-function startJob(k) { const J = JOBS[k]; if (jobOn() || !payCash(J.cost)) return; closeShop(); if (AUTH()) { if (!EV_START[k]()) { P.spent -= J.cost; P.cash += J.cost; gain(J.cost); note(J.name + ' is not ready yet · try again later', 'g'); } } else NET.req('hs', k); SFX.tick(); }
+function startJob(k, opt) { const J = JOBS[k]; if (heistBusy() || !payCash(J.cost)) return; closeShop(); if (AUTH()) { if (!EV_START[k](P, opt)) { P.spent -= J.cost; P.cash += J.cost; gain(J.cost); note(J.name + ' is not ready yet · try again later', 'g'); } } else NET.req('hs', k, opt | 0); SFX.tick(); }
+function startPrep(id) { if (heistBusy()) return; closeShop(); if (AUTH()) { if (!EV_START.prep(P, id)) note('That setup could not start here · try again in a moment', 'g'); } else NET.req('pr', id); SFX.tick(); }
 function labItems() {
   if (!P.lab) return LABS.map((L, i) => ({ label: L.name, sub: 'Set up a lab here: it makes product you smuggle to a buyer', cost: LAB.price, act: () => buyLab(i) })).concat([back()]);
   const L = P.lab, run = smugMine();
@@ -5132,23 +5310,136 @@ function labItems() {
 }
 // the line at the top that says what the job wants now
 function jobLine() {
-  const E = EVTS.find(q => q.k === 'bank' || q.k === 'jewel' || (q.k === 'smug' && (q.owner === P || q.ref === GAME.ref(P)))); if (!E) return '';
-  const st = E.stage | 0, cash = n => '$' + Math.round(n).toLocaleString('en-US');
-  if (E.k === 'bank') return 'Bank job · ' + (st === 0 ? 'get inside Calder Savings' : st === 1 ? 'hold the vault while the drill runs · ' + Math.round((E.drill === undefined ? (E.aux | 0) / 100 : E.drill) * 100) + '%' : st === 2 ? 'bag the cash · ' + cash(E.take === undefined ? (E.aux | 0) * 100 : E.take) : 'lose the police, then reach the drop');
+  const E = EVTS.find(q => q.k === 'bank' || q.k === 'jewel' || q.k === 'cargo' || q.k === 'prep' || (q.k === 'smug' && (q.owner === P || q.ref === GAME.ref(P)))); if (!E) return '';
+  const st = E.stage | 0, cash = n => '$' + Math.round(n).toLocaleString('en-US'), carry = P.bag ? ' · you carry ' + cash(P.bag) : '', loaded = E.loaded ? ' · ' + cash(E.loaded) + ' in the car' : '';
+  if (E.k === 'prep') return 'Setup · ' + PREPS[E.sub].name + ' · ' + (E.sub === 'car' ? (P.car && P.car.prep ? 'park it at the getaway spot behind the bank' : 'steal the car the crew is sitting on') : E.sub === 'gear' ? (E.carrier === P ? 'bring the crate to the getaway spot' : 'take the crate off the crew') : 'stand at the marked spots · guns away · ' + [0, 1, 2].filter(i => (E.mask | 0) >> i & 1).length + ' of 3');
+  if (E.k === 'bank' || E.k === 'cargo') { const gc = getaway(E), where = E.k === 'bank' ? 'Bank' : 'Cargo';
+    if (st === 0) return where + ' · ' + (E.k === 'cargo' ? 'get to the cargo yard at the airport' : E.quiet ? 'walk in quietly · guns away near the guards' : 'get inside Calder Savings');
+    if (st === 1 && E.k === 'cargo') return 'Cargo · crack the lock on the end container · hold the yard';
+    if (st === 1 && !E.quiet) return 'Bank · hold the vault while the drill runs · ' + Math.round((E.drill === undefined ? (E.prog | 0) / 100 : E.drill) * 100) + '%' + (E.jam ? ' · THE DRILL JAMMED · start it again' : '');
+    if (st === 1) return 'Bank · hack the time lock in the back office' + (E.alarm ? ' · the alarm is going' : ' · suspicion ' + Math.round((E.sus === undefined ? (E.prog | 0) / 100 : E.sus) * 100) + '%');
+    if (st === 2) return 'Bank · the time lock opens the vault in ' + Math.max(0, Math.ceil(E.lockT !== undefined ? E.lockT - G.time : E.prog | 0)) + 's';
+    if (st === 3) return where + ' · bag the money and ' + (gc ? 'load it into the getaway car' : E.k === 'cargo' ? 'carry it to a car or helicopter one of you is driving' : 'carry it out · no getaway car') + carry + loaded;
+    return where + ' · lose the police, then take the ' + (gc ? 'getaway car' : 'money') + ' to the drop' + carry + loaded; }
   if (E.k === 'jewel') { const m = E.cases | 0; let n = 0; for (let i = 0; i < 5; i++) if (m >> i & 1) n++; return 'Jewelry store · ' + (st === 1 ? 'smash the cases · ' + n + ' of 5 · ' + cash(E.take || 0) : 'lose the police, then reach the fence · ' + cash(E.take || 0)); }
   return 'Smuggling run · ' + (P.car && P.car.smug ? 'get the van to the buyer' : 'get in the van') + ' · ' + cash((E.units || 0) * LAB.unit);
 }
 // --- what the jobs say as they go, on every machine
 function heistNews(e) {
-  const k = e[1], E = EVTS.find(q => q.id === e[2]);
-  if (k === 'hj') { const st = e[3];
-    if (st === 1) { banner('The alarm is going', 'Get to the vault and hold it while the drill runs', 3, 'gold'); SFX.star(); }
-    else if (st === 2) { banner('The vault is open', 'Bag the cash · a few seconds each', 2.8, 'gold'); SFX.cap(true); }
+  const k = e[1], E = EVTS.find(q => q.id === e[2]), money = n => '$' + (n | 0).toLocaleString('en-US');
+  if (k === 'hj') { const st = e[3], who = (st === 5 || st === 7) && e[4] ? GAME.unref(e[4]) : null;
+    if (st === 1) { banner('The alarm is going', E && E.k === 'bank' && E.quiet ? 'They made you · guards and police coming' : 'Get to the vault and hold it while the drill runs', 3, 'gold'); SFX.star(); }
+    else if (st === 2) { banner(E && E.k === 'cargo' ? 'The container is open' : 'The vault is open', 'One bag each · get them to the getaway', 2.8, 'gold'); SFX.cap(true); }
     else if (st === 3) { banner(E && E.k === 'jewel' ? 'Get it to the fence' : 'Get the money to the drop', 'Lose the police first · the drop is on your map', 3, 'gold'); SFX.tick(); }
-    else if (st === 9) note('Lose the police before the drop · they followed you here', 'c'); }
+    else if (st === 4) { banner('You are in', 'Guns away near the guards · the time lock panel is in the back office', 3.2, 'gold'); SFX.tick(); }
+    else if (st === 5) { banner('Time lock hacked', 'The vault opens in 20 seconds · stay out of sight', 2.8, 'gold'); SFX.cap(true); }
+    else if (st === 6) { banner('The drill jammed', 'Someone at the vault: start it again', 2.4, 'gold'); SFX.deny(); }
+    else if (st === 7) note((who ? nameOf(who) : 'Someone') + ' got the drill going again', 'g');
+    else if (st === 8) { banner('Silent alarm', 'The bank has called it in · move', 2.6, 'gold'); SFX.star(); }
+    else if (st === 9) note('Lose the police before the drop · they followed you here', 'c');
+    else if (st === 10) note('Bring the money: it is in the getaway car, or on someone\'s back', 'c');
+    else if (st === 11) { const c = carById(e[4]); note('That ' + (c ? c.spec.name : 'ride') + ' is the getaway now · load the gold into it', 'g'); }
+    else if (st === 12) { banner('Restricted area', 'Airport police · crack the end container\'s lock', 2.8, 'gold'); SFX.star(); } }
   else if (k === 'lt') { const a = GAME.unref(e[3]); if (a === P) banner('+$' + e[4].toLocaleString('en-US'), 'In the bag · $' + e[5].toLocaleString('en-US') + ' so far', 1.6, 'gold'); else note((a ? nameOf(a) : 'Someone') + ' bagged $' + e[4].toLocaleString('en-US'), 'g'); if (E) E.take = e[5]; SFX.cash(); }
   else if (k === 'js') { const a = GAME.unref(e[4]); if (E) { E.cases |= 1 << e[3]; E.take = e[6]; } if (a === P) banner('+$' + e[5].toLocaleString('en-US'), 'Take so far $' + e[6].toLocaleString('en-US'), 1.4, 'gold'); if (JEWEL && JEWEL.cases[e[3]]) { const c = JEWEL.cases[e[3]]; SFX.crash(c.x, CURB + 1, c.z, 3); } }
   else if (k === 'st') { if (E && (E.owner === P || E.ref === GAME.ref(P))) { banner('They know about the van', 'A crew is coming for it · keep moving', 2.6, 'gold'); SFX.star(); } }
+  else if (k === 'bg') { const a = GAME.unref(e[3]); if (a) a.bag = e[4]; if (a === P) { banner('Bag on your back · ' + money(e[4]), 'Slow going · load it into the getaway', 2, 'gold'); SFX.cash(); } else if (a) note(nameOf(a) + ' has a bag', 'g'); }
+  else if (k === 'bl') { const a = GAME.unref(e[3]); if (a) a.bag = 0; if (E) E.loaded = e[5]; if (a === P) banner('Loaded · ' + money(e[4]), money(e[5]) + ' in the getaway', 1.8, 'gold'); else note((a ? nameOf(a) : 'Someone') + ' loaded a bag · ' + money(e[5]) + ' in the getaway', 'g'); SFX.tick(); }
+  else if (k === 'bd') { const a = GAME.unref(e[3]); if (a) a.bag = 0; note((a === P ? 'You' : a ? nameOf(a) : 'Someone') + ' dropped a bag · pick it up', 'c'); }
+  else if (k === 'bx') { banner('The getaway is gone', 'And ' + money(e[3]) + ' with it', 2.8); SFX.deny(); }
+  else if (k === 'pp') { G.prepMask = e[3]; }
+  else if (k === 'pz') { if (E) E.mask = e[4]; SFX.tick(); note('Spot cased · ' + [0, 1, 2].filter(i => e[4] >> i & 1).length + ' of 3', 'g'); }
+}
+
+/* =====================================================================
+   11d. PLAYING TOGETHER — online, a player whose health runs out goes down instead of dying, as long as someone on their side
+        is still up: they bleed out for thirty seconds unless a teammate stands over them and picks them up. Anyone can mark a
+        spot, a person or a car for their side (a ping). Teammates' health shows down the side of the screen, and a player who
+        does die comes back near the others instead of across town.
+   ===================================================================== */
+const DOWN = { bleed: 30, revive: 2.5, again: 25 };   // seconds to bleed out, to pick someone up, and before the same player can go down again
+const mateOf = (a, b) => a !== b && a.team === b.team && a.team !== TEAM_CIV;
+function canGoDown() { if (!NET.mode || G.time - (P.revT || -99) < DOWN.again) return false; for (const k in NET.remotes) { const r = NET.remotes[k]; if (mateOf(r, P) && !r.dead && !r.down) return true; } return false; }
+function goDown(src, wid, head) {
+  if (P.car) GAME.leaveCar(true);
+  Object.assign(P, { hp: 1, down: DOWN.bleed, downSrc: src, downW: wid, downH: head, knock: 1, knockT: 1, hack: null, rob: null, rev: null, ads: 0 }); mouse.down = false; setAds(false); closeShop();
+  $('dead').hidden = false; setHud('dead-big', 'Down'); SFX.hurt(); banner('Down', 'A teammate can pick you up · ' + capOf('use') + ' gives up', 2.6);
+}
+function bleedOut() { if (!P.down) return; P.down = 0; P.knock = 0; P.hp = 0; setHud('dead-big', 'Dropped'); GAME.playerDied(P.downSrc && !P.downSrc.gone ? P.downSrc : null, P.downW || 'pistol', !!P.downH); }
+function downTick(dt) {
+  P.down -= dt; P.knock = 1; P.knockT = Math.max(P.knockT, .5); P.hp = Math.max(1, P.hp); mouse.down = false;
+  setHud('dead-sub', 'Bleeding out · ' + Math.max(0, Math.ceil(P.down)) + 's · a teammate can pick you up · ' + capOf('use') + ' gives up');
+  if (P.down <= 0 || !NET.mode) bleedOut();
+}
+function revived(by) {
+  if (!P.down) return; Object.assign(P, { down: 0, knock: 0, knockT: 0, hp: Math.round(maxHp() * .4), safeT: 2.5, revT: G.time }); $('dead').hidden = true; setHud('dead-big', 'Dropped');
+  banner('Back on your feet', by && by !== P ? 'Picked up by ' + nameOf(by) : '', 2); SFX.cap(true);
+}
+// picking someone up: stand over them and press USE; it takes a couple of seconds of staying there
+function revivePrompt() {
+  if (P.rev) return { text: 'Picking up ' + P.rev.r.name + '… ' + Math.round(P.rev.t / DOWN.revive * 100) + '%' };
+  for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.down && !r.dead && mateOf(r, P) && hyp(r.x - P.x, r.z - P.z) < 1.8 && Math.abs(r.y - P.y) < 1.5) return { text: '<b>F</b>Pick up ' + r.name, act: () => { P.rev = { r, t: 0 }; SFX.tick(); } }; }
+  return null;
+}
+function reviveTick(dt) {
+  const R = P.rev; if (!R) return; const r = R.r;
+  if (!r.down || r.gone || r.dead || P.down || P.dead || P.car || hyp(r.x - P.x, r.z - P.z) > 2.4) { P.rev = null; return; }
+  R.t += dt; P.shootT = Math.max(P.shootT, .2); if (R.t < DOWN.revive) return;
+  P.rev = null; if (AUTH()) GAME.ev('rv', GAME.ref(r), GAME.ref(P)); else NET.req('rv', r.slot);
+}
+// --- pings: what is under the crosshair (a person, a car) or the spot it lands on, for everyone on your side to see
+const PINGS = [], PING_KIND = ['here', 'enemy', 'car', 'police'], PING_COL = ['#ffc83d', '#ff6a5a', '#7dc3ff', '#5c98ff'], _pd = new T.Vector3();
+function pingHere() {
+  if (P.dead || G.state !== 'playing') return; camera.getWorldDirection(_pd);
+  const ox = camera.position.x, oy = camera.position.y, oz = camera.position.z; let best = null, ba = .07, kind = 0, bx = 0, by = 0, bz = 0;
+  bots.forEach(b => { if (b.dead || b.gone) return; const tx = b.x - ox, ty = b.y + 1.2 - oy, tz = b.z - oz, d = hyp(tx, ty, tz); if (d < 2 || d > 180) return; const a = Math.acos(clamp((tx * _pd.x + ty * _pd.y + tz * _pd.z) / d, -1, 1)); if (a < Math.max(ba, Math.atan(.9 / d)) && a < .2 && los(ox, oy, oz, b.x, b.y + 1.2, b.z, 's')) { ba = a; best = b; } });
+  if (best) { kind = best.team === TEAM_COP ? 3 : hostile(best, P) || (isCrew(best.team) && best.team !== P.team) ? 1 : 0; bx = best.x; by = best.y; bz = best.z; }
+  else { let bc = null, bca = .06; cars.forEach(c => { if (c.gone || c === P.car) return; const tx = c.x - ox, ty = c.y + 1 - oy, tz = c.z - oz, d = hyp(tx, ty, tz); if (d < 3 || d > 200) return; const a = Math.acos(clamp((tx * _pd.x + ty * _pd.y + tz * _pd.z) / d, -1, 1)); if (a < Math.max(bca, Math.atan(1.6 / d)) && a < .2) { bca = a; bc = c; } });
+    if (bc) { kind = 2; bx = bc.x; by = bc.y; bz = bc.z; }
+    else { const t = Math.min(rayCars(ox, oy, oz, _pd.x, _pd.y, _pd.z, rayWorld(ox, oy, oz, _pd.x, _pd.y, _pd.z, 's', 260), P.car), 260); if (t >= 259) return; bx = ox + _pd.x * t; by = oy + _pd.y * t; bz = oz + _pd.z * t; } }
+  if (AUTH()) GAME.ping(P, bx, by, bz, kind); else NET.req('pg', Math.round(bx * 10) / 10, Math.round(by * 10) / 10, Math.round(bz * 10) / 10, kind);
+}
+GAME.ping = (who, x, y, z, kind) => { if (!who || !isFinite(x + y + z)) return; GAME.ev('pg', GAME.ref(who), Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(z * 10) / 10, clamp(kind | 0, 0, 3)); };
+function pingSprite(text, col) { const cv = texCanvas(256, 96), x = cv.getContext('2d'); x.font = '700 30px "Saira Condensed", system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillStyle = 'rgba(14,16,20,.82)'; const w = Math.min(250, x.measureText(text).width + 28); x.fillRect(128 - w / 2, 4, w, 42); x.strokeStyle = col; x.lineWidth = 3; x.strokeRect(128 - w / 2 + 1.5, 5.5, w - 3, 39); x.fillStyle = col; x.fillText(text, 128, 26);
+  x.beginPath(); x.moveTo(128, 92); x.lineTo(112, 60); x.lineTo(144, 60); x.closePath(); x.fill();
+  const sp = new T.Sprite(new T.SpriteMaterial({ map: new T.CanvasTexture(cv), transparent: true, depthWrite: false, depthTest: false, fog: false })); sp.renderOrder = 9; return sp; }
+function addPing(a, x, y, z, kind) {
+  for (let i = PINGS.length - 1; i >= 0; i--) if (PINGS[i].who === a) { scene.remove(PINGS[i].sp); PINGS.splice(i, 1); }   // one ping each: a new one replaces the old
+  const col = PING_COL[kind] || PING_COL[0], sp = pingSprite((a === P ? 'You' : nameOf(a)) + ' · ' + PING_KIND[kind], col); scene.add(sp);
+  PINGS.push({ who: a, x, y, z, kind, t: G.time + 14, sp, col }); SFX.tick();
+  if (a !== P) note(nameOf(a) + ' marked ' + (kind === 1 ? 'an enemy' : kind === 2 ? 'a car' : kind === 3 ? 'the police' : 'a spot'), 'g');
+  if (a === P && !NET.mode) homiesTo(x, z);   // alone, a ping sends your homies there
+}
+function homiesTo(x, z) { let n = 0; bots.forEach(b => { if (b.homie === P && !b.dead && !b.car) { b.goPing = { x, z, until: G.time + 25 }; n++; } }); if (n) note('Homies heading for the mark', 'g'); }
+function coopNews(e) {
+  const k = e[1];
+  if (k === 'rv') { const t = GAME.unref(e[2]), by = GAME.unref(e[3]); if (AUTH() && by) GAME.rp(by, 60); if (t === P) revived(by); else if (t) note((by === P ? 'You' : nameOf(by)) + ' picked up ' + nameOf(t), 'g'); }
+  else if (k === 'pg') { const a = GAME.unref(e[2]); if (!a || (a !== P && !mateOf(a, P))) return; addPing(a, e[3], e[4], e[5], e[6] | 0); }
+}
+// --- every frame: pings fade, markers over teammates who are down, the teammates down the side of the screen
+const _dm = [0, 1, 2].map(() => { const sp = pingSprite('DOWN', '#ff6a5a'); sp.visible = false; scene.add(sp); return sp; });
+let mateT = 0;
+function coopVisuals(dt) {
+  for (let i = PINGS.length - 1; i >= 0; i--) { const q = PINGS[i]; if (G.time > q.t || G.state === 'menu') { scene.remove(q.sp); PINGS.splice(i, 1); continue; }
+    const d = hyp(q.x - camera.position.x, q.z - camera.position.z), s = clamp(d * .07, 2.2, 14); q.sp.position.set(q.x, q.y + 1.6 + s * .2, q.z); q.sp.scale.set(s, s * .375, 1); q.sp.material.opacity = q.t - G.time < 2 ? (q.t - G.time) / 2 : 1; }
+  let n = 0; for (const k in NET.remotes) { const r = NET.remotes[k]; if (!r.down || r.dead || !mateOf(r, P) || n >= _dm.length) continue; const sp = _dm[n++], d = hyp(r.x - camera.position.x, r.z - camera.position.z), s = clamp(d * .06, 1.8, 10); sp.visible = true; sp.position.set(r.x, r.y + 1.2 + s * .2, r.z); sp.scale.set(s, s * .375, 1); sp.material.opacity = .6 + .4 * Math.sin(G.time * 8); }
+  for (let i = n; i < _dm.length; i++) _dm[i].visible = false;
+  mateT -= dt; if (mateT > 0) return; mateT = .25;
+  const el = $('mates'), list = []; if (NET.mode && G.state !== 'menu') for (const k in NET.remotes) { const r = NET.remotes[k]; if (mateOf(r, P)) list.push(r); }
+  el.hidden = !list.length; if (!list.length) return;
+  const html = list.slice(0, 5).map(r => { const hl = r.dead ? 0 : r.hl === undefined ? 100 : r.hl, st = r.dead ? 'dead' : r.down ? 'DOWN' : r.car ? 'in a car' : Math.round(hyp(r.x - P.x, r.z - P.z)) + 'm';
+    return '<div class="' + (r.down ? 'dn' : r.dead ? 'dd' : '') + '"><b>' + r.name.replace(/[<>&]/g, '') + '</b><i><u style="width:' + hl + '%"></u></i><small>' + st + (r.bag ? ' · bag' : '') + '</small></div>'; }).join('');
+  if (el.innerHTML !== html) el.innerHTML = html;
+}
+// --- dying online: come back near a teammate who is up, not across town
+function mateSpawn() {
+  if (!NET.mode) return null; let m = null, md = 1e9;
+  for (const k in NET.remotes) { const r = NET.remotes[k]; if (!mateOf(r, P) || r.dead || r.down || r.y > 6 || !onLand(r.x, r.z)) continue; const d = hyp(r.x - P.x, r.z - P.z); if (d < md) { md = d; m = r; } }
+  if (!m) return null;
+  const near = NAVOK.filter(n => n.y < 1 && !n.iso && hyp(n.x - m.x, n.z - m.z) > 14 && hyp(n.x - m.x, n.z - m.z) < 45).sort((a, b) => hyp(a.x - m.x, a.z - m.z) - hyp(b.x - m.x, b.z - m.z)).slice(0, 6);
+  if (!near.length) return null; const n = near[(rand() * near.length) | 0];
+  return { x: n.x + rs(1), y: n.y, z: n.z + rs(1), yaw: yawOf(m.x - n.x, m.z - n.z), mate: m };
 }
 
 /* =====================================================================
@@ -5184,8 +5475,8 @@ function snapAt(buf, o, delay) {   // o gets x, y, z, yaw (and pitch, vf when th
 // --- what I say about myself
 const myPos = () => [r2(P.x), r2(P.y), r2(P.z), r2(P.yaw), r2(P.pitch)];
 function myBody() {
-  const c = P.car, fl = (P.reloadT > 0 ? 1 : 0) | (P.ads > .5 || P.shootT > 0 ? 2 : 0) | (P.dead ? 4 : 0) | (c ? 8 : 0) | (P.sprint ? 16 : 0) | (P.knock > .5 ? 32 : 0) | (P.safeT > 0 ? 64 : 0) | (P.chute ? 128 : 0);
-  const o = { n: myName(), cr: P.team, rk: P.rank || 1, p: myPos(), a: [P.shots | 0, WEAPONS[P.wpn].n, fl, r2(c ? P.cyaw : P.yaw)], v: null };
+  const c = P.car, fl = (P.reloadT > 0 ? 1 : 0) | (P.ads > .5 || P.shootT > 0 ? 2 : 0) | (P.dead ? 4 : 0) | (c ? 8 : 0) | (P.sprint ? 16 : 0) | (P.knock > .5 ? 32 : 0) | (P.safeT > 0 ? 64 : 0) | (P.chute ? 128 : 0) | (P.down > 0 ? 256 : 0);
+  const o = { n: myName(), cr: P.team, rk: P.rank || 1, hl: Math.round(clamp(P.hp / maxHp(), 0, 1) * 100), p: myPos(), a: [P.shots | 0, WEAPONS[P.wpn].n, fl, r2(c ? P.cyaw : P.yaw)], v: null };
   if (c && P.seat === 0 && c.mine !== false) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); o.v = [c.id, r2(c.x), r2(c.z), r2(c.yaw), Math.round((c.vx * fx + c.vz * fz) * 10) / 10, Math.round(c.steer * 10) / 10, r2(c.y), (c.horn ? 1 : 0) | (c.slip > 5.5 ? 2 : 0)]; if (c.spec.air) o.v.push(r2(c.dive), r2(c.roll)); }
   if (P.hg || P.hr) o.hf = [P.hg | 0, P.hr | 0];
   return o;
@@ -5219,7 +5510,7 @@ function netPeers(dt, each) {
     const p = s.p, A = s.a || [0, 1, 0, 0], ox = r.x, oz = r.z;
     if (s !== r.lastS) { r.lastS = s; arrive(r.jit); snapPush(r.buf, { x: p[0], y: p[1], z: p[2], yaw: p[3], pitch: p[4] || 0 }); } if (snapAt(r.buf, _so, r.jit.d)) { r.x = _so.x; r.y = _so.y; r.z = _so.z; r.yaw = _so.yaw; r.pitch = _so.pitch; }
     r.spd = lerp(r.spd, hyp(r.x - ox, r.z - oz) / Math.max(dt, .001), .3); r.wpn = WID[A[1]] || 'pistol'; r.ayaw = A[3];
-    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128);
+    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128); r.down = !!(fl & 256); r.hl = s.hl;
     { const hf = Array.isArray(s.hf) ? s.hf : [0, 0]; if (r.hg === undefined) { r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if ((hf[0] | 0) > r.hg) fxHeli(r, 'gun', (hf[0] | 0) - r.hg); if ((hf[1] | 0) > r.hr) fxHeli(r, 'pod', (hf[1] | 0) - r.hr); r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
     if (A[0] !== r.shots) { if (A[0] > r.shots && !r.dead) { fxShot(r, r.wpn); if (NET.mode === 'host') GAME.noise(r.x, r.z, r); } r.shots = A[0]; }
     const team = G.rivals ? sideOf(s.cr) : G.crew; if (team !== r.team || cleanName(s.n) !== r.name) { r.team = team; r.name = cleanName(s.n); setLook(r.ch, makeLook(hashStr(pr.peer), team)); killTag(r.tag); r.tag = null; }
@@ -5301,7 +5592,7 @@ function decCars(s, pk) {
   for (let i = cars.length - 1; i >= 0; i--) if (!live[cars[i].id]) { if (P.car === cars[i]) { P.car = null; setHorn(false); radioVolume(0); } removeCar(cars[i]); }
   for (const k in NET.remotes) { const r = NET.remotes[k]; if (r.car && (r.car.gone || r.car.occ[r.seat] !== r)) r.car = null; }
 }
-const PICK_TY = { chain: 'c', cash: '$', bag: 'b', loot: 'l' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag', l: 'loot' };
+const PICK_TY = { chain: 'c', cash: '$', bag: 'b', loot: 'l', hbag: 'h' }, PICK_OF = { c: 'chain', $: 'cash', b: 'bag', l: 'loot', h: 'hbag' };
 const encPicks = () => pickups.map(p => B36(p.id, 3) + (PICK_TY[p.type] || String(WEAPONS[p.type].n)) + B36((p.x + 8) * 16, 3) + B36((p.z + 8) * 16, 3) + B36((p.y + 4) * 8, 2) + (p.team < 0 ? '-' : B36(p.team, 1))).join('');
 function decPicks(s) {
   const live = {};
@@ -5330,8 +5621,13 @@ NET.host = dt => {
       else if (k === 'lw') GAME.clearHeat(r);
       else if (k === 'jb') GAME.forceJob();
       else if (k === 'rb') GAME.rob(r, q[2] | 0);
-      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else if (p.type === 'loot') GAME.takeLoot(p, r); else removePickup(p); } }
-      else if (k === 'hs') { if (EV_START[q[2]] && JOBS[q[2]]) EV_START[q[2]](); }
+      else if (k === 'pk') { const p = pickups.find(o => o.id === q[2]); if (p) { if (p.type === 'chain') GAME.takeChain(p, r); else if (p.type === 'cash') GAME.takeCash(p, r); else if (p.type === 'bag') GAME.takeBag(p, r); else if (p.type === 'loot') GAME.takeLoot(p, r); else if (p.type === 'hbag') GAME.takeHBag(p, r); else removePickup(p); } }
+      else if (k === 'hs') { if (EV_START[q[2]] && JOBS[q[2]]) EV_START[q[2]](r, q[3] | 0); }
+      else if (k === 'pr') EV_START.prep(r, q[2]);
+      else if (k === 'hk') GAME.hack(r);
+      else if (k === 'hd') GAME.drillOn(r);
+      else if (k === 'rv') { const t = GAME.unref('p' + (q[2] | 0)); if (t && t !== r && (t === P ? P.down : t.down) && hyp(t.x - r.x, t.z - r.z) < 4) GAME.ev('rv', GAME.ref(t), GAME.ref(r)); }
+      else if (k === 'pg') GAME.ping(r, +q[2], +q[3], +q[4], q[5] | 0);
       else if (k === 'js') GAME.smash(q[2] | 0, r);
       else if (k === 'sm') EV_START.smug(r, q[2] | 0, q[3] | 0);
       else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4], pw = clamp((+q[5] || 10) / 10, .5, 2), kind = BOOM[q[6]] ? q[6] : 'nade'; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(r)); explode(x, y + .3, z, r, pw, kind); } }
@@ -5348,7 +5644,7 @@ NET.host = dt => {
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; if (NET.slots[k] === undefined || !(r.lastS && followsMe(r.lastS))) continue; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire() };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0 };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', ep: NET.ep, fw: null, W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -5364,6 +5660,7 @@ function applyHost(s) {
   if (G.rivals) G.crew = crewOf(W.c);                                                                         // each on the side they picked
   else if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }          // everyone rides with the host's side
   if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
+  G.prepMask = W.pm | 0; G.prep.car = W.gc | 0; G.prep.gear = W.pm & 2 ? 1 : 0; G.prep.scout = W.pm & 4 ? 1 : 0;
   evFromHost(W.e);
   (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; if ((e[9] | 0) > NET.xpSeen) addRP((e[9] | 0) - NET.xpSeen); NET.xpSeen = e[9] | 0; P.heat = e[6] | 0; P.evade = !!e[7]; P.gs = String(e[8] || ''); } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
   { const hr = NET.remotes[NET.hostPeer]; if (hr) hr.slot = 0; }
@@ -5554,6 +5851,7 @@ function drawRadar() {
   cars.forEach(c => { if (c.cop && c.occ[0] && c.occ[0].team === TEAM_COP) { if (hot && !c.wreck) blip(g, c.x, c.z, k, R, fl ? '#ff4a4a' : '#5c98ff', 4.4, '#fff', true); return; } if (!c.wreck && c !== P.car && (c.occ[0] || c.team === P.team)) blip(g, c.x, c.z, k, R, c.occ[0] && isCrew(c.occ[0].team) ? CREWS[c.occ[0].team].css : c.team === P.team ? '#d8d6cc' : '#8b929c', 3, c.occ[0] && isCrew(c.occ[0].team) ? ringOf(c.occ[0].team, '#111') : '#111'); });
   bots.forEach(b => { if (b.dead || b.car) return; if (b.team === TEAM_COP) { if (hot) blip(g, b.x, b.z, k, R, fl ? '#5c98ff' : '#ff4a4a', 3.2, '#fff'); return; } if (!isCrew(b.team)) return; if (b.team === P.team) blip(g, b.x, b.z, k, R, CREWS[b.team].css, b.homie ? 3.6 : 3, b.homie ? '#fff' : ringOf(b.team)); else if (G.time - (b.shotT || -9) < 2.5 || hyp(b.x - P.x, b.z - P.z) < 22) blip(g, b.x, b.z, k, R, CREWS[b.team].css, 3.4, ringOf(b.team, '#111')); });
   for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.dead) continue; if (r.team === P.team) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, '#fff', true); else if (P.team === TEAM_COP && r.heat > 0) blip(g, r.x, r.z, k, R, Math.sin(G.time * 9) > 0 ? '#ff4a4a' : '#ffc83d', 4.6, '#fff', true); else if (G.time - (r.shotT || -9) < 2.5 || hyp(r.x - P.x, r.z - P.z) < 25) blip(g, r.x, r.z, k, R, SIDE(r.team).css, 4.2, ringOf(r.team, '#111')); }
+  PINGS.forEach(q => { blip(g, q.x, q.z, k, R, q.col, 5.5, '#fff', true); }); for (const q in NET.remotes) { const r = NET.remotes[q]; if (r.down && mateOf(r, P) && Math.sin(G.time * 10) > 0) blip(g, r.x, r.z, k, R, '#ff4a4a', 6, '#fff', true); }
   g.save(); g.rotate(-angTo(P.cyaw, P.car ? P.car.yaw : P.yaw)); g.beginPath(); g.moveTo(0, -8); g.lineTo(5.5, 6); g.lineTo(0, 3); g.lineTo(-5.5, 6); g.closePath(); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 1.5; g.strokeStyle = '#111'; g.stroke(); g.restore();
   radarXY(P.x, P.z - 1000, 1, blipO); const nl = hyp(blipO[0], blipO[1]) || 1; g.fillStyle = '#f2efe6'; g.font = '700 12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', blipO[0] / nl * (R - 10), blipO[1] / nl * (R - 10));
   g.restore();
@@ -5684,7 +5982,7 @@ const TC_DEF = [
   ['map', 'MAP', 'b', 'act:map', 0, .44, 0, .07, .1],
   ['turf', 'TURF', 'b', 'act:board', 0, .55, 0, .07, .1],
   ['cam', 'CAM', 'b', 'act:view', 1, .5, 0, .07, .1],
-  ['call', 'CALL', 'b', 'act:driveby', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'act:phone', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'act:nos', 1, .5, 1, .68, .13],
+  ['call', 'CALL', 'b', 'act:driveby', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'act:phone', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'act:nos', 1, .5, 1, .68, .13], ['ping', 'PING', 'b', 'act:ping', 0, .66, 0, .07, .1],
   ['up', 'UP', 'a', 'act:up', 1, .12, 1, .16, .2], ['down', 'DOWN', 'a', 'act:down', 1, .34, 1, .14, .17], ['rocket', 'ROCKETS', 'a', 'act:rockets', 1, .53, 1, .14, .15],
 ];
 const TC_FIXED = { stick: 1, fire: 1, pause: 1 }, TC_BASE = {}; TC_DEF.forEach(d => { TC_BASE[d[0]] = 1; });
@@ -6048,7 +6346,7 @@ function visuals(dt, now) {
   flushChars();
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
-  updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt);
+  updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt); coopVisuals(dt);
   updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car);
   if (G.state !== 'menu') updateHud(dt);
 }
@@ -6073,7 +6371,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

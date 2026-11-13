@@ -77,7 +77,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
-  if (pg === 'jobs') return jobItems(); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
+  if (pg && pg.slice(0, 4) === 'jobs') return jobItems(pg); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (P.team === TEAM_COP) return copItems(r, cd);
@@ -149,6 +149,7 @@ function homieBrain(b) {
     let k = -1; for (let q = 1; q < c.spec.seats; q++) if (!c.occ[q] && !bots.some(o => o !== b && o.wantCar === c && o.wantSeat === q)) { k = q; break; }
     if (k > 0 && d < 40 && (!c.spec.air || c.landed)) { b.wantCar = c; b.wantSeat = k; b.carT = G.time; b.carChk = 0; b.path = null; b.tgt = null; return; } }
   else if (b.wantCar) b.wantCar = null;
+  if (b.goPing && !saw) { if (G.time > b.goPing.until || hyp(b.x - b.goPing.x, b.z - b.goPing.z) < 3 || a.car) b.goPing = null; else { if (!b.path || G.time > (b.repathT || 0)) { b.repathT = G.time + 2; if (!botPathTo(b, b.goPing.x, CURB, b.goPing.z, false)) b.goPing = null; } return; } }   // a ping sends them on ahead
   if (d > 120 || (d > 60 && (!a.car || carSpeed(a.car) < 4))) { homieCatchUp(b, a); return; }
   if (saw || (b.tgt && !b.tgt.dead && G.time - b.seenT < 2)) return;
   b.tgt = null; b.hunt = false;

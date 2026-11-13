@@ -95,10 +95,10 @@ function killBot(b, src, wid, head) {
   GAME.onKill(src, b, wid, head);
 }
 function hurtPlayer(dmg, src, wid, head) {
-  if (P.dead || DBG.god || P.safeT > 0 || G.state === 'menu') return;
+  if (P.dead || DBG.god || P.safeT > 0 || G.state === 'menu' || P.down) return;
   let d = dmg; if (P.armor > 0) { const ab = Math.min(P.armor, d * .7); P.armor -= ab; d -= ab; }
   P.hp -= d; P.lastHit = G.time; SFX.hurt(); if (src && src.x !== undefined) dmgArrow(src.x, src.z);
-  if (P.hp <= 0) { P.hp = 0; GAME.playerDied(src, wid, head); }
+  if (P.hp <= 0) { if (canGoDown()) { goDown(src, wid, head); return; } P.hp = 0; GAME.playerDied(src, wid, head); }   // online, with a teammate still up: down, not out
 }
 function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
@@ -177,11 +177,11 @@ let pickSeq = 0;
 function addPickup(type, x, y, z, team, id) {
   const g = new T.Group(); let m;
   // chain: off a fallen rival (team: their crew). cash: out of a truck (team: hundreds of dollars). bag: a crew's stash (team: whose). Anything else is a gun.
-  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag' || type === 'loot') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
-  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : type === 'loot' ? 0xffc83d : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
+  if (type === 'chain') { m = new T.Mesh(chainGeo, chainMat); m.rotation.x = .5; } else if (type === 'cash') m = new T.Mesh(cashGeo, cashMat); else if (type === 'bag' || type === 'loot' || type === 'hbag') m = new T.Mesh(bagGeo, bagMat); else { m = new T.Mesh(GUN_GEO[type] || GUN_GEO.pistol, gunMat); m.scale.setScalar(1.5); m.rotation.z = .3; }
+  const s = new T.Sprite(pickGlow); s.scale.setScalar(type === 'chain' || type === 'bag' ? 1.5 : 1.1); const glow = type === 'cash' ? 0x8fe36b : type === 'loot' || type === 'hbag' ? 0xffc83d : (type === 'chain' || type === 'bag') && isCrew(team) ? CREWS[team].glow : null; if (glow !== null) { s.material = pickGlow.clone(); s.material.color.setHex(glow); }
   g.add(m); g.add(s); g.position.set(x, y + .7, z); scene.add(g);
-  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' || type === 'loot' ? 1e9 : 40, g, amt: type === 'cash' || type === 'loot' ? (team | 0) * 100 : 0 }; /* loot: a heist's money bag (team: hundreds of dollars) */ if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
-  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag' && q.type !== 'loot'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
+  const p = { id: id === undefined ? ++pickSeq : id, type, x, y, z, team: team === undefined ? -1 : team, t: type === 'cash' ? 80 : type === 'bag' || type === 'loot' || type === 'hbag' ? 1e9 : 40, g, amt: type === 'cash' || type === 'loot' || type === 'hbag' ? (team | 0) * 100 : 0 }; /* loot: a heist's money bag (team: hundreds of dollars) */ if (p.id > pickSeq) pickSeq = p.id; pickups.push(p);
+  while (pickups.length > 18) { const old = pickups.find(q => q.type !== 'cash' && q.type !== 'bag' && q.type !== 'loot' && q.type !== 'hbag'); if (!old) break; removePickup(old); }   // the oldest chain or gun goes first; nothing an event needs
   return p;
 }
 function removePickup(p) { const i = pickups.indexOf(p); if (i >= 0) pickups.splice(i, 1); scene.remove(p.g); p.gone = true; }

@@ -22,7 +22,7 @@ await run('start', () => { const g = __pc; g.DBG.god = true; g.G.solo = true; g.
   return { bank: g.BANK && [Math.round(g.BANK.x0), Math.round(g.BANK.z0), Math.round(g.BANK.x1), Math.round(g.BANK.z1)], jewel: g.JEWEL && g.JEWEL.name, labs: g.LABS.map(L => L.name), rank: g.P.rank }; });
 
 await run('bank start', () => { const g = __pc; g.openPhone(); g.buy(String(g.phoneItems().findIndex(q => /Heists/.test(q.label)) + 1)); const items = [...document.querySelectorAll('#shop-list li')].map(li => li.textContent);
-  g.buy('1'); g.step(5, 1 / 30); for (let i = 0; i < 4; i++) g.visuals(1 / 30); const E = g.EVTS.find(q => q.k === 'bank'); return { items, on: !!E, stage: E && E.stage, line: document.getElementById('h-race').textContent, banner: document.querySelector('#h-banner .big').textContent }; });
+  g.G.prep.gear = 1; g.buy('1'); const sub = [...document.querySelectorAll('#shop-list li')].map(li => li.textContent); g.buy(String(g.shopNow().list.findIndex(q => /loud/.test(q.label)) + 1)); g.step(5, 1 / 30); for (let i = 0; i < 4; i++) g.visuals(1 / 30); const E = g.EVTS.find(q => q.k === 'bank'); return { items, sub, on: !!E, stage: E && E.stage, line: document.getElementById('h-race').textContent, banner: document.querySelector('#h-banner .big').textContent }; });
 
 await run('bank in', () => { const g = __pc, B = g.BANK; g.DBG.notarget = false; g.P.x = B.door.x - 6; g.P.z = B.door.z; g.step(10, 1 / 30); const outside = g.EVTS.find(q => q.k === 'bank').stage;
   g.P.x = B.x0 + 3; g.P.z = B.cz; g.step(30, 1 / 30); const E = g.EVTS.find(q => q.k === 'bank');
@@ -30,18 +30,18 @@ await run('bank in', () => { const g = __pc, B = g.BANK; g.DBG.notarget = false;
 await shot('v5_bank');
 
 await run('drill', () => { const g = __pc, B = g.BANK, E = g.EVTS.find(q => q.k === 'bank'); g.DBG.notarget = true; g.P.x = B.vault.x; g.P.z = B.vault.z; let half = null;
-  for (let i = 0; i < 30 * 60 && E.stage === 1; i++) { g.P.x = B.vault.x; g.P.z = B.vault.z; g.step(1, 1 / 30); if (i % 10 === 0) g.visuals(1 / 30); if (half === null && E.drill > .5) half = Math.round(g.G.time); }
+  let jams = 0; for (let i = 0; i < 30 * 90 && E.stage === 1; i++) { g.P.x = B.vault.x; g.P.z = B.vault.z; if (E.jam) { jams++; g.GAME.drillOn(g.P); } g.step(1, 1 / 30); if (i % 10 === 0) g.visuals(1 / 30); if (half === null && E.drill > .5) half = Math.round(g.G.time); }
   for (let i = 0; i < 40; i++) g.visuals(1 / 30);
-  return { stage: E.stage, bags: E.bags.length, vaultOpen: g.BANK.vbox.off, doorRot: +g.vaultDoor.rotation.y.toFixed(2), line: document.getElementById('h-race').textContent }; });
+  return { jams, stage: E.stage, bags: E.bags.length, vaultOpen: g.BANK.vbox.off, doorRot: +g.vaultDoor.rotation.y.toFixed(2), line: document.getElementById('h-race').textContent }; });
 await shot('v5_vault');
 
-await run('bag it', () => { const g = __pc, E = g.EVTS.find(q => q.k === 'bank'), cash0 = g.P.cash; E.bags.forEach(q => { if (q.gone) return; g.P.x = q.x; g.P.z = q.z; g.P.y = q.y; g.step(5, 1 / 30); }); g.step(10, 1 / 30);
-  return { take: E.take, stage: E.stage, drop: [Math.round(E.x), Math.round(E.z)], cashNow: g.P.cash - cash0, line: (g.visuals(1 / 30), document.getElementById('h-race').textContent) }; });
+await run('bag it', () => { const g = __pc, E = g.EVTS.find(q => q.k === 'bank'), cash0 = g.P.cash; const q = E.bags.find(b => !b.gone); g.P.x = q.x; g.P.z = q.z; g.P.y = q.y; g.step(5, 1 / 30); const carrying = g.P.bag; E.openT = -999; g.step(10, 1 / 30);
+  return { carrying, left: E.bags.length, stage: E.stage, drop: [Math.round(E.x), Math.round(E.z)], cashNow: g.P.cash - cash0, line: (g.visuals(1 / 30), document.getElementById('h-race').textContent) }; });
 
 await run('drop', () => { const g = __pc, E = g.EVTS.find(q => q.k === 'bank'), cash0 = g.P.cash, rp0 = g.P.rp; g.P.x = E.x + 3; g.P.z = E.z; g.P.y = g.groundAt(E.x + 3, E.z, 3, 'p'); g.step(10, 1 / 30); const wanted = g.EVTS.includes(E);
   g.GAME.clearHeat(g.P); g.step(10, 1 / 30); return { blockedWhileWanted: wanted, over: !g.EVTS.includes(E), paid: g.P.cash - cash0, rp: g.P.rp - rp0, banner: document.querySelector('#h-banner .big').textContent }; });
 
-await run('jewel', () => { const g = __pc, J = g.JEWEL; g.G.jobT = {}; g.openPhone(); g.buy(String(g.phoneItems().findIndex(q => /Heists/.test(q.label)) + 1)); g.buy('2'); g.step(4, 1 / 30); const E = g.EVTS.find(q => q.k === 'jewel'); if (!E) return 'did not start';
+await run('jewel', () => { const g = __pc, J = g.JEWEL; g.G.jobT = {}; g.openPhone(); g.buy(String(g.phoneItems().findIndex(q => /Heists/.test(q.label)) + 1)); g.buy(String(g.shopNow().list.findIndex(q => /Jewelry/.test(q.label)) + 1)); g.step(4, 1 / 30); const E = g.EVTS.find(q => q.k === 'jewel'); if (!E) return 'did not start';
   g.DBG.notarget = false; const prompts = []; J.cases.forEach((c, i) => { g.P.x = c.x + (J.door.x - c.x) * .1; g.P.z = c.z + (J.door.z - c.z) * .1; g.P.x += 0; g.step(3, 1 / 30); const pr = g.findPromptNow && g.findPromptNow(); prompts.push(pr ? pr.text : null); if (pr && pr.act) pr.act(); g.step(2, 1 / 30); });
   const heat = g.P.heat; g.step(30 * 2, 1 / 30); g.DBG.notarget = true; return { prompts, cases: E.cases, take: E.take, heat, stage: E.stage }; });
 

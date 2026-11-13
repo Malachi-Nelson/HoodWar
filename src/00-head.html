@@ -74,8 +74,8 @@ body{background:var(--asphalt);color:var(--chalk);font-family:var(--font-ui);fon
 #turf .zs b.here{outline:2px solid var(--chalk);outline-offset:2px}
 @keyframes hot{50%{filter:brightness(1.6)}}
 #t-time{top:48px;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;letter-spacing:.14em;color:var(--chalk)}
-#h-net{top:70px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
-#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;white-space:nowrap}
+#h-net{top:50px;left:calc(50% + 46px);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--ash);white-space:nowrap}#h-net::before{content:'● ';color:var(--cash)}#h-net.meh::before{color:var(--gold)}#h-net.bad::before{color:var(--blood)}#h-net.bad{color:var(--chalk)}
+#h-race{top:72px;left:50%;transform:translateX(-50%);font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:rgba(10,12,16,.62);padding:2px 12px;width:max-content;max-width:min(50vw,560px);text-align:center;line-height:1.25}
 /* top-left: the jobs going on in the city */
 #evl{top:14px;left:18px;display:flex;flex-direction:column;gap:4px;max-width:min(44vw,330px)}
 #evl div{display:grid;grid-template-columns:26px 1fr;column-gap:8px;align-items:center;background:rgba(10,12,16,.62);padding:4px 10px 4px 4px}
@@ -137,7 +137,9 @@ body.touch #car-nos{margin:3px auto 0;width:110px}
 .tc-fire.down{background:rgba(226,59,46,.6)}
 .tc-use.go{border-color:var(--gold);background:rgba(255,200,61,.34)}
 .tc-gas{border-color:rgba(143,227,107,.9)}.tc-brake{border-color:rgba(255,106,90,.85)}.tc-up{border-color:rgba(143,227,107,.9)}.tc-down{border-color:rgba(127,184,255,.9)}.tc-rocket{border-color:rgba(255,200,61,.95);background:rgba(217,165,33,.25)}
-.tc-pause,.tc-map,.tc-turf,.tc-cam{border-radius:10px}
+.tc-pause,.tc-map,.tc-turf,.tc-cam,.tc-ping{border-radius:10px}
+#mates{left:18px;top:42%;display:flex;flex-direction:column;gap:4px;width:150px;pointer-events:none}#mates div{background:rgba(10,12,16,.6);padding:3px 7px;display:grid;grid-template-columns:1fr auto;gap:0 6px;align-items:center}#mates b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#mates small{font-size:11px;color:var(--ash);text-align:right}#mates i{grid-column:1/-1;height:4px;background:rgba(255,255,255,.15);display:block}#mates u{display:block;height:100%;background:var(--cash)}#mates .dn{outline:2px solid var(--blood);animation:mdn .6s infinite alternate}#mates .dn u{background:var(--blood)}#mates .dd{opacity:.5}@keyframes mdn{to{background:rgba(120,20,16,.6)}}
+body.touch #mates{top:auto;bottom:calc(var(--u, 4px) * 46 + 12px);left:8px;width:118px}body.touch #mates b{font-size:12px}
 .tc-stick{background:rgba(10,12,16,.22);border-style:dashed}
 .tc-stick i{position:absolute;left:30%;top:30%;width:40%;height:40%;border-radius:50%;background:rgba(242,239,230,.75);box-shadow:0 2px 6px rgba(0,0,0,.5)}
 .tc-stick.down{border-style:solid}
@@ -193,7 +195,7 @@ body.touch #turf{top:6px}
 body.touch #turf .zs{gap:2px}
 body.touch #turf .zs b{width:5.2vmin;height:5.2vmin;font-size:3.3vmin;border-width:1px}
 body.touch #t-time{top:calc(5.2vmin + 10px);font-size:12px}
-body.touch #h-net{top:calc(5.2vmin + 26px);font-size:11px}
+body.touch #h-net{top:calc(5.2vmin + 10px);left:calc(50% + 32px);font-size:11px}
 body.touch #h-race,body.touch #h-radio{top:calc(5.2vmin + 30px);font-size:13px}
 body.touch #feed{top:calc(var(--u)*31);right:calc(var(--u)*16);align-items:flex-end;font-size:11px;max-width:30vw}
 body.touch #feed div{white-space:normal;text-align:right}
@@ -321,6 +323,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
     <div id="turf" class="sh"><div class="zs"></div></div>
     <div id="t-time" class="sh"></div>
     <div id="h-net" class="sh" hidden></div>
+    <div id="mates" hidden aria-label="Your side"></div>
     <div id="h-race" class="sh" hidden></div>
     <div id="evl" aria-label="Events" hidden></div>
     <div id="h-radio" class="sh"></div>

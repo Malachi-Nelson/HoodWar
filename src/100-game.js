@@ -38,7 +38,8 @@ function onEvent(e, mine) {
   else if (k === 'wn') { const a = GAME.unref(e[2]); if (P.team === TEAM_COP && a && a !== P) note('Dispatch · ' + nameOf(a) + ' is wanted · ' + '★'.repeat(e[3]), 'g'); }
   else if (k === 'hs') { const a = GAME.unref(e[2]); if (a === P) { note(CREWS[e[3]].name + ' sent a crew after you', 'k' + e[3]); SFX.star(); } }
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
-  else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st') heistNews(e);
+  else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st' || k === 'bg' || k === 'bl' || k === 'bd' || k === 'bx' || k === 'pp' || k === 'pz') heistNews(e);
+  else if (k === 'rv' || k === 'pg' || k === 'dn') coopNews(e);
   else if (k === 'gs') { const a = GAME.unref(e[2]); if (a === P) banner('Gunship stolen', 'The airport police are coming', 2.6, 'gold'); else if (a) note(nameOf(a) + ' stole the airport gunship', 'g'); }
   else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + ' is on the helipad at ' + e[3] + ' · it is on your map', 'g'); } }
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
@@ -76,7 +77,7 @@ GAME.respawn = home => {
   if (P.team === TEAM_COP) { const S = SPAWNS[TEAM_COP], s = home ? S[2] : S.reduce((b, q) => hyp(q.x - P.x, q.z - P.z) < hyp(b.x - P.x, b.z - P.z) ? q : b, S[0]); SPAWNS.cop = [s]; }   // an officer comes back at the nearer station house
   let zi = -1, bd = hyp(SPAWNS[P.team][0].x - P.x, SPAWNS[P.team][0].z - P.z); if (!home) ZS.forEach((z, i) => { if (z.owner !== P.team || z.hot) return; const d = hyp(ZONES[i].x - P.x, ZONES[i].z - P.z); if (d < bd) { bd = d; zi = i; } });
   if (!home) { const fee = Math.min(200, Math.floor(Math.max(0, P.cash) * .01) * 10); if (fee > 0) { P.spent += fee; P.cash -= fee; note('Patched up · −$' + fee, 'g'); } }
-  const s = (zi >= 0 && zoneSpawn(zi)) || (P.team === TEAM_COP ? baseSpawnAt(SPAWNS.cop[0]) : baseSpawn(P.team)); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
+  const ms = home ? null : mateSpawn(), s = ms || (zi >= 0 && zoneSpawn(zi)) || (P.team === TEAM_COP ? baseSpawnAt(SPAWNS.cop[0]) : baseSpawn(P.team)); if (ms) note('Back with ' + nameOf(ms.mate), 'g'); Object.assign(P, { x: s.x, y: s.y, z: s.z, vx: 0, vz: 0, vy: 0, onGround: true, yaw: s.yaw, cyaw: s.yaw, cpitch: -.08, hp: maxHp(), dead: false, deadT: 0, safeT: 3, knock: 0, car: null, enter: null, ads: 0, reloadT: 0, fireT: 0, lastHit: -99, camY: s.y });
   for (const id in P.inv) { const d = WEAPONS[id]; if (!d.melee) { P.inv[id].mag = d.mag; P.inv[id].res = Math.max(P.inv[id].res, d.mag * 2); } }
   if (P.nades < 1) P.nades = 1; $('dead').hidden = true;
   if (P.team === TEAM_COP) { giveWeapon('smg'); if ((P.rank | 0) >= 4) giveWeapon('rifle'); P.armor = 100; if (P.nades < 2) P.nades = 2; }   // the armory kits out an officer every time
@@ -270,7 +271,7 @@ function populate() {
   staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
   // cars: abandoned traffic is cleared away, parked cars come back to their spots
-  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv || c.pa || (c.spec.air && !c.landed)) continue; const far = nearHuman(c.x, c.z);
+  for (let i = cars.length - 1; i >= 0; i--) { const c = cars[i]; if (c.wreck || c.occ[0] || c.occ[1] || c.occ[2] || c.occ[3] || c.kin || c.chop || c.pv || c.pa || c.getaway || (c.spec.air && !c.landed)) continue; const far = nearHuman(c.x, c.z);
     if (!c.home && c.idle > 45 && far > 70) removeCar(c); else if (c.temp && c.idle > 8 && far > 60) removeCar(c); else if (c.home && c.idle > 70 && far > 90 && hyp(c.x - c.home.x, c.z - c.home.z) > 12) removeCar(c); }
   G.homes.forEach(h => { if (h.car && !h.car.gone && !h.car.wreck) return; if (h.car) { h.car = null; h.t = G.time + 28; } if (G.time < h.t || nearHuman(h.spot.x, h.spot.z) < 70 || cars.some(c => hyp(c.x - h.spot.x, c.z - h.spot.z) < 6) || cars.length >= CAR_MAX - 4) return; h.car = parkCar(h.spot, h.type, h.color !== undefined ? { color: h.color } : h.team >= 0 ? { color: CREW_PAINT[h.team], team: h.team } : {}); });
 }
@@ -311,7 +312,7 @@ function resetWorld() {
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
   Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), hour: 17, polT: 0, gangT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10, streetT: 0, streetMax: TOUCH.on ? 8 : 12, evT: 35 });
   if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
-  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents();
+  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents(); G.prep = { car: 0, gear: 0, scout: 0 }; G.prepMask = 0; P.bag = 0; P.hack = null;
 }
 // where cars stand parked: some street spots and car park bays, each crew's cars at its yard, the airport's helicopters on their pads
 function planHomes() {

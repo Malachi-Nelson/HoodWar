@@ -201,33 +201,40 @@ function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
-    else if (kind === 'bank' || kind === 'jewel') { banner(I.name, kind === 'bank' ? 'Calder Savings on Calder Avenue · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'bank' || kind === 'jewel' || kind === 'cargo') { const E = EVTS.find(q => q.id === e[2]); banner(kind === 'bank' ? JOBS.bank.name : I.name, kind === 'bank' ? (E && E.quiet ? 'Quiet · walk in like a customer, guns away' : 'Loud · everyone in, the alarm goes as you enter') : kind === 'cargo' ? 'The airport cargo yard · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
+    else if (kind === 'prep') { const E = EVTS.find(q => q.id === e[2]), S = PREPS[E && E.sub] || PREPS.car; banner('Setup · ' + S.name, S.how, 3.2, 'gold'); SFX.tick(); }
     else if (kind === 'smug') return;
     else note(I.name + ' · ' + areaName(e[4], e[5]) + ' · ' + I.how, 'g'); }
   else if (k === 'ed') { const ok = e[4], amt = e[5], who = GAME.unref(e[6]), team = e[7], zi = e[8];
     if (kind === 'race') return;
     if (kind === 'smug') { if (who === P) { if (ok) { banner('Product sold', 'The buyer paid · check your cash', 2.8, 'gold'); SFX.streak(); } else banner('Run failed', 'The product is gone', 2.4); } return; }
-    if ((kind === 'bank' || kind === 'jewel') && !ok) { banner(I.name, 'It fell apart · no payout', 2.6); return; }
-    if ((kind === 'bank' || kind === 'jewel') && ok) { banner(kind === 'bank' ? 'Bank job done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
+    if (kind === 'prep') { if (ok) { banner('Setup done', '+$' + amt.toLocaleString('en-US') + ' · see Phone › Heists for what is left', 2.8, 'gold'); SFX.streak(); } else banner('Setup failed', 'Try it again from the phone', 2.4); return; }
+    if ((kind === 'bank' || kind === 'jewel' || kind === 'cargo') && !ok) { banner(kind === 'bank' ? JOBS.bank.name : I.name, 'It fell apart · no payout', 2.6); return; }
+    if ((kind === 'bank' || kind === 'jewel' || kind === 'cargo') && ok) { banner(kind === 'bank' ? 'Bank job done' : kind === 'cargo' ? 'Cargo Score done' : 'Jewelry store done', 'Your share +$' + amt.toLocaleString('en-US'), 3.2, 'gold'); SFX.streak(); return; }
     if (ok && amt) banner(kind === 'war' ? 'Turf defended' : kind === 'hit' ? 'Hit done' : kind === 'chop' ? 'Car delivered' : kind === 'stash' ? 'Stash delivered' : I.name, '+$' + amt + (who && who !== P && who.name ? ' · ' + who.name : ''), 2.6, 'gold');
     else if (ok && kind === 'deal') note('The deal is done for: nothing left on the ground', 'g');
     else if (ok && kind === 'truck') note('Armored truck · done', 'g');
     else note(kind === 'war' ? CREWS[team].name + ' took ' + ZONES[zi].name : kind === 'hit' ? (who ? 'Somebody else got the lieutenant' : 'The lieutenant slipped away') : kind === 'truck' ? 'The armored truck got away' : kind === 'chop' ? 'The chop shop car is gone' : I.name + ' · missed', 'c'); }
   else if (k === 'eo') note('Armored truck stopped · grab the cash', 'g');
-  else if (k === 'sc') { const a = GAME.unref(e[3]); if (a === P) banner('Stash grabbed', 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + ' has the stash', 'g'); }
+  else if (k === 'sc') { const a = GAME.unref(e[3]), E = EVTS.find(q => q.id === e[2]), gear = E && E.k === 'prep'; if (a === P) banner(gear ? 'Gear grabbed' : 'Stash grabbed', gear ? 'Get it to the getaway spot behind the bank' : 'Get it to your yard', 2.6, 'gold'); else if (a) note(nameOf(a) + (gear ? ' has the gear' : ' has the stash'), 'g'); }
   else if (k === 'sd') note('The stash was dropped', 'c');
   else if (k === 'db2') note('The deal went bad · guns out', 'c');
   else if (k === 'dl') note(e[3] ? 'The product is on the ground · grab it' : 'The money is on the ground · grab it', 'g');
 }
 // --- what the host says about its events, and what a joined player makes of it
-const evWire = () => EVTS.map(E => [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time)),
-  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
-  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]);
+const evWire = () => EVTS.map(E => { const b = [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time))];
+  if (E.k === 'bank' || E.k === 'cargo') { const gc = getaway(E), car = []; humans().forEach(h => { if (h.bag) car.push(GAME.ref(h), Math.round(h.bag / 100)); });   // and who is carrying a bag of it
+    return b.concat([E.stage, E.stage === 1 ? Math.round((E.quiet ? E.sus : E.drill || 0) * 100) : E.stage === 2 ? Math.max(0, Math.ceil(E.lockT - G.time)) : Math.round(E.loaded / 100), [E.quiet ? 1 : 0, E.alarm ? 1 : 0, E.jam ? 1 : 0, gc ? gc.id : 0].concat(car)]); }
+  if (E.k === 'prep') return b.concat([PREP_IDS.indexOf(E.sub), E.sub === 'scout' ? E.mask | 0 : E.sub === 'gear' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.car ? E.car.id : 0]);
+  return b.concat([  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
+  E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]); });
 function evFromHost(list) {
-  const was = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
+  const was = {}, bags = {}; EVTS.forEach(E => { was[E.id] = E; }); EVTS.length = 0;
   (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
     if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null;
-    if (k === 'bank') { E.stage = q[5]; if (E.stage === 1) E.drill = q[6] / 100; else E.take = q[6] * 100; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+    if (k === 'bank' || k === 'cargo') { const x = q[7] || []; E.stage = q[5]; E.prog = q[6]; E.quiet = !!x[0]; E.alarm = !!x[1]; E.jam = !!x[2]; E.gc = x[3] | 0; E.drill = E.sus = E.lockT = undefined; if (E.stage === 1) { if (E.quiet) E.sus = q[6] / 100; else E.drill = q[6] / 100; } else if (E.stage === 2) E.lockT = G.time + q[6]; else E.loaded = q[6] * 100; for (let i = 4; i + 1 < x.length; i += 2) bags[x[i]] = x[i + 1] * 100; }
+    if (k === 'prep') { E.sub = PREP_IDS[q[5]] || 'car'; if (E.sub === 'scout') E.mask = q[6] | 0; else if (E.sub === 'gear') E.carrier = q[6] ? GAME.unref(q[6]) : null; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
+  if (NET.mode === 'client') { P.bag = bags['p' + NET.slot] || 0; for (const k in NET.remotes) { const r = NET.remotes[k]; r.bag = bags['p' + r.slot] || 0; } }
 }
 // where an event's marker belongs on this machine: on the thing itself when it can be seen, else where the host says
 function evSpot(E, o) {

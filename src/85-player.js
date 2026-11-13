@@ -119,7 +119,7 @@ let prompt = null, shopOpen = null;
 function findPrompt() {
   prompt = null; if (P.dead || P.car || P.enter) return;
   for (let i = 0; i < SHOPS.length; i++) { const s = SHOPS[i]; if (s.team !== undefined && s.team !== P.team) continue; if (hyp(s.x - P.x, s.z - P.z) < 2.3 && Math.abs(P.y - CURB) < 1.2) { prompt = { text: `<b>F</b>${s.name}: guns, ammo, armor`, act: () => openShop(s) }; return; } }
-  { const bp = bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
+  { const bp = revivePrompt() || bankPrompt() || bizPrompt() || labPrompt() || jewelPrompt(); if (bp) { prompt = bp; return; } }
   for (let i = 0; i < ROBS.length; i++) { const r = ROBS[i]; if (hyp(r.x - P.x, r.z - P.z) > 1.7 || Math.abs(P.y - CURB) > 1.2) continue;
     if (P.rob && P.rob.i === i) { prompt = { text: 'Emptying the till… ' + Math.round(P.rob.t / 3.5 * 100) + '%' }; return; }
     if (!tillOpen(i)) prompt = { text: 'The till is empty. Give it a few minutes.' };
@@ -175,15 +175,16 @@ function gunItems(pg) {
 }
 function collectPickups() {
   for (let i = pickups.length - 1; i >= 0; i--) { const p = pickups[i]; if (hyp(p.x - P.x, p.z - P.z) > 1.4 || Math.abs(p.y - P.y) > 1.6 || P.dead) continue;
-    if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
+    if (p.type === 'hbag') { if (P.bag || P.down) continue; if (AUTH()) GAME.takeHBag(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } }
+    else if (p.type === 'chain' || p.type === 'cash' || p.type === 'bag' || p.type === 'loot') { if (AUTH()) (p.type === 'chain' ? GAME.takeChain : p.type === 'cash' ? GAME.takeCash : p.type === 'loot' ? GAME.takeLoot : GAME.takeBag)(p, P); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); if (p.type === 'cash' || p.type === 'loot') SFX.cash(); } }
     else { const had = !!P.inv[p.type]; giveWeapon(p.type, WEAPONS[p.type].mag * 2); SFX.swap(); if (!had) { banner(WEAPONS[p.type].name, 'picked up', 1.6); } if (AUTH()) removePickup(p); else { NET.req('pk', p.id); NET.pkGone[p.id] = G.time; removePickup(p); } } }
 }
 // --- on foot
 function updateOnFoot(dt) {
   let fwd = (isHeld('fwd') ? 1 : 0) - (isHeld('back') ? 1 : 0), str = (isHeld('right') ? 1 : 0) - (isHeld('left') ? 1 : 0), push = 1; const d = WEAPONS[P.wpn], w = P.inv[P.wpn];
   { const sx = stickX(), sy = stickY(); if (sx || sy) { fwd = -sy; str = sx; push = Math.min(1, hyp(fwd, str)); } }   // a stick: a little push walks, all the way runs; on a touch screen, pinned forward sprints
-  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0;
-  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1);
+  const aiming = mouse.right && P.reloadT <= 0 && !d.melee && P.knock <= 0, sprint = (isHeld('sprint') || (TOUCH.on && push > .95)) && fwd > (TOUCH.on ? .4 : 0) && !aiming && P.reloadT <= 0 && !P.bag;
+  let wx = -Math.sin(P.cyaw) * fwd + Math.cos(P.cyaw) * str, wz = -Math.cos(P.cyaw) * fwd - Math.sin(P.cyaw) * str; const wl = hyp(wx, wz), sp = (sprint ? CFG.player.sprint : CFG.player.run * (push < 1 ? lerp(.45, 1, push) : 1)) * lerp(1, .52, P.ads) * (P.knock > 0 ? 0 : 1) * (P.bag ? .8 : 1);
   if (wl > 0) { wx = wx / wl * sp; wz = wz / wl * sp; }
   if (P.chute) { const k = 6.5 / (sp || 1); wx *= k; wz *= k; P.vy = Math.max(P.vy, -4.6); }   // under a canopy: a slow drift down, steered
   const acc = Math.min(1, dt * (P.onGround ? 11 : P.chute ? 1.6 : 2.5)); P.vx = lerp(P.vx, wx, acc); P.vz = lerp(P.vz, wz, acc);
@@ -201,10 +202,10 @@ function updateOnFoot(dt) {
   // weapon
   if (P.autoReload > 0) { P.autoReload -= dt; if (P.autoReload <= 0) startReload(); }
   if (P.reloadT > 0) { P.reloadT -= dt; if (P.reloadT <= 0) { const n = Math.min(d.mag - w.mag, w.res); w.mag += n; w.res -= n; } }
-  if (mouse.down && !sprint && (autoNow() || mouse.fresh)) tryFire();
+  if (mouse.down && !sprint && !P.down && (autoNow() || mouse.fresh)) tryFire();
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
-  if (P.rob) updateRob(dt); findPrompt(); collectPickups();
+  if (P.rob) updateRob(dt); hackTick(dt); reviveTick(dt); findPrompt(); collectPickups();
   if (shopOpen && shopOpen.kind === 'gun' && hyp(shopOpen.x - P.x, shopOpen.z - P.z) > 3.4) closeShop();
 }
 // --- at the wheel, or riding
@@ -230,6 +231,7 @@ function updateInCar(dt) {
 function updatePlayer(dt) {
   P.fireT -= dt; P.switchT -= dt; P.safeT -= dt; P.kick = Math.max(0, P.kick - dt * 1.3); if (P.punchT > 0) P.punchT -= dt;
   if (P.dead) { P.deadT += dt; P.spd = 0; if (P.deadT >= CFG.respawn && G.phase === 'play') GAME.respawn(); return; }
+  if (P.down > 0) downTick(dt);
   if (P.enter) updateEnter(dt); else if (P.car) updateInCar(dt); else updateOnFoot(dt);
   if (G.time - P.lastHit > CFG.player.regenDelay && P.hp < maxHp()) P.hp = Math.min(maxHp(), P.hp + CFG.player.regenRate * dt);
   P.cash = (P.bank === undefined ? CFG.startCash : P.bank) + P.earn - P.spent;

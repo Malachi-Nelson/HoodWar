@@ -25,7 +25,7 @@ const TC_DEF = [
   ['map', 'MAP', 'b', 'act:map', 0, .44, 0, .07, .1],
   ['turf', 'TURF', 'b', 'act:board', 0, .55, 0, .07, .1],
   ['cam', 'CAM', 'b', 'act:view', 1, .5, 0, .07, .1],
-  ['call', 'CALL', 'b', 'act:driveby', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'act:phone', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'act:nos', 1, .5, 1, .68, .13],
+  ['call', 'CALL', 'b', 'act:driveby', .5, 0, 0, .36, .13], ['phone', 'PHONE', 'b', 'act:phone', 1, .5, 0, .19, .1], ['nos', 'NOS', 'c', 'act:nos', 1, .5, 1, .68, .13], ['ping', 'PING', 'b', 'act:ping', 0, .66, 0, .07, .1],
   ['up', 'UP', 'a', 'act:up', 1, .12, 1, .16, .2], ['down', 'DOWN', 'a', 'act:down', 1, .34, 1, .14, .17], ['rocket', 'ROCKETS', 'a', 'act:rockets', 1, .53, 1, .14, .15],
 ];
 const TC_FIXED = { stick: 1, fire: 1, pause: 1 }, TC_BASE = {}; TC_DEF.forEach(d => { TC_BASE[d[0]] = 1; });

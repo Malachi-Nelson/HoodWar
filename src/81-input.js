@@ -22,7 +22,7 @@ const ACTS = [
   ['guns', 'Guns (gunship)', 'GUNS', 'a', 1, ['Mouse0'], ['Pad5']], ['rockets', 'Rockets (gunship)', 'ROCKETS', 'a', 1, ['Mouse2', 'KeyG'], ['Pad4']],
   ['use', 'Use · get in or out', 'USE', 'fca', 0, ['KeyF', 'KeyE'], ['Pad3']], ['reload', 'Reload', 'RELOAD', 'fca', 0, ['KeyR'], ['Pad2']],
   ['view', 'Camera', 'CAM', 'fca', 0, ['KeyV'], ['Pad13']], ['phone', 'Phone', 'PHONE', 'fca', 0, ['KeyT', 'ArrowUp'], ['Pad12']],
-  ['driveby', 'Call a drive-by', 'CALL', 'fca', 0, ['KeyB'], ['Pad14']],
+  ['driveby', 'Call a drive-by', 'CALL', 'fca', 0, ['KeyB'], ['Pad14']], ['ping', 'Mark a spot for your side (ping)', 'PING', 'fca', 0, ['KeyZ', 'Mouse1'], ['Pad11']],
   ['map', 'Map (hold)', 'MAP', 'fca', 1, ['KeyM'], ['Pad8']], ['board', 'Players and turf (hold)', 'TURF', 'fca', 1, ['Tab'], []], ['pause', 'Pause', 'PAUSE', 'fca', 0, ['KeyP'], ['Pad9']],
 ];
 const ACT_BY = {}; ACTS.forEach(a => { ACT_BY[a[0]] = a; });
@@ -85,9 +85,10 @@ function actDown(id, src) {
   if (id === 'pause') { if (shopOpen) closeShop(); else if (locked()) document.exitPointerLock(); else pause(); return; }
   if (P.dead) return;
   switch (id) {
-    case 'fire': case 'cfire': case 'guns': mouse.down = true; mouse.fresh = true; initAudio(); return;
+    case 'fire': case 'cfire': case 'guns': if (P.down) return; mouse.down = true; mouse.fresh = true; initAudio(); return;
+    case 'ping': pingHere(); return;
     case 'ads': if ((src === 'touch' ? CTL.tads : CTL.ads) === 'toggle') setAds(!mouse.right); else { mouse.right = true; markAds(); } return;
-    case 'use': if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); return;
+    case 'use': if (P.down) { bleedOut(); return; } if (shopOpen) closeShop(); else if (P.car) GAME.leaveCar(false); else if (prompt && prompt.act) prompt.act(); return;
     case 'reload': startReload(); return;
     case 'nade': throwGrenade(); return;
     case 'next': case 'cnext': cycleWeapon(1); return;
@@ -223,7 +224,7 @@ function keysHelp() {
   const rows = [[k('fwd', 'left', 'back', 'right'), 'Move · drive'], ['Mouse', 'Look · ' + k('fire') + ' fires · ' + k('ads') + ' aims down sights'], [k('use'), 'Get in or out · carjack · shop · rob a till'],
     [k('sprint') + ' · ' + k('jump'), 'Sprint · jump / handbrake'], ['1–0 · ' + k('next'), 'Weapons (7 Glocks · 8 M60 · 9 launcher · 0 bazooka)'], [k('reload') + ' · ' + k('nade'), 'Reload · grenade'],
     [k('view') + ' · ' + k('behind'), 'Camera · look behind'], [k('radio') + ' · ' + k('horn'), 'Radio · horn, or siren in a police car'], [k('board') + ' · ' + k('map'), 'Players and turf · map'],
-    [k('driveby') + ' · ' + k('phone'), 'Call a drive-by (4-kill streak) · phone'],
+    [k('driveby') + ' · ' + k('phone'), 'Call a drive-by (4-kill streak) · phone'], [k('ping'), 'Mark a spot, an enemy or a car for your side (ping)'],
     ['Flying', k('afwd', 'aleft', 'aback', 'aright') + ' fly · ' + k('up') + ' up · ' + k('down') + ' down · mouse turns · ' + k('guns') + ' guns · ' + k('rockets') + ' rockets'],
     ['Controller', 'Works when connected · Controls changes any key or button']];
   dl.textContent = ''; rows.forEach(r => { const d = document.createElement('div'), t = document.createElement('dt'), v = document.createElement('dd'); t.textContent = r[0]; v.textContent = r[1]; d.append(t, v); dl.appendChild(d); });

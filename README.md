@@ -26,8 +26,21 @@ A **controller** works as soon as it is connected (Xbox, PlayStation and most ot
 
 ## Heists and the drug business
 
-- **Bank job (co-op).** Phone › Heists › Calder Savings & Trust, from rank 4. Trip the alarm, drill the vault while guards and the police come in, carry the money bags out (more bags the more of you there are), lose your stars and drop the bags off. Each bag pays $3,500, split between everyone in the session.
+- **Calder Savings Score (co-op).** Phone › Heists › Calder Savings Score. Three setups first, any of them done by anyone in the session, kept for the session:
+  - **Getaway car**: a fast car sits on a rival crew's corner with three of them watching it. Take it and park it at the getaway spot behind the bank (a GETAWAY sign hangs over it from then on).
+  - **Drill and charges**: a crate of gear with four of a crew on it. Carry it to the getaway car.
+  - **Case the bank**: stand at the three marked spots in and around the bank like a customer, guns away and no stars.
+- **Then in loud or quiet** (from rank 4). **Loud** needs the gear: the alarm goes as you walk in, guards and the police come, someone has to hold the vault while the drill runs, and when it jams someone has to start it again. **Quiet** needs the bank cased: walk in with your guns away, slip behind the counter while the guards are looking the other way, and hack the time lock on the back-office wall (stand at the panel for a few seconds); twenty seconds later the vault opens by itself. A guard who sees a gun out, someone behind the counter or at the vault, or a bag on someone's back grows suspicious (the job line shows how much); a guard hurt or a shot fired and the alarm goes. Quiet bags are worth 40% more, and the bank's silent alarm only calls the police 45 seconds after the vault opens.
+- **The money comes out in bags**: one on each back, slow going (no sprinting), more bags the more of you there are. A bag counts once it is in the getaway car, and the car has to reach the drop, across town with no stars on you. Anyone who goes down drops their bag; if the getaway car burns, so does everything loaded in it. The take is split between everyone in the session.
+- **Cargo Score** (rank 6, $4,000): the airport's cargo yard. Get near and it is restricted ground: three stars and the airport police. Crack the lock on the end container of the west row (stand at it ten seconds), then carry the gold ($6,000 a bag) to any car or helicopter one of you is driving: that is the getaway now. Fly it out if you like.
 - **Jewelry store.** Gold Rush Jewelers in the mall, from rank 2: smash the five cases and get away.
+
+## Playing together
+
+- **Down, not out.** Online, when your health runs out while someone on your side is still up, you go down instead of dying: you bleed out for 30 seconds while the bots leave you alone. A teammate stands over you and presses USE ("Pick up …") for a couple of seconds and you are back with 40% health. Go down again within 25 seconds and it is for real. USE while down gives up.
+- **Pings.** Z or the middle mouse button (PING on a touch screen, the right stick click on a controller) marks whatever is under your crosshair for your side: a spot, an enemy, a car or the police, with your name on it, on the radar too. Playing alone, a ping sends your homies there.
+- **Your side down the left of the screen**: each teammate's health, how far off they are, whether they are down, in a car or carrying a bag.
+- **Coming back near the others.** Die online and you come back on foot a short way from the nearest teammate who is up, not across town.
 - **Drug lab.** Buy a unit in the industrial district for $25,000. It makes product while you play, and more slowly while you're away. Phone › Your lab › Smuggle loads it into a van for a run across town with a hit squad on your tail.
 
 ## The airport and helicopters
