@@ -127,6 +127,7 @@ function findPrompt() {
     else prompt = { text: '<b>F</b>Rob the till', act: () => { P.rob = { i, t: 0 }; SFX.tick(); } };
     return; }
   const c = carInReach(); if (c) { const o = carOffer(c); if (o) prompt = { text: o.text, act: () => tryEnter(c, o) }; }
+  if (!prompt) prompt = casePrompt();   // a case in the hand can always be put down
 }
 // holding someone up takes a few seconds of standing there with the gun out
 function updateRob(dt) {
@@ -205,7 +206,7 @@ function updateOnFoot(dt) {
   if (mouse.down && !sprint && !P.down && (autoNow() || mouse.fresh)) tryFire();
   mouse.fresh = false;
   P.ads = lerp(P.ads, aiming && !sprint ? 1 : 0, Math.min(1, dt * 13));
-  if (P.rob) updateRob(dt); hackTick(dt); reviveTick(dt); findPrompt(); collectPickups();
+  if (P.rob) updateRob(dt); hackTick(dt); reviveTick(dt); findPrompt(); collectPickups(); myCases(dt);
   if (shopOpen && shopOpen.kind === 'gun' && hyp(shopOpen.x - P.x, shopOpen.z - P.z) > 3.4) closeShop();
 }
 // --- at the wheel, or riding

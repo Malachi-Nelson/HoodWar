@@ -40,6 +40,7 @@ function onEvent(e, mine) {
   else if (k === 'en' || k === 'ed' || k === 'eo' || k === 'sc' || k === 'sd' || k === 'db2' || k === 'dl') evNews(e, mine);
   else if (k === 'hj' || k === 'lt' || k === 'js' || k === 'st' || k === 'bg' || k === 'bl' || k === 'bd' || k === 'bx' || k === 'pp' || k === 'pz') heistNews(e);
   else if (k === 'rv' || k === 'pg' || k === 'dn') coopNews(e);
+  else if (k === 'ct' || k === 'cq' || k === 'cb' || k === 'cf' || k === 'cl' || k === 'wb' || k === 'wx' || k === 'wf' || k === 'to' || k === 'tr' || k === 'tn' || k === 'mg') tradeNews(e);
   else if (k === 'gs') { const a = GAME.unref(e[2]); if (a === P) banner('Gunship stolen', 'The airport police are coming', 2.6, 'gold'); else if (a) note(nameOf(a) + ' stole the airport gunship', 'g'); }
   else if (k === 'ad') { if (GAME.unref(e[2]) === P) { const c = carById(e[5]); if (c) c.pa = P; note('Your ' + (CARS[e[4]] ? CARS[e[4]].name : 'helicopter') + ' is on the helipad at ' + e[3] + ' · it is on your map', 'g'); } }
   else if (k === 'rb') { const a = GAME.unref(e[2]), r = ROBS[e[3]]; if (a === P) { SFX.buy(); banner('Till emptied', '+$' + e[4], 2, 'gold'); } else if (a && r) note(nameOf(a) + ' robbed ' + r.name, 'g'); }
@@ -312,7 +313,7 @@ function resetWorld() {
   POI.forEach(p => { p.who.fill(null); p.npc = null; p.t = 0; });
   Object.assign(G, { time: 0, tod: 17.1, phase: 'play', respawnQ: CREWS.map(() => []), homes: [], popT: 0, civs: 70, traffic: 11, raid: CREWS.map(() => null), raidT: CREWS.map((c, t) => 55 + t * 32 + rand() * 40), hour: 17, polT: 0, gangT: 0, patrolT: 6, robT: [], robMask: 0, propI: 0, postI: 0, beatT: 10, streetT: 0, streetMax: TOUCH.on ? 8 : 12, evT: 35 });
   if (isCrew(G.crew)) G.raidT[G.crew] += 40;     // somebody else makes the first move
-  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents(); G.prep = { car: 0, gear: 0, scout: 0 }; G.prepMask = 0; P.bag = 0; P.hack = null;
+  [P].forEach(a => { GAME.clearHeat(a); GAME.clearGang(a); }); LIFE.reset(); resetEvents(); G.prep = { car: 0, gear: 0, scout: 0 }; G.prepMask = 0; P.bag = 0; P.hack = null; while (CASES.length) liftCase(CASES[0]); P.case = null; P.deal = null;
 }
 // where cars stand parked: some street spots and car park bays, each crew's cars at its yard, the airport's helicopters on their pads
 function planHomes() {
@@ -362,7 +363,7 @@ function authTick(dt) {
   updateZones(dt); updateRaids(dt);
   G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); airTick(); }
   if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }
-  G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); }
+  G.gangT -= dt; if (G.gangT <= 0) { G.gangT = .25; updateGangs(); updateEvents(); caseTick(); }
   if (!DBG.freeze) for (let i = 0; i < bots.length; i++) updateBot(bots[i], dt);
   updateCarsAuth(dt); updateDriveBys();
   G.popT -= dt; if (G.popT <= 0) { G.popT = .5; populate();

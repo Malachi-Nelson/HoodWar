@@ -198,7 +198,7 @@ function bankPrompt() {
   if (P.hack) return { text: 'Hacking… ' + Math.round(P.hack.t / P.hack.need * 100) + '% · stay at the panel' };
   if (E.k === 'bank' && E.quiet && (E.stage | 0) === 1 && hyp(P.x - BK2.panel.x, P.z - BK2.panel.z) < 1.5) return { text: '<b>F</b>Hack the time lock', act: () => { P.hack = { t: 0, need: 7, x: BK2.panel.x, z: BK2.panel.z }; SFX.tick(); } };
   if (E.k === 'cargo' && (E.stage | 0) === 1 && hyp(P.x - CARGO.hack.x, P.z - CARGO.hack.z) < 1.7) return { text: '<b>F</b>Crack the container lock', act: () => { P.hack = { t: 0, need: 10, x: CARGO.hack.x, z: CARGO.hack.z }; SFX.tick(); } };
-  if (E.k === 'bank' && E.jam && hyp(P.x - BANK.vault.x, P.z - BANK.vault.z) < 2.8) return { text: '<b>F</b>Start the drill again', act: () => { if (AUTH()) GAME.drillOn(P); else { NET.req('hd'); E.jam = false; } SFX.tick(); } };
+  if (E.k === 'bank' && E.jam && hyp(P.x - BANK.vault.x, P.z - BANK.vault.z) < 2.8) return { text: '<b>F</b>Start the drill again', act: () => { if (AUTH()) GAME.drillOn(P); else { NET.req('dr'); E.jam = false; } SFX.tick(); } };
   return null;
 }
 // a hack runs while you stand at the panel; walk off, go down or get hurt badly and it stops
@@ -241,21 +241,23 @@ function jewelPrompt() {
 LABS.forEach((L, i) => { L.name = (L.j <= 1 ? 'North' : L.j >= 4 ? 'South' : 'River') + ' side lab'; L.idx = i; L.m = mark(L.x, L.z, 0xc8ff7d, .8); });
 function labTick() {
   const L = P.lab; if (!L || G.state !== 'playing' || G.phase !== 'play') { if (L) L.at = G.time; return; }
-  L.prog = (L.prog || 0) + Math.max(0, G.time - (L.at === undefined ? G.time : L.at)) / LAB.hour; L.at = G.time;
-  while (L.prog >= 1) { L.prog -= 1; if (L.stock < LAB.cap) { L.stock++; if (L.stock === LAB.cap) note('Your lab is full · smuggle the product to get paid', 'g'); } }
+  const dt = Math.max(0, G.time - (L.at === undefined ? G.time : L.at)); L.at = G.time; if (L.sup === undefined) L.sup = 60;
+  if (L.sup >= LAB.supPer && L.stock < labCap()) { L.prog = (L.prog || 0) + dt / (LAB.hour / (L.up & 1 ? LAB.fast : 1));   // a unit an hour (faster with the better kit), each using up some supplies
+    while (L.prog >= 1 && L.sup >= LAB.supPer && L.stock < labCap()) { L.prog -= 1; L.stock++; L.sup -= LAB.supPer; if (L.stock === labCap()) note('Your lab is full · sell, deal or smuggle the product', 'g'); if (L.sup < LAB.supPer) note('Your lab is out of supplies · Phone › Your lab', 'g'); } }
+  labBusiness(dt);
 }
 const smugMine = () => EVTS.find(E => E.k === 'smug' && (E.owner === P || E.ref === GAME.ref(P))) || null;
-function buyLab(i) { if (P.lab || !LABS[i] || !payCash(LAB.price)) return; P.lab = { site: i, stock: 0, prog: 0, at: G.time }; addRP(CFG.rp.buy * 2); saveGame(); SFX.buy(); banner(LABS[i].name, 'Yours · it makes a unit of product every hour, twenty at most', 3, 'gold'); closeShop(); }
+function buyLab(i) { if (P.lab || !LABS[i] || !payCash(LAB.price)) return; P.lab = { site: i, stock: 0, prog: 0, at: G.time, sup: 100, up: 0, dealers: [] }; addRP(CFG.rp.buy * 2); saveGame(); SFX.buy(); banner(LABS[i].name, 'Yours · it makes a unit of product every hour, twenty at most', 3, 'gold'); closeShop(); }
 function startSmuggle() {
   const L = P.lab; if (!L || L.stock < 3 || smugMine()) { SFX.deny(); return; }
-  const units = L.stock; L.stock = 0; L.prog = 0; saveGame(); closeShop();
-  if (AUTH()) { if (!EV_START.smug(P, L.site, units)) { L.stock = units; note('No van could get to the lab · try again in a moment', 'g'); } } else NET.req('sm', L.site, units);
+  const units = L.stock; L.stock = 0; saveGame(); closeShop();
+  if (AUTH()) { if (!EV_START.smug(P, L.site, units, unitVal())) { L.stock = units; note('No van could get to the lab · try again in a moment', 'g'); } } else NET.req('sm', L.site, units, unitVal());
   banner('Smuggling run', units + ' units in the van at the ' + LABS[L.site].name + ' · drive it to the buyer', 3, 'gold');
 }
-EV_START.smug = (who, site, units) => {
+EV_START.smug = (who, site, units, val) => {
   const L = LABS[site]; if (!L || !who) return false; units = clamp(units | 0, 1, LAB.cap);
   const c = spawnCar('van', L.park.x, L.park.z, L.park.yaw, { color: 0x3f4a3a }); if (!c) return false; c.temp = true; c.smug = true;
-  const d = dropFar(L.x, L.z); evStart({ k: 'smug', owner: who, units, value: units * LAB.unit, car: c, x: c.x, z: c.z, drop: d, until: G.time + 480, tailT: G.time + 18 }); return true;
+  const d = dropFar(L.x, L.z); evStart({ k: 'smug', owner: who, units, value: units * (val || LAB.unit), car: c, x: c.x, z: c.z, drop: d, until: G.time + 480, tailT: G.time + 18 }); return true;
 };
 EV_TICK.smug = E => {
   const c = E.car; if (!c || c.gone || c.wreck || c.burn > 0) return evEnd(E, false, 0, E.owner);
@@ -266,7 +268,7 @@ EV_TICK.smug = E => {
 };
 function labPrompt() {
   for (let i = 0; i < LABS.length; i++) { const L = LABS[i]; if (hyp(L.x - P.x, L.z - P.z) > 2.4 || Math.abs(P.y - CURB) > 1.2) continue;
-    if (P.lab && P.lab.site === i) return P.lab.stock >= 3 && !smugMine() ? { text: '<b>F</b>Your lab · ' + P.lab.stock + ' of ' + LAB.cap + ' · smuggle it for $' + (P.lab.stock * LAB.unit).toLocaleString('en-US'), act: startSmuggle } : { text: 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap + (smugMine() ? ' · a run is on' : ' · needs three units for a run') };
+    if (P.lab && P.lab.site === i) return { text: '<b>F</b>Your lab · ' + P.lab.stock + ' of ' + labCap() + ' · supplies ' + P.lab.sup + '% · open the books', act: () => { openMenu({ kind: 'phone', title: LABS[i].name, items: labItems, foot: 'A number or a tap · ' + capOf('use') + ' or Esc closes' }); } };
     if (P.lab) return { text: 'You already run the ' + LABS[P.lab.site].name };
     return P.cash >= LAB.price ? { text: '<b>F</b>Set up a lab here · $' + LAB.price.toLocaleString('en-US'), act: () => buyLab(i) } : { text: 'A lab here costs $' + LAB.price.toLocaleString('en-US') }; }
   return null;
@@ -292,16 +294,15 @@ function jobItems(pg) {
 }
 function startJob(k, opt) { const J = JOBS[k]; if (heistBusy() || !payCash(J.cost)) return; closeShop(); if (AUTH()) { if (!EV_START[k](P, opt)) { P.spent -= J.cost; P.cash += J.cost; gain(J.cost); note(J.name + ' is not ready yet · try again later', 'g'); } } else NET.req('hs', k, opt | 0); SFX.tick(); }
 function startPrep(id) { if (heistBusy()) return; closeShop(); if (AUTH()) { if (!EV_START.prep(P, id)) note('That setup could not start here · try again in a moment', 'g'); } else NET.req('pr', id); SFX.tick(); }
-function labItems() {
-  if (!P.lab) return LABS.map((L, i) => ({ label: L.name, sub: 'Set up a lab here: it makes product you smuggle to a buyer', cost: LAB.price, act: () => buyLab(i) })).concat([back()]);
-  const L = P.lab, run = smugMine();
-  return [{ label: LABS[L.site].name, sub: L.stock + ' of ' + LAB.cap + ' units · worth $' + (L.stock * LAB.unit).toLocaleString('en-US') + ' · makes one every hour', off: true, own: true },
-    run ? { label: 'Smuggle', sub: 'A run is on now', off: true } : L.stock < 3 ? { label: 'Smuggle', sub: 'Needs three units at least', off: true } : { label: 'Smuggle the product', sub: 'A van at the lab takes it across town to a buyer', act: startSmuggle }, back()];
-}
 // the line at the top that says what the job wants now
 function jobLine() {
-  const E = EVTS.find(q => q.k === 'bank' || q.k === 'jewel' || q.k === 'cargo' || q.k === 'prep' || (q.k === 'smug' && (q.owner === P || q.ref === GAME.ref(P)))); if (!E) return '';
+  const mine = q => q.owner === P || q.ref === GAME.ref(P), E = EVTS.find(q => q.k === 'bank' || q.k === 'jewel' || q.k === 'cargo' || q.k === 'prep' || ((q.k === 'smug' || q.k === 'whsl' || q.k === 'sups' || q.k === 'raid') && mine(q)) || q.k === 'cour' || (q.k === 'trade' && (q.seller === P || q.buyer === P))); if (!E) return '';
   const st = E.stage | 0, cash = n => '$' + Math.round(n).toLocaleString('en-US'), carry = P.bag ? ' · you carry ' + cash(P.bag) : '', loaded = E.loaded ? ' · ' + cash(E.loaded) + ' in the car' : '';
+  if (E.k === 'whsl') return 'Wholesale · ' + (P.case && P.case.k === 'prod' ? 'take the case to the buyers yourself' : P.case && P.case.k === 'cash' ? 'hold on to the cash' : 'grab the cash case');
+  if (E.k === 'cour') return 'Courier · ' + (P.case && P.case.k === 'pkg' ? 'get the package to the buyer' : 'pick up the package');
+  if (E.k === 'sups') return 'Supply run · ' + (P.car && P.car.type === 'van' ? 'drive the van to your lab' : 'steal the supply van off the crew');
+  if (E.k === 'raid') return 'Lab raid · drop the crew at your lab before they clean you out';
+  if (E.k === 'trade') { const o = E.seller === P ? E.buyer : E.seller; return 'Meet ' + nameOf(o) + ' · swap cases · ' + (P.case ? 'yours is in your hand' : 'pick up what they brought'); }
   if (E.k === 'prep') return 'Setup · ' + PREPS[E.sub].name + ' · ' + (E.sub === 'car' ? (P.car && P.car.prep ? 'park it at the getaway spot behind the bank' : 'steal the car the crew is sitting on') : E.sub === 'gear' ? (E.carrier === P ? 'bring the crate to the getaway spot' : 'take the crate off the crew') : 'stand at the marked spots · guns away · ' + [0, 1, 2].filter(i => (E.mask | 0) >> i & 1).length + ' of 3');
   if (E.k === 'bank' || E.k === 'cargo') { const gc = getaway(E), where = E.k === 'bank' ? 'Bank' : 'Cargo';
     if (st === 0) return where + ' · ' + (E.k === 'cargo' ? 'get to the cargo yard at the airport' : E.quiet ? 'walk in quietly · guns away near the guards' : 'get inside Calder Savings');

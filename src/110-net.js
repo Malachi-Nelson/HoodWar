@@ -32,7 +32,7 @@ function snapAt(buf, o, delay) {   // o gets x, y, z, yaw (and pitch, vf when th
 const myPos = () => [r2(P.x), r2(P.y), r2(P.z), r2(P.yaw), r2(P.pitch)];
 function myBody() {
   const c = P.car, fl = (P.reloadT > 0 ? 1 : 0) | (P.ads > .5 || P.shootT > 0 ? 2 : 0) | (P.dead ? 4 : 0) | (c ? 8 : 0) | (P.sprint ? 16 : 0) | (P.knock > .5 ? 32 : 0) | (P.safeT > 0 ? 64 : 0) | (P.chute ? 128 : 0) | (P.down > 0 ? 256 : 0);
-  const o = { n: myName(), cr: P.team, rk: P.rank || 1, hl: Math.round(clamp(P.hp / maxHp(), 0, 1) * 100), p: myPos(), a: [P.shots | 0, WEAPONS[P.wpn].n, fl, r2(c ? P.cyaw : P.yaw)], v: null };
+  const o = { n: myName(), cr: P.team, rk: P.rank || 1, lb: P.lab ? P.lab.site : -1, hl: Math.round(clamp(P.hp / maxHp(), 0, 1) * 100), p: myPos(), a: [P.shots | 0, WEAPONS[P.wpn].n, fl, r2(c ? P.cyaw : P.yaw)], v: null };
   if (c && P.seat === 0 && c.mine !== false) { const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw); o.v = [c.id, r2(c.x), r2(c.z), r2(c.yaw), Math.round((c.vx * fx + c.vz * fz) * 10) / 10, Math.round(c.steer * 10) / 10, r2(c.y), (c.horn ? 1 : 0) | (c.slip > 5.5 ? 2 : 0)]; if (c.spec.air) o.v.push(r2(c.dive), r2(c.roll)); }
   if (P.hg || P.hr) o.hf = [P.hg | 0, P.hr | 0];
   return o;
@@ -66,7 +66,7 @@ function netPeers(dt, each) {
     const p = s.p, A = s.a || [0, 1, 0, 0], ox = r.x, oz = r.z;
     if (s !== r.lastS) { r.lastS = s; arrive(r.jit); snapPush(r.buf, { x: p[0], y: p[1], z: p[2], yaw: p[3], pitch: p[4] || 0 }); } if (snapAt(r.buf, _so, r.jit.d)) { r.x = _so.x; r.y = _so.y; r.z = _so.z; r.yaw = _so.yaw; r.pitch = _so.pitch; }
     r.spd = lerp(r.spd, hyp(r.x - ox, r.z - oz) / Math.max(dt, .001), .3); r.wpn = WID[A[1]] || 'pistol'; r.ayaw = A[3];
-    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128); r.down = !!(fl & 256); r.hl = s.hl;
+    const fl = A[2] | 0, wasDead = r.dead; r.reload = !!(fl & 1); r.aim = fl & 2 ? 1 : 0; r.dead = !!(fl & 4); r.sprint = !!(fl & 16); r.knock = fl & 32 ? 1 : 0; r.safe = !!(fl & 64); r.chute = !!(fl & 128); r.down = !!(fl & 256); r.hl = s.hl; r.lab = s.lb === undefined ? -1 : s.lb;
     { const hf = Array.isArray(s.hf) ? s.hf : [0, 0]; if (r.hg === undefined) { r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if ((hf[0] | 0) > r.hg) fxHeli(r, 'gun', (hf[0] | 0) - r.hg); if ((hf[1] | 0) > r.hr) fxHeli(r, 'pod', (hf[1] | 0) - r.hr); r.hg = hf[0] | 0; r.hr = hf[1] | 0; } if (r.dead && !wasDead) r.deadT = 0; if (r.dead) r.deadT += dt;
     if (A[0] !== r.shots) { if (A[0] > r.shots && !r.dead) { fxShot(r, r.wpn); if (NET.mode === 'host') GAME.noise(r.x, r.z, r); } r.shots = A[0]; }
     const team = G.rivals ? sideOf(s.cr) : G.crew; if (team !== r.team || cleanName(s.n) !== r.name) { r.team = team; r.name = cleanName(s.n); setLook(r.ch, makeLook(hashStr(pr.peer), team)); killTag(r.tag); r.tag = null; }
@@ -181,11 +181,21 @@ NET.host = dt => {
       else if (k === 'hs') { if (EV_START[q[2]] && JOBS[q[2]]) EV_START[q[2]](r, q[3] | 0); }
       else if (k === 'pr') EV_START.prep(r, q[2]);
       else if (k === 'hk') GAME.hack(r);
-      else if (k === 'hd') GAME.drillOn(r);
+      else if (k === 'dr') GAME.drillOn(r);
       else if (k === 'rv') { const t = GAME.unref('p' + (q[2] | 0)); if (t && t !== r && (t === P ? P.down : t.down) && hyp(t.x - r.x, t.z - r.z) < 4) GAME.ev('rv', GAME.ref(t), GAME.ref(r)); }
       else if (k === 'pg') GAME.ping(r, +q[2], +q[3], +q[4], q[5] | 0);
       else if (k === 'js') GAME.smash(q[2] | 0, r);
-      else if (k === 'sm') EV_START.smug(r, q[2] | 0, q[3] | 0);
+      else if (k === 'sm') EV_START.smug(r, q[2] | 0, q[3] | 0, q[4] | 0);
+      else if (k === 'ck') GAME.takeCase(q[2] | 0, r);
+      else if (k === 'cq') GAME.putCase(r);
+      else if (k === 'ws') { if (!EV_START.whsl(r, q[2] | 0, q[3] | 0)) GAME.ev('wf', GAME.ref(r), q[2] | 0); }
+      else if (k === 'cr') EV_START.cour(r);
+      else if (k === 'sp') EV_START.sups(r, q[2] | 0);
+      else if (k === 'lr') EV_START.raid(r, q[2] | 0, q[3] | 0);
+      else if (k === 'of') { const t = GAME.unref('p' + (q[2] | 0)); if (t && t !== r) GAME.ev('to', GAME.ref(r), GAME.ref(t), q[3] | 0, q[4] | 0); }
+      else if (k === 'oa') { const s2 = GAME.unref('p' + (q[2] | 0)); if (s2 && s2 !== r) GAME.tradeOn(s2, r, q[3] | 0, q[4] | 0); }
+      else if (k === 'od') GAME.ev('tn', 'p' + (q[2] | 0), GAME.ref(r));
+      else if (k === 'mg') { const t = GAME.unref('p' + (q[2] | 0)); if (t) GAME.ev('mg', GAME.ref(r), GAME.ref(t), q[3] | 0, Math.round(r.x), Math.round(r.z)); }
       else if (k === 'gx') { const x = +q[2], y = +q[3], z = +q[4], pw = clamp((+q[5] || 10) / 10, .5, 2), kind = BOOM[q[6]] ? q[6] : 'nade'; if (isFinite(x + y + z)) { GAME.ev('x', Math.round(x), Math.round(y), Math.round(z), Math.round(pw * 10), 0, GAME.ref(r)); explode(x, y + .3, z, r, pw, kind); } }
       else if (k === 'db') GAME.callDriveBy(r);
       else if (k === 'kn') { const p = PROPS[q[2] | 0]; if (p) knockProp(p, +q[3] || 0, +q[4] || 1); } });
@@ -200,7 +210,7 @@ NET.host = dt => {
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; if (NET.slots[k] === undefined || !(r.lastS && followsMe(r.lastS))) continue; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0 };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0, ks: casesWire() };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', ep: NET.ep, fw: null, W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -217,7 +227,7 @@ function applyHost(s) {
   else if (crewOf(W.c) !== G.crew || P.team !== G.crew) { G.crew = crewOf(W.c); wearCrew(G.crew); }          // everyone rides with the host's side
   if (typeof W.z === 'string') for (let i = 0; i < ZS.length && i * 5 + 5 <= W.z.length; i++) { const z = ZS[i], o = i * 5; z.owner = U36(W.z, o, 1) - 1; z.by = U36(W.z, o + 1, 1) - 1; z.prog = U36(W.z, o + 2, 1) / 35; z.hot = W.z[o + 3] === '1'; z.ctrl = U36(W.z, o + 4, 1) / .35; }
   G.prepMask = W.pm | 0; G.prep.car = W.gc | 0; G.prep.gear = W.pm & 2 ? 1 : 0; G.prep.scout = W.pm & 4 ? 1 : 0;
-  evFromHost(W.e);
+  evFromHost(W.e); if (W.ks) casesFromHost(W.ks[0], W.ks[1]);
   (s.pl || []).forEach(e => { if (e[1] === NET.me) { NET.slot = e[0]; P.slot = e[0]; P.kills = e[3]; P.deaths = e[4]; if (e[5] > NET.paid) { gain(e[5] - NET.paid); P.earn += e[5] - NET.paid; } NET.paid = e[5]; if ((e[9] | 0) > NET.xpSeen) addRP((e[9] | 0) - NET.xpSeen); NET.xpSeen = e[9] | 0; P.heat = e[6] | 0; P.evade = !!e[7]; P.gs = String(e[8] || ''); } else { const r = NET.remotes[e[1]]; if (r) { r.slot = e[0]; r.kills = e[3]; r.deaths = e[4]; r.heat = e[6] | 0; } } });
   { const hr = NET.remotes[NET.hostPeer]; if (hr) hr.slot = 0; }
   decCars(s.cs || '', s.cp || ''); decBots(s.bs || '', s.bv || '', s.bc || ''); decPicks(s.pk || '');

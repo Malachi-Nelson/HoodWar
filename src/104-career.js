@@ -77,7 +77,7 @@ function storeItems(pg) {
   return null;
 }
 function phoneItems(pg) {
-  if (pg && pg.slice(0, 4) === 'jobs') return jobItems(pg); if (pg === 'lab') return labItems(); if (pg === 'air') return airItems();
+  if (pg && pg.slice(0, 4) === 'jobs') return jobItems(pg); if (pg && pg.slice(0, 3) === 'lab') return labItems(pg); if (pg && pg.slice(0, 5) === 'deals') return dealItems(pg); if (pg === 'air') return airItems();
   if (pg) { const st = storeItems(pg); if (st) return st; }
   const r = P.rank || 1, out = [], cd = (t, s) => coolLeft(t, s);
   if (P.team === TEAM_COP) return copItems(r, cd);
@@ -96,7 +96,7 @@ function phoneItems(pg) {
   if (cd(PH.jobT, 75)) out.push({ label: 'Work', sub: 'Nothing yet · call back in ' + cd(PH.jobT, 75) + 's', off: true });
   else out.push({ label: 'Work', sub: 'Lines up a job: a truck, a hit, a stash, a race', act: callJob });
   if (P.driveby) out.push({ label: 'Drive-by', sub: 'A carload of your crew rolls through the nearest rival block', act: () => { closeShop(); callDriveBy(); } });
-  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + LAB.cap : 'Drug business', 'lab'), page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
+  out.push(page('Heists', 'jobs'), page(P.lab ? 'Your lab · ' + P.lab.stock + ' of ' + labCap() : 'Drug business', 'lab'), page('Deals' + (OFFERS.length ? ' · ' + OFFERS.length + (OFFERS.length === 1 ? ' offer' : ' offers') : ''), 'deals'), page('Online · cars', 'cars'), page(P.air ? 'Your ' + CARS[P.air.t].name : 'Aircraft', 'air'));
   return out;
 }
 // an officer's phone: backup, a cruiser, and the shops; no fixer, no jobs, no heists, no lab
@@ -254,7 +254,7 @@ GAME.airDeliver = (a, t, col) => {
 
 function careerTick(dt) {
   PH.tickT = (PH.tickT || 0) - dt; if (PH.tickT > 0) return; PH.tickT = .5;
-  bizMarks(); labTick();
+  bizMarks(); labTick(); offerTick();
   if (P.pvAsk && G.time > P.pvAsk && G.state === 'playing' && (AUTH() || NET.slot > 0)) { P.pvAsk = 0; sendPV(); }
   if (shopOpen && shopOpen.kind === 'phone') renderShop();
 }

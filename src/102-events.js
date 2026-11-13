@@ -199,6 +199,7 @@ function updateRace(dt) {   // on every machine, for its own player
 // --- news of events, on every machine
 function evNews(e, mine) {
   const k = e[1], kind = EV_KINDS[e[3]], I = EV_INFO[kind];
+  if ((k === 'en' || k === 'ed') && (kind === 'raid' || kind === 'sups' || kind === 'whsl' || kind === 'cour' || kind === 'trade')) return tradeEvNews(e, kind);
   if (k === 'en') { const team = e[6], zi = e[7];
     if (kind === 'war') { banner('Hood war', CREWS[team].name + ' is coming for ' + ZONES[zi].name + ' · defend it', 3.4, 't' + team); SFX.star(); }
     else if (kind === 'bank' || kind === 'jewel' || kind === 'cargo') { const E = EVTS.find(q => q.id === e[2]); banner(kind === 'bank' ? JOBS.bank.name : I.name, kind === 'bank' ? (E && E.quiet ? 'Quiet · walk in like a customer, guns away' : 'Loud · everyone in, the alarm goes as you enter') : kind === 'cargo' ? 'The airport cargo yard · everyone in' : 'Smash the cases at ' + (JEWEL ? JEWEL.name : 'the jewelers'), 3.2, 'gold'); SFX.streak(); }
@@ -225,6 +226,8 @@ function evNews(e, mine) {
 const evWire = () => EVTS.map(E => { const b = [E.id, EV_KINDS.indexOf(E.k), Math.round(E.x), Math.round(E.z), Math.max(0, Math.round(E.until - G.time))];
   if (E.k === 'bank' || E.k === 'cargo') { const gc = getaway(E), car = []; humans().forEach(h => { if (h.bag) car.push(GAME.ref(h), Math.round(h.bag / 100)); });   // and who is carrying a bag of it
     return b.concat([E.stage, E.stage === 1 ? Math.round((E.quiet ? E.sus : E.drill || 0) * 100) : E.stage === 2 ? Math.max(0, Math.ceil(E.lockT - G.time)) : Math.round(E.loaded / 100), [E.quiet ? 1 : 0, E.alarm ? 1 : 0, E.jam ? 1 : 0, gc ? gc.id : 0].concat(car)]); }
+  if (E.k === 'raid' || E.k === 'sups' || E.k === 'whsl' || E.k === 'cour') return b.concat([E.owner ? GAME.ref(E.owner) : '', E.k === 'whsl' ? (E.blown ? 2 : E.done ? 1 : 0) : 0]);
+  if (E.k === 'trade') return b.concat([GAME.ref(E.seller), GAME.ref(E.buyer)]);
   if (E.k === 'prep') return b.concat([PREP_IDS.indexOf(E.sub), E.sub === 'scout' ? E.mask | 0 : E.sub === 'gear' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.car ? E.car.id : 0]);
   return b.concat([  E.k === 'truck' || E.k === 'chop' ? E.car.id : E.k === 'hit' ? E.boss.id : E.k === 'war' ? E.zone : E.k === 'stash' ? (E.carrier ? GAME.ref(E.carrier) : '') : E.k === 'race' ? E.ij[0] * 16 + E.ij[1] : E.k === 'deal' ? (E.blown ? 1 : 0) : E.k === 'bank' || E.k === 'jewel' ? E.stage : E.k === 'smug' ? GAME.ref(E.owner) : 0,
   E.k === 'truck' ? (E.open ? 1 : 0) : E.k === 'chop' ? E.held : E.k === 'bank' ? (E.stage === 1 ? Math.round(E.drill * 100) : Math.round(E.take / 100)) : E.k === 'jewel' ? E.cases + 32 * Math.round(E.take / 100) : E.k === 'smug' ? E.units : E.team === undefined ? -1 : E.team]); });
@@ -233,6 +236,7 @@ function evFromHost(list) {
   (list || []).forEach(q => { const k = EV_KINDS[q[1]]; if (!k) return; const E = was[q[0]] || { id: q[0], k }; Object.assign(E, { x: q[2], z: q[3], until: G.time + q[4], ref: q[5], aux: q[6] });
     if (k === 'race') E.ij = [q[5] >> 4, q[5] & 15]; if (k === 'stash') E.carrier = q[5] ? GAME.unref(q[5]) : null;
     if (k === 'bank' || k === 'cargo') { const x = q[7] || []; E.stage = q[5]; E.prog = q[6]; E.quiet = !!x[0]; E.alarm = !!x[1]; E.jam = !!x[2]; E.gc = x[3] | 0; E.drill = E.sus = E.lockT = undefined; if (E.stage === 1) { if (E.quiet) E.sus = q[6] / 100; else E.drill = q[6] / 100; } else if (E.stage === 2) E.lockT = G.time + q[6]; else E.loaded = q[6] * 100; for (let i = 4; i + 1 < x.length; i += 2) bags[x[i]] = x[i + 1] * 100; }
+    if (k === 'raid' || k === 'sups' || k === 'whsl' || k === 'cour') { E.owner = q[5] ? GAME.unref(q[5]) : null; E.st = q[6]; } if (k === 'trade') { E.seller = GAME.unref(q[5]); E.buyer = GAME.unref(q[6]); }
     if (k === 'prep') { E.sub = PREP_IDS[q[5]] || 'car'; if (E.sub === 'scout') E.mask = q[6] | 0; else if (E.sub === 'gear') E.carrier = q[6] ? GAME.unref(q[6]) : null; } if (k === 'jewel') { E.stage = q[5]; E.cases = q[6] & 31; E.take = (q[6] >> 5) * 100; } if (k === 'smug') E.units = q[6]; if (k === 'truck') E.open = !!q[6]; if (k === 'chop') E.held = q[6]; if (k === 'war') { E.zone = q[5]; E.team = q[6]; } else E.team = q[6]; EVTS.push(E); });
   if (NET.mode === 'client') { P.bag = bags['p' + NET.slot] || 0; for (const k in NET.remotes) { const r = NET.remotes[k]; r.bag = bags['p' + r.slot] || 0; } }
 }

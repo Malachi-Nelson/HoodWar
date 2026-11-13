@@ -24,7 +24,7 @@ Plays with a keyboard and mouse, a controller, or on a phone or tablet held side
 
 A **controller** works as soon as it is connected (Xbox, PlayStation and most others): the left stick moves, drives and flies, the right stick looks, the triggers aim and fire on foot and drive in a car, the d-pad and A/B work the phone and the shops, and Menu pauses. Its buttons have their own tab on the Controls page, with look speed, inverted look and aim help. Bindings are kept in the browser.
 
-## Heists and the drug business
+## Heists
 
 - **Calder Savings Score (co-op).** Phone › Heists › Calder Savings Score. Three setups first, any of them done by anyone in the session, kept for the session:
   - **Getaway car**: a fast car sits on a rival crew's corner with three of them watching it. Take it and park it at the getaway spot behind the bank (a GETAWAY sign hangs over it from then on).
@@ -41,7 +41,23 @@ A **controller** works as soon as it is connected (Xbox, PlayStation and most ot
 - **Pings.** Z or the middle mouse button (PING on a touch screen, the right stick click on a controller) marks whatever is under your crosshair for your side: a spot, an enemy, a car or the police, with your name on it, on the radar too. Playing alone, a ping sends your homies there.
 - **Your side down the left of the screen**: each teammate's health, how far off they are, whether they are down, in a car or carrying a bag.
 - **Coming back near the others.** Die online and you come back on foot a short way from the nearest teammate who is up, not across town.
-- **Drug lab.** Buy a unit in the industrial district for $25,000. It makes product while you play, and more slowly while you're away. Phone › Your lab › Smuggle loads it into a van for a run across town with a hit squad on your tail.
+## The drug business
+
+- **The lab.** Buy a unit in the industrial district for $25,000 (Phone › Drug business, or walk up to the door). It makes a unit of product every in-game hour, up to 20, and keeps making it (more slowly) while you are away. Walk up to your lab's door to open its books.
+- **Supplies.** Every unit uses 5% of the lab's supplies; at nothing, it stops. **Buy supplies** ($3,000 for +50%) or **Steal supplies**: a supply van sits on a crew's corner with three of them watching it; drive it to the lab for +60%.
+- **Upgrades.** Better equipment (60% faster, $15,000), a better cook ($800 a unit instead of $600, $12,000), more storage (40 units, $9,000), security (raids come half as often and two of your crew defend the lab, $12,000).
+- **Dealers.** Put up to three dealers on corners your side holds ($2,500 each): each sells a unit every couple of in-game hours at 85% while your side keeps the neighbourhood. Now and then one gets picked up by the police.
+- **Raids.** Once there are eight units or more in the lab, a crew comes for them every so often: get there and drop all five before they finish, or lose half.
+- **Selling.** Smuggle the lot in a van across town (a crew tails it), sell wholesale, deal it on the corners, fence it, or sell it to another player.
+
+## Deals and briefcases
+
+Deals go the Sub Rosa way: what changes hands is a briefcase someone has to carry. A case of cash, of product or a courier's package is in your hand until you put it down (USE when nothing else is in reach) or go down, and whoever picks it up owns it. Cash is yours once it is home: your side's yard or your lab. Product goes into your lab, or to the fence at Calder Auto Body for $450 a unit.
+
+- **Wholesale** (Phone › Deals, five units or more): a crew pays 30% over the street price at a meet. You carry the case of product to them yourself. One time in four they came with guns instead of money; drop them and the cash case their buyer was showing is yours, and you still have the product.
+- **Courier job**: carry a package across town to a buyer ($2,200 to $4,200). Word sometimes gets out.
+- **Between players**: Phone › Deals › Offer product to (another player): pick a size and price. They answer from their phone; if they take it, the seller gets a case of product, the buyer a case of their own cash, and both get the meet on the map. Then it is up to the two of you: swap cases, or don't.
+- **Texts**: Phone › Deals › Text (a player): meet me here, need backup, got the goods, bring the money, deal is off, watch your back, with where you are marked on their map.
 
 ## The airport and helicopters
 
