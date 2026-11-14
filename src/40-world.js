@@ -14,7 +14,8 @@ const ZONES = [], SHOPS = [], ROBS = [], GARAGES = [], SPAWNS = CREWS.map(() => 
 // Places where people do something other than walk past. k: 'sit' a bench, 'hang' a knot of people talking, 'browse' a window or a stall,
 // 'wait' a stop or a platform, 'hoop' a basket, 'dance' by a speaker, 'post' where a vendor or a clerk works, 'work' a job done between two spots.
 const POI = [];
-const CARTS = [];   // food carts: { x, z, text, d (the way the counter faces) }
+const CARTS = [];
+const BLDS = [];    // every building() as built: the dressing pass adds ledges, sills, AC units, balconies, doors, rooftop gear and grime   // food carts: { x, z, text, d (the way the counter faces) }
 const VENTS = [], STACKS = [], ROOSTS = [], SPEAKERS = [], GRILLS = [];   // steam from the street, smoke from chimneys, where pigeons gather, where music plays, where food is cooking
 const WP = rng32(77123);                                       // its own dice, so adding a bench never reshuffles the buildings
 const LAMPS = [];
@@ -39,7 +40,7 @@ const deco = (x0, x1, y0, y1, z0, z1, col, o) => addBox(x0, x1, y0, y1, z0, z1, 
 // a flat patch of another surface laid on the block (grass, a parking lot, a court)
 const LAYER = { grass: .014, dirt: .018, lot: .022, plaza: .026, tile: .03, court: .034 };   // patches laid over one another sit at slightly different heights, softest ground lowest
 function ground(x0, z0, x1, z1, mat, col, y) { const d = MATS[mat], h = (y === undefined ? CURB : y) + (LAYER[mat] || .03); SB(mat).quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, x0 / d.tu, -z1 / d.tv, x1 / d.tu, -z0 / d.tv, colOf(col)); if (y === undefined) PATCH.push([x0, z0, x1, z1, mat]); }
-function paint(x0, z0, x1, z1, col, y) { const h = (y === undefined ? 0 : y) + .05; SB('paint').quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, 0, 0, 1, 1, colOf(col === undefined ? 0xd8d6cc : col)); }
+function paint(x0, z0, x1, z1, col, y) { const h = (y === undefined ? 0 : y) + .02; SB('paint').quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, 0, 0, 1, 1, colOf(col === undefined ? 0xd8d6cc : col)); }   // 2 cm up: flush enough that the occlusion pass sees no step round every line
 function cyl(x, y0, y1, z, r, mat, col, o) { o = o || {}; const g = new T.CylinderGeometry(o.rTop === undefined ? r : o.rTop, r, y1 - y0, o.seg || 12); SB(mat).geo(g, new T.Matrix4().makeTranslation(x, (y0 + y1) / 2, z), colOf(col)); g.dispose(); if (!o.nocol) solid(x - r * .8, x + r * .8, y0, y1, z - r * .8, z + r * .8, o); }
 // a straight flight of steps from (ax,az) at y0 up to (bx,bz) at y1; each step is solid down to the bottom
 function stairs(ax, az, bx, bz, y0, y1, w, mat, col) {
@@ -147,6 +148,7 @@ function building(x0, z0, x1, z1, h, o) {
   if (o.parapet !== false) { const p = .35, ph = .7, pc = o.trim === undefined ? 0x4b4743 : o.trim, y = y0 + h;
     deco(x0, x1, y, y + ph, z0, z0 + p, pc); deco(x0, x1, y, y + ph, z1 - p, z1, pc); deco(x0, x0 + p, y, y + ph, z0 + p, z1 - p, pc); deco(x1 - p, x1, y, y + ph, z0 + p, z1 - p, pc); }
   if (o.clutter !== false && x1 - x0 > 8 && z1 - z0 > 8) roofClutter(x0, z0, x1, z1, y0 + h, o.tank);
+  BLDS.push({ x0, z0, x1, z1, y0, yb, top: y0 + h, mat, shop: !!o.shop, kind: o.kind || 'b', parapet: o.parapet !== false, roof: o.clutter !== false });   // for the dressing pass (42.8-dress.js)
   return { x0, z0, x1, z1, y: y0 + h };
 }
 function awning(x0, x1, z, face, col) { const d = FACE[face][1] * 1.3; deco(x0, x1, CURB + 2.9, CURB + 3.1, Math.min(z, z + d), Math.max(z, z + d), col); }

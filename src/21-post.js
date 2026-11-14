@@ -27,14 +27,16 @@ T.ShaderChunk.fog_fragment = `#ifdef USE_FOG
 #endif`;
 T.Material.prototype.onBeforeCompile = function (sh) { sh.uniforms.fogSunDir = FOGU.fogSunDir; sh.uniforms.fogSunCol = FOGU.fogSunCol; sh.uniforms.fogHeight = FOGU.fogHeight; };
 // --- physically based twins for the standing city: roughness and metalness for each material. Low keeps the old matte ones.
-const PBR_OF = { asphalt: [.86, 0], lot: [.84, 0], walk: [.9, 0], plaza: [.82, 0], grass: [1, 0], turf: [1, 0], dirt: [1, 0], court: [.62, 0], roof: [.92, 0], shingle: [.85, 0],
+const PBR_OF = { asphalt: [1, 0], lot: [1, 0], walk: [1, 0], plaza: [1, 0],   // these four take their roughness from their maps (22-surfaces.js)
+  grass: [1, 0], turf: [1, 0], dirt: [1, 0], court: [.62, 0], roof: [.92, 0], shingle: [.85, 0],
   concrete: [.9, 0], corr: [.48, .55], tile: [.5, 0], plaster: [.92, 0], flat: [.72, 0], flatnc: [.72, 0], paint: [.65, 0], glass: [.05, .2], fence: [.45, .6], sign: [.55, 0] };
 function makePBR() {
   for (const key in MATS) { const M = MATS[key], m = M.mat; if (M.low) continue; M.low = m; if (!(m instanceof T.MeshLambertMaterial)) { M.pbr = m; continue; }
     const fac = FACADES.includes(m), q = PBR_OF[key] || [.85, 0];
     const p = new T.MeshStandardMaterial({ vertexColors: m.vertexColors, map: m.map, emissiveMap: m.emissiveMap, emissive: m.emissive.clone(), color: m.color.clone(), transparent: m.transparent, opacity: m.opacity,
       alphaTest: m.alphaTest, side: m.side, polygonOffset: m.polygonOffset, polygonOffsetFactor: m.polygonOffsetFactor, polygonOffsetUnits: m.polygonOffsetUnits, roughness: fac ? 1 : q[0], metalness: fac ? 0 : q[1],
-      roughnessMap: fac && m.userData.rough ? m.userData.rough : null, depthWrite: m.depthWrite, envMapIntensity: key === 'glass' ? 1.2 : fac ? .8 : LOOK.envI });
+      roughnessMap: m.userData.rough || null, normalMap: m.userData.nrm || null, depthWrite: m.depthWrite, envMapIntensity: key === 'glass' ? 1.2 : fac ? .8 : LOOK.envI });
+    if (m.userData.nrm) p.normalScale.set(m.userData.ns || 1, m.userData.ns || 1);
     if (fac) FACADES.push(p); M.pbr = p; }
 }
 function setStaticPBR(on) {
@@ -69,15 +71,18 @@ const aoMat = new T.ShaderMaterial({
   uniforms: { tDepth: { value: null }, res: { value: new T.Vector2() }, projInv: { value: new T.Matrix4() }, projScale: { value: 1 }, radius: { value: 1.6 }, intensity: { value: 1 }, aspect: { value: 1 } },
   vertexShader: QUAD_VS,
   fragmentShader: `uniform sampler2D tDepth; uniform vec2 res; uniform mat4 projInv; uniform float projScale; uniform float radius; uniform float intensity; uniform float aspect; varying vec2 vUv;
-    vec3 vpos(vec2 uv) { float d = texture2D(tDepth, uv).x; vec4 p = projInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
+    // every position is rebuilt at the centre of the depth texel it was read from: half a texel out, a steep floor seen at a slant
+    // comes back tilted a row at a time (that drew lines across the road)
+    vec2 snap(vec2 uv) { return (floor(uv * res) + 0.5) / res; }
+    vec3 vpos(vec2 uv) { uv = snap(uv); float d = texture2D(tDepth, uv).x; vec4 p = projInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
     void main() {
-      float d0 = texture2D(tDepth, vUv).x; if (d0 >= 0.99999) { gl_FragColor = vec4(1.0); return; }
-      vec2 px = 1.0 / res; vec3 P = vpos(vUv), Pr = vpos(vUv + vec2(px.x, 0.0)), Pl = vpos(vUv - vec2(px.x, 0.0)), Pu = vpos(vUv + vec2(0.0, px.y)), Pd = vpos(vUv - vec2(0.0, px.y));
+      vec2 uv0 = snap(vUv); float d0 = texture2D(tDepth, uv0).x; if (d0 >= 0.99999) { gl_FragColor = vec4(1.0); return; }
+      vec2 px = 1.0 / res; vec3 P = vpos(uv0), Pr = vpos(uv0 + vec2(px.x, 0.0)), Pl = vpos(uv0 - vec2(px.x, 0.0)), Pu = vpos(uv0 + vec2(0.0, px.y)), Pd = vpos(uv0 - vec2(0.0, px.y));
       vec3 dx = abs(Pr.z - P.z) < abs(P.z - Pl.z) ? Pr - P : P - Pl, dy = abs(Pu.z - P.z) < abs(P.z - Pd.z) ? Pu - P : P - Pd, N = normalize(cross(dx, dy));
       if (dot(N, P) > 0.0) N = -N;
       float ssr = min(radius * projScale / -P.z, 0.12), rot = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831, r2 = radius * radius, sum = 0.0;
       for (int i = 0; i < 12; i++) { float fi = float(i) + 0.5, a = fi * 2.39996 + rot, r = ssr * sqrt(fi / 12.0);
-        vec3 v = vpos(vUv + vec2(cos(a), sin(a) * aspect) * r) - P; float vv = dot(v, v), f = max(r2 - vv, 0.0);
+        vec3 v = vpos(uv0 + vec2(cos(a), sin(a) * aspect) * r) - P; float vv = dot(v, v), f = max(r2 - vv, 0.0);
         sum += f * f * f * max((dot(v, N) - 0.01 * -P.z) / (vv + 0.01), 0.0); }
       float ao = max(0.0, 1.0 - sum * intensity * 5.0 / (r2 * r2 * r2 * 12.0));
       gl_FragColor = vec4(ao, ao, ao, 1.0);
@@ -188,7 +193,7 @@ function lookTick() {
 }
 // --- applying the settings
 const VIEW = { far: 1000 };
-function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
+function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap', 'normalMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
 function applyQuality(save) {
   const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res));
   renderer.shadowMap.enabled = GQ.shadow > 0;
@@ -198,7 +203,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });

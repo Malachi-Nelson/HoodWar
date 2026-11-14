@@ -113,12 +113,12 @@ function aiStart(c, mode, dest) {
   A.next = aiNext(A); c.ai = A; c.asleep = false; c.inp.hb = false; return A;
 }
 function aiBlocked(c, reach, yieldTo) {   // -> [gap ahead in metres, speed of what is there, 1 if it is a person]
-  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); let gap = 1e9, v = 99, who = 0;
-  for (let i = 0; i < cars.length; i++) { const o = cars[i]; if (o === c) continue; const dx = o.x - c.x, dz = o.z - c.z; if (dx * dx + dz * dz > (reach + 6) * (reach + 6)) continue; const ah = dx * fx + dz * fz, lat = dx * rx + dz * rz, turned = Math.abs(Math.sin(o.yaw - c.yaw)), hwid = 1.25 + turned * (o.spec.len / 2 - 1); if (ah < 1 || Math.abs(lat) > hwid + .5) continue; const g = ah - c.spec.len / 2 - lerp(o.spec.len / 2, 1, turned); if (g < gap && g < reach) { gap = g; v = Math.max(0, o.vx * fx + o.vz * fz); } }
-  if (yieldTo) eachActor(a => { if (a.dead || a.car || a.gone || !yieldTo(a)) return; const dx = a.x - c.x, dz = a.z - c.z, ah = dx * fx + dz * fz; if (ah < 1 || ah > reach * .8 + 3 || Math.abs(dx * rx + dz * rz) > 1.5 || Math.abs(a.y - c.y) > 1.5) return; const g = ah - c.spec.len / 2 - .4; if (g < gap) { gap = g; v = 0; who = 1; } });
-  _blk[0] = gap; _blk[1] = v; _blk[2] = who; return _blk;
+  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); let gap = 1e9, v = 99, who = 0, car = null;
+  for (let i = 0; i < cars.length; i++) { const o = cars[i]; if (o === c) continue; const dx = o.x - c.x, dz = o.z - c.z; if (dx * dx + dz * dz > (reach + 6) * (reach + 6)) continue; const ah = dx * fx + dz * fz, lat = dx * rx + dz * rz, turned = Math.abs(Math.sin(o.yaw - c.yaw)), hwid = 1.25 + turned * (o.spec.len / 2 - 1); if (ah < 1 || Math.abs(lat) > hwid + .5) continue; const g = ah - c.spec.len / 2 - lerp(o.spec.len / 2, 1, turned); if (g < gap && g < reach) { gap = g; v = Math.max(0, o.vx * fx + o.vz * fz); car = o; } }
+  if (yieldTo) eachActor(a => { if (a.dead || a.car || a.gone || !yieldTo(a)) return; const dx = a.x - c.x, dz = a.z - c.z, ah = dx * fx + dz * fz; if (ah < 1 || ah > reach * .8 + 3 || Math.abs(dx * rx + dz * rz) > 1.5 || Math.abs(a.y - c.y) > 1.5) return; const g = ah - c.spec.len / 2 - .4; if (g < gap) { gap = g; v = 0; who = 1; car = null; } });
+  _blk[0] = gap; _blk[1] = v; _blk[2] = who; _blk[3] = car; return _blk;
 }
-const _blk = [0, 0, 0];
+const _blk = [0, 0, 0, null];
 function driveAI(c, dt) {
   const A = c.ai, inp = c.inp, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, sp = Math.abs(vf); A.age += dt;
   if (A.wait > 0) { A.wait -= dt; inp.thr = 0; inp.steer = 0; inp.hb = true; return; }
@@ -135,9 +135,16 @@ function driveAI(c, dt) {
   if (turning && toX < 34) cruise = Math.min(cruise, lerp(6, cruise, clamp((toX - 3) / 31, 0, 1))); else if (toX < 10 && toX > -10 && (A.mode === 'traffic' || A.mode === 'bus')) cruise = Math.min(cruise, A.mode === 'bus' ? 6.5 : 9);
   if (Math.abs(diff) > .45) cruise = Math.min(cruise, 6.5);
   if (last && s > L - 34) { cruise = Math.min(cruise, Math.max(0, (L - 15 - s) * .7)); if (s > L - 22 && sp < 1.2) A.done = true; }
+  // traffic signals (42.8-dress.js): stop at the line on red, and on amber if there is room to stop without standing on the brakes
+  A.red = false; if ((A.mode === 'traffic' || A.mode === 'bus') && A.panic <= 0) { const ph = signalAhead(A.from, A.to);
+    if (ph) { const toStop = L - 11 - c.spec.len / 2 - s, need = sp * sp / (ph === 2 ? 13 : 8); if (toStop > -.6 && toStop > need + (ph === 2 ? -1.5 : 1)) { cruise = Math.min(cruise, toStop > 1.2 ? Math.sqrt(6 * (toStop - 1)) : 0); A.red = true; } } }   // brake on a curve that ends a metre short of the line
   const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
   if (A.mode === 'cop' && gap < 20 && A.passT <= 0) { A.off = -1.8; A.passT = 3.5; }
-  if (gap < 1e8) { cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8); if (gap < 6 && sp < 1) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0; if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } } }   // a person who will not move: back up and go round else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
+  A.q = !!(blk[3] && blk[3].ai && (blk[3].ai.red || blk[3].ai.q) && gap < 9);   // in a queue at a red light: wait, no horn, no going round
+  if (gap < 1e8) cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8);
+  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0;
+    if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } }   // a person who will not move: back up and go round
+  else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
   if (A.passT > 0 && gap > 1e8) cruise = Math.min(cruise, 9);
   if (A.passT > 0 && blk[2] && gap > 1 && gap < 1e8) cruise = Math.max(cruise, 2.2);       // someone is standing in the road and is not going to move: edge round them
   // stuck against something: back up and try again

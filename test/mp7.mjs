@@ -41,6 +41,8 @@ await B.evaluate(() => { const g = __pc; g.DBG.god = true; g.P.earn += 5000; });
 // the weather: the host says storm, Bob's sky follows
 await A.evaluate(() => { __pc.WX.k = 3; __pc.WX.next = __pc.G.time + 9999; });
 await pump(90);
+{ const [ha, hb] = [await A.evaluate(() => __pc.sigClock()), await B.evaluate(() => __pc.sigClock())]; const ph = await Promise.all([A, B].map(p => p.evaluate(() => __pc.SIGNALS.map(S => __pc.signalPhase(S, 0, __pc.sigClock())).join(''))));
+  log('signals agree', { hostClock: +ha.toFixed(1), bobClock: +hb.toFixed(1), same: Math.abs(ha - hb) < 1.5 }); }
 log('weather', { host: await A.evaluate(() => [__pc.WX.k, +__pc.WX.rain.toFixed(2)]), bob: await B.evaluate(() => [__pc.WX.k, +__pc.WX.rain.toFixed(2), __pc.rainMesh.visible]) });
 await A.evaluate(() => { __pc.WX.k = 0; });
 // the bus: put one at a stop by Bob and let him ride it

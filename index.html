@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 12:30 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 13:25 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -903,7 +903,7 @@ const MATS = {};
 const lam = o => new T.MeshLambertMaterial(Object.assign({ vertexColors: true }, o));
 function defMat(key, mat, tu, tv, o) { MATS[key] = Object.assign({ mat, tu: tu || 4, tv: tv || tu || 4, cast: true, recv: true }, o || {}); return mat; }
 const FACADES = [];   // materials whose windows light up after dark
-function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); m.userData.rough = t.rough; FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
+function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); m.userData.rough = t.rough; m.userData.fo = o; FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
 defMat('asphalt', lam({ map: noiseTex('#3a3c40', .1, { cracks: 14, blots: 16 }) }), 12, 12, { cast: false });
 defMat('walk',    lam({ map: noiseTex('#a9a7a0', .07, { lines: 64, vlines: 64, lineCol: 'rgba(0,0,0,.18)', blots: 8 }) }), 6, 6, { cast: false });
 defMat('plaza',   lam({ map: noiseTex('#b9b4a8', .05, { lines: 32, vlines: 32, lineCol: 'rgba(0,0,0,.12)' }) }), 4, 4, { cast: false });
@@ -969,14 +969,16 @@ T.ShaderChunk.fog_fragment = `#ifdef USE_FOG
 #endif`;
 T.Material.prototype.onBeforeCompile = function (sh) { sh.uniforms.fogSunDir = FOGU.fogSunDir; sh.uniforms.fogSunCol = FOGU.fogSunCol; sh.uniforms.fogHeight = FOGU.fogHeight; };
 // --- physically based twins for the standing city: roughness and metalness for each material. Low keeps the old matte ones.
-const PBR_OF = { asphalt: [.86, 0], lot: [.84, 0], walk: [.9, 0], plaza: [.82, 0], grass: [1, 0], turf: [1, 0], dirt: [1, 0], court: [.62, 0], roof: [.92, 0], shingle: [.85, 0],
+const PBR_OF = { asphalt: [1, 0], lot: [1, 0], walk: [1, 0], plaza: [1, 0],   // these four take their roughness from their maps (22-surfaces.js)
+  grass: [1, 0], turf: [1, 0], dirt: [1, 0], court: [.62, 0], roof: [.92, 0], shingle: [.85, 0],
   concrete: [.9, 0], corr: [.48, .55], tile: [.5, 0], plaster: [.92, 0], flat: [.72, 0], flatnc: [.72, 0], paint: [.65, 0], glass: [.05, .2], fence: [.45, .6], sign: [.55, 0] };
 function makePBR() {
   for (const key in MATS) { const M = MATS[key], m = M.mat; if (M.low) continue; M.low = m; if (!(m instanceof T.MeshLambertMaterial)) { M.pbr = m; continue; }
     const fac = FACADES.includes(m), q = PBR_OF[key] || [.85, 0];
     const p = new T.MeshStandardMaterial({ vertexColors: m.vertexColors, map: m.map, emissiveMap: m.emissiveMap, emissive: m.emissive.clone(), color: m.color.clone(), transparent: m.transparent, opacity: m.opacity,
       alphaTest: m.alphaTest, side: m.side, polygonOffset: m.polygonOffset, polygonOffsetFactor: m.polygonOffsetFactor, polygonOffsetUnits: m.polygonOffsetUnits, roughness: fac ? 1 : q[0], metalness: fac ? 0 : q[1],
-      roughnessMap: fac && m.userData.rough ? m.userData.rough : null, depthWrite: m.depthWrite, envMapIntensity: key === 'glass' ? 1.2 : fac ? .8 : LOOK.envI });
+      roughnessMap: m.userData.rough || null, normalMap: m.userData.nrm || null, depthWrite: m.depthWrite, envMapIntensity: key === 'glass' ? 1.2 : fac ? .8 : LOOK.envI });
+    if (m.userData.nrm) p.normalScale.set(m.userData.ns || 1, m.userData.ns || 1);
     if (fac) FACADES.push(p); M.pbr = p; }
 }
 function setStaticPBR(on) {
@@ -1011,15 +1013,18 @@ const aoMat = new T.ShaderMaterial({
   uniforms: { tDepth: { value: null }, res: { value: new T.Vector2() }, projInv: { value: new T.Matrix4() }, projScale: { value: 1 }, radius: { value: 1.6 }, intensity: { value: 1 }, aspect: { value: 1 } },
   vertexShader: QUAD_VS,
   fragmentShader: `uniform sampler2D tDepth; uniform vec2 res; uniform mat4 projInv; uniform float projScale; uniform float radius; uniform float intensity; uniform float aspect; varying vec2 vUv;
-    vec3 vpos(vec2 uv) { float d = texture2D(tDepth, uv).x; vec4 p = projInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
+    // every position is rebuilt at the centre of the depth texel it was read from: half a texel out, a steep floor seen at a slant
+    // comes back tilted a row at a time (that drew lines across the road)
+    vec2 snap(vec2 uv) { return (floor(uv * res) + 0.5) / res; }
+    vec3 vpos(vec2 uv) { uv = snap(uv); float d = texture2D(tDepth, uv).x; vec4 p = projInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
     void main() {
-      float d0 = texture2D(tDepth, vUv).x; if (d0 >= 0.99999) { gl_FragColor = vec4(1.0); return; }
-      vec2 px = 1.0 / res; vec3 P = vpos(vUv), Pr = vpos(vUv + vec2(px.x, 0.0)), Pl = vpos(vUv - vec2(px.x, 0.0)), Pu = vpos(vUv + vec2(0.0, px.y)), Pd = vpos(vUv - vec2(0.0, px.y));
+      vec2 uv0 = snap(vUv); float d0 = texture2D(tDepth, uv0).x; if (d0 >= 0.99999) { gl_FragColor = vec4(1.0); return; }
+      vec2 px = 1.0 / res; vec3 P = vpos(uv0), Pr = vpos(uv0 + vec2(px.x, 0.0)), Pl = vpos(uv0 - vec2(px.x, 0.0)), Pu = vpos(uv0 + vec2(0.0, px.y)), Pd = vpos(uv0 - vec2(0.0, px.y));
       vec3 dx = abs(Pr.z - P.z) < abs(P.z - Pl.z) ? Pr - P : P - Pl, dy = abs(Pu.z - P.z) < abs(P.z - Pd.z) ? Pu - P : P - Pd, N = normalize(cross(dx, dy));
       if (dot(N, P) > 0.0) N = -N;
       float ssr = min(radius * projScale / -P.z, 0.12), rot = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831, r2 = radius * radius, sum = 0.0;
       for (int i = 0; i < 12; i++) { float fi = float(i) + 0.5, a = fi * 2.39996 + rot, r = ssr * sqrt(fi / 12.0);
-        vec3 v = vpos(vUv + vec2(cos(a), sin(a) * aspect) * r) - P; float vv = dot(v, v), f = max(r2 - vv, 0.0);
+        vec3 v = vpos(uv0 + vec2(cos(a), sin(a) * aspect) * r) - P; float vv = dot(v, v), f = max(r2 - vv, 0.0);
         sum += f * f * f * max((dot(v, N) - 0.01 * -P.z) / (vv + 0.01), 0.0); }
       float ao = max(0.0, 1.0 - sum * intensity * 5.0 / (r2 * r2 * r2 * 12.0));
       gl_FragColor = vec4(ao, ao, ao, 1.0);
@@ -1130,7 +1135,7 @@ function lookTick() {
 }
 // --- applying the settings
 const VIEW = { far: 1000 };
-function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
+function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap', 'normalMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
 function applyQuality(save) {
   const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res));
   renderer.shadowMap.enabled = GQ.shadow > 0;
@@ -1140,7 +1145,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
@@ -1161,6 +1166,107 @@ GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', (
 if ($('gq-more')) $('gq-more').addEventListener('click', () => { const a = $('gq-adv'); a.hidden = !a.hidden; $('gq-more').textContent = a.hidden ? 'Advanced' : 'Hide advanced'; });
 // a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session
 function slowerPreset() { const order = ['ultra', 'high', 'medium', 'low'], i = order.indexOf(GQ.preset), next = i < 0 ? 'medium' : order[Math.min(order.length - 1, i + 1)]; if (next === GQ.preset) return false; setPreset(next, true); return next; }
+
+/* =====================================================================
+   2c. SURFACES — the ground and the walls up close. Asphalt with real aggregate in it, pavements laid as slabs with joints between
+       them (each slab a touch different, each sitting a touch off level), and for the lit look (Medium and up) a relief map for
+       each — the stones stand out of the binder, the joints and mortar lines sink in, windows sit back in their frames — and a
+       roughness map, whose blue channel also marks the low spots where rain will gather (98-weather.js). Built from numbers on
+       the spot, tiled without a seam; Low gets the colour alone at half the size.
+   ===================================================================== */
+const SURF = { level: -1, tex: {}, gen: 0, fac: false };
+// smooth noise that wraps at the edges: `cells` lattice points across
+function tileNoise(S, cells, R) {
+  const L = new Float32Array(cells * cells); for (let i = 0; i < L.length; i++) L[i] = R();
+  const out = new Float32Array(S * S), k = cells / S;
+  for (let y = 0; y < S; y++) { const fy = y * k, y0 = Math.floor(fy), ty = fy - y0, sy = ty * ty * (3 - 2 * ty), r0 = (y0 % cells) * cells, r1 = ((y0 + 1) % cells) * cells;
+    for (let x = 0; x < S; x++) { const fx = x * k, x0 = Math.floor(fx), tx = fx - x0, sx = tx * tx * (3 - 2 * tx), c0 = x0 % cells, c1 = (x0 + 1) % cells, a = L[r0 + c0] + (L[r0 + c1] - L[r0 + c0]) * sx, b = L[r1 + c0] + (L[r1 + c1] - L[r1 + c0]) * sx;
+      out[y * S + x] = a + (b - a) * sy; } }
+  return out;
+}
+// the same at a quarter of the size, then stretched smoothly to full size: the slow drift of tone needs no more, and it is 16x cheaper
+function fbmUp(S, cells, oct, R) { const s = S >> 2, lo = fbmTile(s, cells, oct, R), out = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) { const fy = y / 4 - .375, y0 = Math.floor(fy), ty = fy - y0, ra = ((y0 + s) % s) * s, rb = ((y0 + 1 + s) % s) * s;
+    for (let x = 0; x < S; x++) { const fx = x / 4 - .375, x0 = Math.floor(fx), tx = fx - x0, ca = (x0 + s) % s, cb = (x0 + 1 + s) % s, a = lo[ra + ca] + (lo[ra + cb] - lo[ra + ca]) * tx, b = lo[rb + ca] + (lo[rb + cb] - lo[rb + ca]) * tx; out[y * S + x] = a + (b - a) * ty; } }
+  return out; }
+function fbmTile(S, cells, oct, R) { const out = new Float32Array(S * S); let amp = 1, tot = 0; for (let o = 0; o < oct; o++, amp *= .5) { const n = tileNoise(S, cells << o, R); tot += amp; for (let i = 0; i < out.length; i++) out[i] += n[i] * amp; } for (let i = 0; i < out.length; i++) out[i] /= tot; return out; }
+function pixTex(S, fill, linear) { const c = texCanvas(S), g = c.getContext('2d'), im = g.createImageData(S, S); fill(im.data); g.putImageData(im, 0, 0); const t = new T.CanvasTexture(c); if (linear) t.encoding = T.LinearEncoding; t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4; return t; }
+// a normal map from heights (wrapping): str is how steep a step of 1 between neighbours looks
+function normalTex(h, S, str) { return pixTex(S, d => { for (let y = 0; y < S; y++) { const yu = ((y - 1 + S) % S) * S, yd = ((y + 1) % S) * S, yr = y * S;
+  for (let x = 0; x < S; x++) { const xl = (x - 1 + S) % S, xr = (x + 1) % S, dx = (h[yr + xr] - h[yr + xl]) * str, dy = (h[yd + x] - h[yu + x]) * str, l = Math.sqrt(dx * dx + dy * dy + 1), i = (yr + x) * 4;
+    d[i] = (-dx / l * .5 + .5) * 255; d[i + 1] = (dy / l * .5 + .5) * 255; d[i + 2] = (.5 / l + .5) * 255; d[i + 3] = 255; } } }, true); }
+// --- asphalt: dark binder, aggregate of every size, a slow drift of tone; `warm` shifts it toward the browner lot surface
+function asphaltSet(S, full, o) {
+  const R = rng32(o.seed), N = S * S, tone = fbmUp(S, 4, 4, R), fine = new Float32Array(N), hgt = new Float32Array(N), stone = new Float32Array(N), tint = new Float32Array(N);
+  for (let i = 0; i < N; i++) { fine[i] = R(); hgt[i] = fine[i] * .35 + tone[i] * 3; }
+  const sc = S / 1024, nst = Math.round(N * .03);
+  for (let k = 0; k < nst; k++) { const cx = R() * S, cy = R() * S, r = (.5 + R() * R() * 1.7) * Math.max(.8, sc), v = .35 + R() * .65, w = R() * .3 - .1, r2 = r * r;
+    for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) { const d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy); if (d2 > r2) continue;
+      const i = ((y + S) % S) * S + ((x + S) % S), f = 1 - d2 / r2; if (stone[i] < v * f) { stone[i] = v * f; tint[i] = w; } hgt[i] += f * .7; } }
+  const puddle = full ? fbmUp(S, 3, 3, R) : null;
+  const map = pixTex(S, d => { for (let i = 0; i < N; i++) { const t = (tone[i] - .5) * o.tone, s = stone[i], f = (fine[i] - .5) * 10, j = i * 4, b = o.base;
+    d[j] = clamp(b[0] * (1 + t) + f + s * o.stone * (1 + tint[i]), 0, 255); d[j + 1] = clamp(b[1] * (1 + t) + f + s * o.stone, 0, 255); d[j + 2] = clamp(b[2] * (1 + t) + f + s * o.stone * (1 - tint[i] * .6), 0, 255); d[j + 3] = 255; } });
+  if (!full) return { map };
+  const rough = pixTex(S, d => { for (let i = 0; i < N; i++) { const j = i * 4; d[j] = 0; d[j + 1] = clamp(222 + (fine[i] - .5) * 40 - stone[i] * 26 + (tone[i] - .5) * 30, 0, 255); d[j + 2] = clamp((puddle[i] - .56) * 900, 0, 255); d[j + 3] = 255; } }, true);
+  return { map, nrm: normalTex(hgt, S, 1.6 * Math.min(1, S / 1024) + .6), rough };
+}
+// --- pavement: concrete slabs `slab` px across, joints between, each slab its own shade and its own slight tilt; pores, stains
+function slabSet(S, full, o) {
+  const R = rng32(o.seed), N = S * S, tone = fbmUp(S, 6, 4, R), n = Math.round(S / o.slab), shade = [], tilt = [], hgt = new Float32Array(N), jw = Math.max(2, Math.round(S / 340)), sc = S / 1024;
+  for (let k = 0; k < n * n; k++) { shade.push((R() - .5) * o.vary); tilt.push([(R() - .5) * .0016, (R() - .5) * .0016]); }
+  const pores = new Float32Array(N); for (let k = 0; k < N * .012; k++) pores[(R() * N) | 0] = .4 + R() * .6;
+  const crack = new Uint8Array(N); for (let k = 0; k < n * n * .12; k++) { const s = (R() * n * n) | 0, sx = (s % n) * o.slab, sy = Math.floor(s / n) * o.slab; let x = sx + R() * o.slab, y = sy + (R() < .5 ? 0 : o.slab), dx = (R() - .5) * .8, dy = y === sy ? 1 : -1; if (R() < .5) { [x, y] = [sx + (R() < .5 ? 0 : o.slab), sy + R() * o.slab]; dx = x === sx ? 1 : -1; dy = (R() - .5) * .8; }
+    for (let st = 0; st < o.slab * 1.2; st++) { x += dx + (R() - .5) * .9; y += dy + (R() - .5) * .9; if (x < sx || x >= sx + o.slab || y < sy || y >= sy + o.slab) break; crack[((y | 0) % S) * S + ((x | 0) % S)] = 1; } }
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x, sx = Math.floor(x / o.slab), sy = Math.floor(y / o.slab), si = (sy % n) * n + (sx % n), lx = x % o.slab, ly = y % o.slab, jt = lx < jw || ly < jw;
+    hgt[i] = jt ? -2.2 : (tone[i] * 1.2 + (lx * tilt[si][0] + ly * tilt[si][1]) * o.slab * .9 - pores[i] * .6 - crack[i] * 1.2); }
+  const map = pixTex(S, d => { for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) { const i = y * S + x, j = i * 4, sx = Math.floor(x / o.slab), sy = Math.floor(y / o.slab), si = (sy % n) * n + (sx % n), lx = x % o.slab, ly = y % o.slab, jt = lx < jw || ly < jw;
+    const k = (1 + shade[si] + (tone[i] - .5) * o.tone) * (jt ? .72 : 1) * (1 - pores[i] * .22) * (crack[i] ? .55 : 1), f = ((i * 2654435761 >>> 24) / 255 - .5) * 9;
+    d[j] = clamp(o.base[0] * k + f, 0, 255); d[j + 1] = clamp(o.base[1] * k + f, 0, 255); d[j + 2] = clamp(o.base[2] * k + f, 0, 255); d[j + 3] = 255; } });
+  if (!full) return { map };
+  const puddle = fbmUp(S, 3, 2, R);
+  const rough = pixTex(S, d => { for (let i = 0; i < N; i++) { const j = i * 4; d[j] = 0; d[j + 1] = clamp(235 - pores[i] * -15 + (tone[i] - .5) * 30, 0, 255); d[j + 2] = clamp((puddle[i] - .62) * 700 + (hgt[i] < -2 ? 60 : 0), 0, 255); d[j + 3] = 255; } }, true);
+  return { map, nrm: normalTex(hgt, S, .6 * sc + .25), rough };
+}
+// --- a facade's relief, drawn over the same layout as its texture (facadeTex): mortar and joints sink in, windows sit back, frames stand out
+function facadeRelief(o) {
+  const S = 512, c = texCanvas(S), g = c.getContext('2d'), cw = S / o.bays, ch = S / o.floors;
+  g.fillStyle = 'rgb(128,128,128)'; g.fillRect(0, 0, S, S);
+  if (o.style === 'brick') { g.fillStyle = 'rgb(70,70,70)'; for (let y = 0; y < S; y += 7) { g.fillRect(0, y, S, 1); for (let bx = (y / 7 % 2) * 9; bx < S; bx += 18) g.fillRect(bx, y, 1, 7); } }
+  if (o.style === 'siding') for (let y = 0; y < S; y += 9) { const gr = g.createLinearGradient(0, y, 0, y + 9); gr.addColorStop(0, 'rgb(100,100,100)'); gr.addColorStop(1, 'rgb(160,160,160)'); g.fillStyle = gr; g.fillRect(0, y, S, 9); }
+  if (o.style === 'panel') { g.fillStyle = 'rgb(84,84,84)'; for (let i = 0; i <= o.bays; i++) g.fillRect(i * cw - 1, 0, 2, S); for (let j = 0; j <= o.floors; j++) g.fillRect(0, j * ch - 1, S, 2); }
+  if (o.style === 'glass') { g.fillStyle = 'rgb(150,150,150)'; for (let i = 0; i <= o.bays; i++) g.fillRect(i * cw - 2, 0, 4, S); for (let j = 0; j <= o.floors; j++) g.fillRect(0, j * ch - 2, S, 4); }
+  for (let j = 0; j < o.floors; j++) for (let i = 0; i < o.bays; i++) {
+    const ww = cw * o.ww, wh = ch * o.wh, wx = i * cw + (cw - ww) / 2, wy = j * ch + (ch - wh) * (o.wy === undefined ? .45 : o.wy);
+    if (o.style !== 'glass') { g.fillStyle = 'rgb(176,176,176)'; g.fillRect(wx - 3, wy - 5, ww + 6, 5); }
+    g.fillStyle = 'rgb(30,30,30)'; g.fillRect(wx, wy, ww, wh); g.strokeStyle = 'rgb(112,112,112)'; g.lineWidth = o.style === 'glass' ? 1 : 2; g.strokeRect(wx + .5, wy + .5, ww - 1, wh - 1);
+    if (o.mull) { g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); if (o.mull > 1) { g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2); } g.stroke(); }
+  }
+  const d = g.getImageData(0, 0, S, S).data, h = new Float32Array(S * S); for (let i = 0; i < h.length; i++) h[i] = d[i * 4] / 255 * 6;
+  return normalTex(h, S, o.style === 'glass' ? .5 : 1);
+}
+// --- put them on the materials (both the plain and the lit twin); `level` 0 is Low
+const SURF_SETS = {
+  asphalt: (S, f) => asphaltSet(S, f, { seed: 11, base: [60, 62, 66], tone: .2, stone: 40 }),
+  lot: (S, f) => asphaltSet(S, f, { seed: 12, base: [66, 66, 67], tone: .24, stone: 36 }),
+  walk: (S, f) => slabSet(S, f, { seed: 13, base: [170, 168, 160], slab: S / 4, vary: .06, tone: .12 }),
+  plaza: (S, f) => slabSet(S, f, { seed: 14, base: [186, 180, 168], slab: S / 8, vary: .12, tone: .1 }),
+};
+const SURF_NS = { asphalt: .9, lot: .9, walk: .8, plaza: .7 };
+const SURF_SIZE = { asphalt: 1024, walk: 1024, lot: 512, plaza: 512 };
+// Built a set at a time between frames (the page stays live while it works; until each is ready the plain texture stands in), or all
+// at once under test. A change of level part way through starts again.
+function applySurfaces(level) {
+  if (level === SURF.level) return; SURF.level = level; const gen = SURF.gen = (SURF.gen || 0) + 1, t0 = performance.now(), full = level > 0, keys = Object.keys(SURF_SETS);
+  const one = key => { const M = MATS[key]; if (!M) return; const old = SURF.tex[key]; const set = SURF_SETS[key](full ? SURF_SIZE[key] : 512, full); SURF.tex[key] = Object.values(set);
+    [M.low || M.mat, M.pbr].forEach(m => { if (!m) return; m.map = set.map; if (m.isMeshStandardMaterial) { m.normalMap = set.nrm || null; m.roughnessMap = set.rough || null; m.normalScale.set(SURF_NS[key], SURF_NS[key]); } m.needsUpdate = true; });
+    const lo = M.low || M.mat; lo.userData.nrm = set.nrm || null; lo.userData.rough = set.rough || null; lo.userData.ns = SURF_NS[key]; if (old) old.forEach(t => t.dispose());
+    const a = Math.min(8, renderer.capabilities.getMaxAnisotropy()), an = [1, 4, a][GQ.tex] || 4; SURF.tex[key].forEach(t => { t.anisotropy = an; }); };
+  const facades = () => { if (!full || SURF.fac) return; SURF.fac = true; for (const key in MATS) { const M = MATS[key], lo = M.low || M.mat; if (!lo.userData || !lo.userData.fo || lo.userData.nrm) continue;
+    lo.userData.nrm = facadeRelief(lo.userData.fo); lo.userData.ns = .55; if (M.pbr && M.pbr.isMeshStandardMaterial) { M.pbr.normalMap = lo.userData.nrm; M.pbr.normalScale.set(.55, .55); M.pbr.needsUpdate = true; } } };
+  if (TEST) { keys.forEach(one); facades(); console.log('surfaces', level, Math.round(performance.now() - t0) + ' ms'); return; }
+  const next = k => { if (gen !== SURF.gen) return; if (k < keys.length) { one(keys[k]); setTimeout(() => next(k + 1), 30); } else facades(); };
+  setTimeout(() => next(0), 60);
+}
 
 /* =====================================================================
    3. COLLISION + RAYS — every solid is an axis-aligned box that is both
@@ -1281,7 +1387,8 @@ const ZONES = [], SHOPS = [], ROBS = [], GARAGES = [], SPAWNS = CREWS.map(() => 
 // Places where people do something other than walk past. k: 'sit' a bench, 'hang' a knot of people talking, 'browse' a window or a stall,
 // 'wait' a stop or a platform, 'hoop' a basket, 'dance' by a speaker, 'post' where a vendor or a clerk works, 'work' a job done between two spots.
 const POI = [];
-const CARTS = [];   // food carts: { x, z, text, d (the way the counter faces) }
+const CARTS = [];
+const BLDS = [];    // every building() as built: the dressing pass adds ledges, sills, AC units, balconies, doors, rooftop gear and grime   // food carts: { x, z, text, d (the way the counter faces) }
 const VENTS = [], STACKS = [], ROOSTS = [], SPEAKERS = [], GRILLS = [];   // steam from the street, smoke from chimneys, where pigeons gather, where music plays, where food is cooking
 const WP = rng32(77123);                                       // its own dice, so adding a bench never reshuffles the buildings
 const LAMPS = [];
@@ -1306,7 +1413,7 @@ const deco = (x0, x1, y0, y1, z0, z1, col, o) => addBox(x0, x1, y0, y1, z0, z1, 
 // a flat patch of another surface laid on the block (grass, a parking lot, a court)
 const LAYER = { grass: .014, dirt: .018, lot: .022, plaza: .026, tile: .03, court: .034 };   // patches laid over one another sit at slightly different heights, softest ground lowest
 function ground(x0, z0, x1, z1, mat, col, y) { const d = MATS[mat], h = (y === undefined ? CURB : y) + (LAYER[mat] || .03); SB(mat).quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, x0 / d.tu, -z1 / d.tv, x1 / d.tu, -z0 / d.tv, colOf(col)); if (y === undefined) PATCH.push([x0, z0, x1, z1, mat]); }
-function paint(x0, z0, x1, z1, col, y) { const h = (y === undefined ? 0 : y) + .05; SB('paint').quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, 0, 0, 1, 1, colOf(col === undefined ? 0xd8d6cc : col)); }
+function paint(x0, z0, x1, z1, col, y) { const h = (y === undefined ? 0 : y) + .02; SB('paint').quad([x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0], 0, 1, 0, 0, 0, 1, 1, colOf(col === undefined ? 0xd8d6cc : col)); }   // 2 cm up: flush enough that the occlusion pass sees no step round every line
 function cyl(x, y0, y1, z, r, mat, col, o) { o = o || {}; const g = new T.CylinderGeometry(o.rTop === undefined ? r : o.rTop, r, y1 - y0, o.seg || 12); SB(mat).geo(g, new T.Matrix4().makeTranslation(x, (y0 + y1) / 2, z), colOf(col)); g.dispose(); if (!o.nocol) solid(x - r * .8, x + r * .8, y0, y1, z - r * .8, z + r * .8, o); }
 // a straight flight of steps from (ax,az) at y0 up to (bx,bz) at y1; each step is solid down to the bottom
 function stairs(ax, az, bx, bz, y0, y1, w, mat, col) {
@@ -1414,6 +1521,7 @@ function building(x0, z0, x1, z1, h, o) {
   if (o.parapet !== false) { const p = .35, ph = .7, pc = o.trim === undefined ? 0x4b4743 : o.trim, y = y0 + h;
     deco(x0, x1, y, y + ph, z0, z0 + p, pc); deco(x0, x1, y, y + ph, z1 - p, z1, pc); deco(x0, x0 + p, y, y + ph, z0 + p, z1 - p, pc); deco(x1 - p, x1, y, y + ph, z0 + p, z1 - p, pc); }
   if (o.clutter !== false && x1 - x0 > 8 && z1 - z0 > 8) roofClutter(x0, z0, x1, z1, y0 + h, o.tank);
+  BLDS.push({ x0, z0, x1, z1, y0, yb, top: y0 + h, mat, shop: !!o.shop, kind: o.kind || 'b', parapet: o.parapet !== false, roof: o.clutter !== false });   // for the dressing pass (42.8-dress.js)
   return { x0, z0, x1, z1, y: y0 + h };
 }
 function awning(x0, x1, z, face, col) { const d = FACE[face][1] * 1.3; deco(x0, x1, CURB + 2.9, CURB + 3.1, Math.min(z, z + d), Math.max(z, z + d), col); }
@@ -2206,6 +2314,261 @@ function genBusStops() {
   BUS_STOPS.length = 0; keep.filter(S => S.leg !== undefined).forEach(S => BUS_STOPS.push(S));
 }
 
+/* =====================================================================
+   4c¾. DRESSING THE CITY — after every block is built and before it is all poured into the big static meshes: the things that make
+        a street read as real. On buildings: a cornice under the roofline, a plinth at the foot, corner piers, a stone sill under
+        every window, air conditioners in some (with the stain they leave), balconies, a proper front door, rooftop plant; dirt
+        along the foot of every wall and streaks down from the top. On the streets: tyre wear down every lane, patches, cracks,
+        potholes and oil stains, storm drains at the kerbs, manhole covers, stains and litter on the pavements; traffic signals at
+        the busy crossings (the traffic stops for them: 90-bots.js), street names at every crossing, and wooden utility poles
+        with sagging wires along the house and factory streets.
+        All of it rolls its own dice (WD), so nothing here moves a building, a shop or anything saved.
+   ===================================================================== */
+const WD = rng32(424243), wdr = (a, b) => a + (b - a) * WD();
+const DLANE = 2.2;   // the middle of a travel lane, out from the road's centre line
+// --- grime: one atlas of decals for walls and the ground (4 x 4 cells)
+const GRIME = (() => {
+  const S = 1024, C = S / 4, c = texCanvas(S), g = c.getContext('2d'), R = rng32(907);
+  const cell = (k, fn) => { const x = (k % 4) * C, y = Math.floor(k / 4) * C; g.save(); g.beginPath(); g.rect(x, y, C, C); g.clip(); g.translate(x, y); fn(); g.restore(); };
+  const blob = (x, y, r, a, rgb) => { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${rgb || '12,11,10'},${a})`); gr.addColorStop(1, `rgba(${rgb || '12,11,10'},0)`); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); };
+  cell(0, () => { for (let i = 0; i < 26; i++) blob(128 + (R() - .5) * 120, 128 + (R() - .5) * 120, 18 + R() * 50, .14 + R() * .18); for (let i = 0; i < 5; i++) blob(128 + (R() - .5) * 90, 128 + (R() - .5) * 90, 10 + R() * 18, .25); });   // oil
+  cell(1, () => { const gr = g.createLinearGradient(0, 0, 0, C); gr.addColorStop(0, 'rgba(22,19,15,0)'); gr.addColorStop(.5, 'rgba(22,19,15,.16)'); gr.addColorStop(1, 'rgba(22,19,15,.5)'); g.fillStyle = gr; g.fillRect(0, 0, C, C);
+    for (let i = 0; i < 60; i++) { const x = R() * C, h = 30 + R() * 150; g.fillStyle = `rgba(22,19,15,${.03 + R() * .08})`; g.fillRect(x, C - h, 2 + R() * 7, h); }
+    for (let i = 0; i < 12; i++) blob(R() * C, C - R() * 40, 20 + R() * 40, .12, '30,34,22'); });                                                     // dirt and damp at the foot of a wall
+  cell(2, () => { for (let i = 0; i < 46; i++) { const x = R() * C, h = 60 + R() * 190, w = 2 + R() * 9, gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, `rgba(25,22,18,${.1 + R() * .22})`); gr.addColorStop(1, 'rgba(25,22,18,0)'); g.fillStyle = gr; g.fillRect(x, 0, w, h); } });   // streaks down from a ledge
+  cell(3, () => { for (let x = 0; x < C; x++) { const d = (x - C / 2) / (C * .3), a = Math.exp(-d * d) * (.2 + R() * .08); g.fillStyle = `rgba(6,6,6,${a})`; g.fillRect(x, 0, 1, C); } });   // tyre wear: one band, the same all along
+  const snake = (x, y, ang, len, w) => { const pts = []; let a = ang; for (let t = 0; t <= len; t += 6) { pts.push([x, y]); a += (R() - .5) * .5; x += Math.cos(a) * 6; y += Math.sin(a) * 6; }
+    [[w * 3.2, .1], [w, .82]].forEach(([lw, al]) => { g.strokeStyle = `rgba(7,7,7,${al})`; g.lineWidth = lw; g.lineJoin = g.lineCap = 'round'; g.beginPath(); pts.forEach((p, k) => k ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); }); };
+  cell(4, () => { snake(-10, 60 + R() * 136, (R() - .5) * .4, 290, 3.5); if (R() < .7) snake(40 + R() * 170, -10, PI / 2 + (R() - .5) * .6, 120 + R() * 150, 2.6); });   // a sealed crack (a tar snake) and a branch
+  cell(12, () => { g.strokeStyle = 'rgba(20,20,20,.7)'; g.lineWidth = 1.6; g.lineCap = 'round'; for (let k = 0; k < 2; k++) { let x = R() * C, y = 0, a = PI / 2 + (R() - .5) * .5; g.beginPath(); g.moveTo(x, y); while (y < C && x > 0 && x < C) { a += (R() - .5) * .35; x += Math.cos(a) * 9; y += Math.sin(a) * 9; g.lineTo(x, y); } g.stroke(); } });   // a crack across a slab
+  cell(5, () => { g.fillStyle = 'rgba(105,100,94,.55)'; g.beginPath(); for (let a = 0; a < TAU; a += .22) { const r = 98 + R() * 20; g.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r * .82); } g.fill();
+    g.fillStyle = 'rgba(34,31,28,.93)'; g.beginPath(); for (let a = 0; a < TAU; a += .2) { const r = 64 + R() * 24; g.lineTo(128 + Math.cos(a) * r, 128 + Math.sin(a) * r * .82); } g.fill();
+    for (let i = 0; i < 160; i++) { const r = R() * 70, a = R() * TAU, v = 70 + R() * 70; g.fillStyle = `rgba(${v},${v - 4},${v - 9},${.5 + R() * .4})`; g.fillRect(128 + Math.cos(a) * r, 128 + Math.sin(a) * r * .8, 2 + R() * 4, 2 + R() * 4); }
+    const gr = g.createRadialGradient(128, 128, 40, 128, 128, 92); gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, C, C); });   // pothole: a broken rim, gravel in the bottom
+  cell(6, () => { g.fillStyle = 'rgba(14,14,16,.36)'; g.fillRect(16, 16, C - 32, C - 32); for (let i = 0; i < 40; i++) { g.fillStyle = `rgba(0,0,0,${R() * .06})`; g.fillRect(16 + R() * (C - 60), 16 + R() * (C - 60), 10 + R() * 30, 10 + R() * 30); }
+    g.strokeStyle = 'rgba(4,4,4,.65)'; g.lineWidth = 4; g.strokeRect(16, 16, C - 32, C - 32); });   // a patched repair: newer, darker asphalt and a sealed seam
+  cell(7, () => { g.fillStyle = 'rgba(46,46,48,1)'; g.fillRect(8, 60, C - 16, C - 120); g.fillStyle = 'rgba(3,3,4,1)'; for (let x = 24; x < C - 26; x += 22) g.fillRect(x, 74, 11, C - 148); g.strokeStyle = 'rgba(92,92,95,1)'; g.lineWidth = 7; g.strokeRect(8, 60, C - 16, C - 120); });   // storm drain grate
+  cell(8, () => { for (let i = 0; i < 70; i++) { const x = R() * C, y = R() * C, r = 2 + R() * 6; g.fillStyle = `rgba(20,20,20,${.15 + R() * .3})`; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill(); } for (let i = 0; i < 6; i++) blob(R() * C, R() * C, 14 + R() * 24, .12); });   // gum and stains
+  cell(9, () => { for (let i = 0; i < 9; i++) blob(128 + (R() - .5) * 140, 128 + (R() - .5) * 140, 30 + R() * 50, .1 + R() * .1, '28,30,26'); });       // a damp patch
+  cell(10, () => { g.fillStyle = 'rgba(52,50,48,1)'; g.beginPath(); g.arc(128, 128, 118, 0, TAU); g.fill(); g.strokeStyle = 'rgba(82,78,74,1)'; g.lineWidth = 9; g.stroke(); g.lineWidth = 4;
+    for (let r = 30; r < 110; r += 22) { g.beginPath(); g.arc(128, 128, r, 0, TAU); g.stroke(); } for (let a = 0; a < TAU; a += PI / 6) { g.beginPath(); g.moveTo(128, 128); g.lineTo(128 + Math.cos(a) * 110, 128 + Math.sin(a) * 110); g.stroke(); } });   // manhole cover
+  cell(11, () => { for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(${200 + R() * 55},${190 + R() * 55},${170 + R() * 60},${.5 + R() * .4})`; g.save(); g.translate(R() * C, R() * C); g.rotate(R() * 6); g.fillRect(-6, -4, 8 + R() * 12, 6 + R() * 8); g.restore(); }
+    for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(${90 + R() * 50},${60 + R() * 30},20,.6)`; g.beginPath(); g.ellipse(R() * C, R() * C, 5 + R() * 6, 3 + R() * 3, R() * 3, 0, TAU); g.fill(); } });   // litter and leaves
+  const t = new T.CanvasTexture(c); t.anisotropy = 4; return t;
+})();
+defMat('grime', new T.MeshLambertMaterial({ map: GRIME, transparent: true, depthWrite: false, vertexColors: true, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -40 }), 1, 1, { cast: false });
+defMat('dflat', lam({}), 1, 1);                                                    // fine detail: sills, air conditioners, balconies, vents (not drawn on Low)
+PBR_OF.grime = [.95, 0]; PBR_OF.dflat = [.7, .05];
+const cellUV = k => [(k % 4) / 4 + .005, 1 - (Math.floor(k / 4) + 1) / 4 + .005, (k % 4 + 1) / 4 - .005, 1 - Math.floor(k / 4) / 4 - .005];
+// a decal flat on the ground: centre, width across, length along, angle (0: the length runs along z), atlas cell, tint
+function decalG(x, z, y, w, l, ang, k, col) { const u = cellUV(k), c = Math.cos(ang), s = Math.sin(ang), hw = w / 2, hl = l / 2, P = (a, b) => [x + a * c + b * s, y, z - a * s + b * c];
+  SB('grime').quad(P(-hw, hl), P(hw, hl), P(hw, -hl), P(-hw, -hl), 0, 1, 0, u[0], u[1], u[2], u[3], colOf(col === undefined ? 0xffffff : col)); }
+// a decal on a wall facing (nx, nz), centred at (px, pz) along it, w wide, from y0 up to y1
+function decalW(px, pz, nx, nz, w, y0, y1, k, col) { const u = cellUV(k), tx = nz, tz = -nx, hw = w / 2, x = px + nx * .03, z = pz + nz * .03;
+  SB('grime').quad([x - tx * hw, y0, z - tz * hw], [x + tx * hw, y0, z + tz * hw], [x + tx * hw, y1, z + tz * hw], [x - tx * hw, y1, z - tz * hw], nx, 0, nz, u[0], u[1], u[2], u[3], colOf(col === undefined ? 0xffffff : col)); }
+// the dressing goes into buffers by square, each its own mesh, so the frustum (and the shadow camera) can skip what is not in view:
+// "near" detail (sills, air conditioners, vents, aerials: material dflat) by 100 m squares, also left out beyond a few hundred metres
+// and on Low; "mid" detail (ledges, doors, balconies, rooftop plant, signals, poles: the plain 'flat' material) by 200 m squares.
+const DCH = {}, DETAIL = { list: [] };
+const dchunk = (x, z, tier) => { const s = tier === 'm' ? 200 : 100, i = Math.floor(x / s), j = Math.floor(z / s), k = tier + i + ',' + j; return (DCH[k] || (DCH[k] = { b: new GeoBuf(), tier, x: (i + .5) * s, z: (j + .5) * s })).b; };
+function boxQ(b, x0, x1, y0, y1, z0, z1, col, f) { const c = colOf(col);   // the same faces as addBox (bits: 1 +x, 2 -x, 4 +z, 8 -z, 16 top, 32 bottom)
+  if (f & 4) b.quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], 0, 0, 1, 0, 0, 0, 0, c); if (f & 8) b.quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], 0, 0, -1, 0, 0, 0, 0, c);
+  if (f & 1) b.quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], 1, 0, 0, 0, 0, 0, 0, c); if (f & 2) b.quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], -1, 0, 0, 0, 0, 0, 0, c);
+  if (f & 16) b.quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], 0, 1, 0, 0, 0, 0, 0, c); if ((f & 32) && y0 > .3) b.quad([x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], 0, -1, 0, 0, 0, 0, 0, c); }
+const dbox = (x0, x1, y0, y1, z0, z1, col, mat, f) => boxQ(dchunk((x0 + x1) / 2, (z0 + z1) / 2, mat === 'flat' ? 'm' : 'n'), x0, x1, y0, y1, z0, z1, col, f === undefined ? 63 : f);
+function dcyl(x, y0, y1, z, r, col, seg, tier, rTop) { const g = new T.CylinderGeometry(rTop === undefined ? r : rTop, r, y1 - y0, seg || 8, 1, false); g.translate(x, (y0 + y1) / 2, z); dchunk(x, z, tier || 'n').geo(g, null, colOf(col)); g.dispose(); }
+function finishDetail() {
+  for (const k in DCH) { const D = DCH[k], key = D.tier === 'm' ? 'flat' : 'dflat', m = new T.Mesh(D.b.build(), MATS[key].mat); m.userData.key = key; m.castShadow = true; m.receiveShadow = true; m.matrixAutoUpdate = false;
+    scene.add(m); staticMeshes.push(m); if (D.tier === 'n') DETAIL.list.push({ m, x: D.x, z: D.z }); }
+}
+function detailTick() { const on = GQ.tex > 0, R = [130, 130, 190, 280][GQ.view] + 71, cx = camera.position.x, cz = camera.position.z;   // 71: half a square's diagonal
+  for (let i = 0; i < DETAIL.list.length; i++) { const d = DETAIL.list[i]; d.m.visible = on && hyp(d.x - cx, d.z - cz) < R; } }
+// the windows each facade texture draws: bay width, storey height, window width and height (fractions of the bay and storey), where the window sits in its storey
+const FAC_WIN = { brick: [3, 3.2, .42, .58, .45], brick2: [3, 3.2, .56, .5, .45], office: [3, 3.2, .86, .56, .45], siding: [3.5, 3, .34, .5, .45] };
+// how far a face stands from the centre line of the street it looks onto (99: it looks onto no street)
+function faceRoadGap(f, B) {
+  if (f === 's') { const j = Math.ceil((B.z1 - EDGE) / PZ - .001); return j > NZ ? 99 : RZ(j) - B.z1; }
+  if (f === 'n') { const j = Math.floor((B.z0 - EDGE) / PZ + .001); return j < 0 ? 99 : B.z0 - RZ(j); }
+  if (f === 'e') { const i = Math.ceil((B.x1 - EDGE) / PX - .001); return i > NX ? 99 : RX(i) - B.x1; }
+  const i = Math.floor((B.x0 - EDGE) / PX + .001); return i < 0 ? 99 : B.x0 - RX(i);
+}
+// a face as its texture sees it: where u = 0 is, the way u runs, the way the face looks, its length
+function faceFrame(f, B) {
+  if (f === 's') return { ox: B.x0, oz: B.z1, tx: 1, tz: 0, nx: 0, nz: 1, len: B.x1 - B.x0 };
+  if (f === 'n') return { ox: B.x1, oz: B.z0, tx: -1, tz: 0, nx: 0, nz: -1, len: B.x1 - B.x0 };
+  if (f === 'e') return { ox: B.x1, oz: B.z1, tx: 0, tz: -1, nx: 1, nz: 0, len: B.z1 - B.z0 };
+  return { ox: B.x0, oz: B.z0, tx: 0, tz: 1, nx: -1, nz: 0, len: B.z1 - B.z0 };
+}
+// a box standing out from a face: from u0 to u1 along it, y0 to y1, d0 to d1 out from the wall
+function faceBox(F, u0, u1, y0, y1, d0, d1, col, mat, f) { const ax = F.ox + F.tx * u0 + F.nx * d0, az = F.oz + F.tz * u0 + F.nz * d0, bx = F.ox + F.tx * u1 + F.nx * d1, bz = F.oz + F.tz * u1 + F.nz * d1;
+  dbox(Math.min(ax, bx), Math.max(ax, bx), y0, y1, Math.min(az, bz), Math.max(az, bz), col, mat, f !== undefined ? f : d0 > 0 ? 63 : 63 & ~(F.nx > 0 ? 2 : F.nx < 0 ? 1 : F.nz > 0 ? 8 : 4)); }   // the side against the wall is never seen
+const faceAt = (F, u) => [F.ox + F.tx * u, F.oz + F.tz * u];
+const STONE = [0xcfc6b4, 0xbdb3a1, 0xd8d0c0, 0xa9a196], AC_COL = [0xd9d6cc, 0xc8ccc9, 0xbfb9aa, 0xe2ded2], DOORS = [0x3d2b20, 0x2c3e50, 0x1f2a24, 0x5a2d22, 0x2a2c30];
+// grime along a face, in pieces a few metres long so the texture is never stretched
+function grimeRun(F, y0, y1, k, p) { for (let u = 0; u < F.len - .2;) { const w = Math.min(F.len - u, wdr(2.4, 4.6)); if (WD() < p) { const c = faceAt(F, u + w / 2), v = .75 + WD() * .35; decalW(c[0], c[1], F.nx, F.nz, w + .2, y0, y1, k, [v, v, v]); } u += w; } }
+function dressBuilding(B) {
+  const W2 = FAC_WIN[B.mat], tall = B.top - B.y0, stone = STONE[(WD() * STONE.length) | 0], glassy = B.mat === 'office' || B.mat === 'tower';
+  ['n', 's', 'e', 'w'].forEach(f => {
+    const F = faceFrame(f, B); if (F.len < 3) return; const street = faceRoadGap(f, B) < EDGE + 4;
+    // cornice under the roofline, plinth at the foot, piers up the corners of brick
+    if (B.parapet && tall > 5) faceBox(F, -.25, F.len + .25, B.top - .52, B.top - .06, 0, .28, glassy ? 0x7d858c : stone, 'flat');
+    if (!B.shop) faceBox(F, -.07, F.len + .07, B.y0, B.y0 + .55, 0, .08, 0x625c55, 'flat');
+    if (tall > 6 && (B.mat === 'brick' || B.mat === 'brick2')) { faceBox(F, 0, .4, B.yb, B.top - .52, 0, .07, stone, 'flat'); faceBox(F, F.len - .4, F.len, B.yb, B.top - .52, 0, .07, stone, 'flat'); }
+    grimeRun(F, B.y0, B.y0 + 1.6, 1, .9);
+    if (tall > 6 && WD() < .6) grimeRun(F, B.top - wdr(3, 6), B.top - .52, 2, .55);
+    if (!W2) return;
+    const [bw, fh, wwf, whf, wy] = W2, floors = Math.floor((B.top - B.yb - .4) / fh), bays = Math.floor(F.len / bw + .001), sillY = (1 - (1 - whf) * wy - whf) * fh, ww = bw * wwf;
+    const homes = B.mat !== 'office', balcony = B.mat === 'brick2' && floors >= 3 && WD() < .3;
+    for (let fl = 0; fl < floors; fl++) for (let k = 0; k < bays; k++) {
+      const uc = (k + .5) * bw, y = B.yb + fl * fh + sillY; if (uc + ww / 2 > F.len - .3 || uc - ww / 2 < .3) continue;
+      if (homes) faceBox(F, uc - ww / 2 - .1, uc + ww / 2 + .1, y - .11, y, 0, .15, stone, 'n', 48 | (F.nx > 0 ? 1 : F.nx < 0 ? 2 : F.nz > 0 ? 4 : 8));                                          // the sill (office glazing has none)
+      if (homes && fl >= (B.shop ? 0 : 1) && WD() < .1) { faceBox(F, uc - .34, uc + .34, y + .02, y + .48, 0, .56, AC_COL[(WD() * 4) | 0]); faceBox(F, uc - .29, uc + .29, y + .08, y + .42, .56, .58, 0x4d5052);   // an air conditioner
+        const c = faceAt(F, uc); decalW(c[0], c[1], F.nx, F.nz, .6, Math.max(B.y0 + .3, y - wdr(1.2, 2.4)), y - .11, 2); }
+      if (balcony && fl >= 1 && k % 2 === 1) { const y0 = B.yb + fl * fh - .02, a = uc - bw * .43, b = uc + bw * .43; faceBox(F, a, b, y0, y0 + .13, 0, 1.15, 0x8e8a84, 'flat');
+        faceBox(F, a, b, y0 + .13, y0 + 1, 1.1, 1.15, 0x2b2e31, 'flat'); faceBox(F, a, a + .05, y0 + .13, y0 + 1, .02, 1.12, 0x2b2e31, 'flat'); faceBox(F, b - .05, b, y0 + .13, y0 + 1, .02, 1.12, 0x2b2e31, 'flat'); faceBox(F, a, b, y0 + .95, y0 + 1, 0, 1.15, 0x2b2e31, 'flat'); }
+    }
+    // a front door where a face with no shop fronts looks onto the street
+    if (street && !B.shop && bays >= 2) { const uc = (Math.floor(bays / 2) + .5) * bw, dc = DOORS[(WD() * DOORS.length) | 0], y = B.y0;
+      if (uc + 1.2 < F.len) { faceBox(F, uc - .86, uc - .62, y, y + 2.76, 0, .15, stone, 'flat'); faceBox(F, uc + .62, uc + .86, y, y + 2.76, 0, .15, stone, 'flat'); faceBox(F, uc - .9, uc + .9, y + 2.5, y + 2.82, 0, .17, stone, 'flat');
+        faceBox(F, uc - .62, uc + .62, y + .14, y + 2.5, 0, .05, dc, 'flat'); faceBox(F, uc - .5, uc + .5, y + 1.55, y + 2.35, .05, .06, 0x2c3a46, 'flat');   // the door and its glass
+        faceBox(F, uc - 1.05, uc + 1.05, y, y + .15, 0, .8, 0x9a948a, 'flat'); faceBox(F, uc - 1.15, uc + 1.15, y + 2.86, y + 2.98, 0, .95, 0x2f3134, 'flat'); }
+    }
+  });
+  // rooftop plant: air handlers with fans, vents, aerials, the odd dish (not on roofs kept clear for helicopters)
+  if (!B.roof || glassy && B.mat === 'tower') return;
+  const rw = B.x1 - B.x0, rd = B.z1 - B.z0; if (rw < 7 || rd < 7) return; const y = B.top;
+  for (let i = 0, n = 1 + ((WD() * 3) | 0); i < n; i++) { const x = wdr(B.x0 + 1.5, B.x1 - 3.4), z = wdr(B.z0 + 1.5, B.z1 - 2.8); dbox(x, x + 1.8, y, y + 1.1, z, z + 1.25, 0xa7abad, 'flat', 47);
+    dcyl(x + .9, y + 1.1, y + 1.22, z + .62, .44, 0x34373a, 10); dbox(x + .1, x + 1.7, y + .2, y + .9, z - .02, z, 0x6b7073); solid(x, x + 1.8, y, y + 1.1, z, z + 1.25); }
+  for (let i = 0, n = 2 + ((WD() * 3) | 0); i < n; i++) { const x = wdr(B.x0 + .8, B.x1 - .8), z = wdr(B.z0 + .8, B.z1 - .8), h = wdr(.5, 1.2); dcyl(x, y, y + h, z, wdr(.08, .16), 0x6a6e70, 6); dcyl(x, y + h, y + h + .08, z, .22, 0x55595b, 8); }
+  if (WD() < .3) { const x = wdr(B.x0 + 1, B.x1 - 1), z = wdr(B.z0 + 1, B.z1 - 1), h = wdr(3, 7); dbox(x - .05, x + .05, y, y + h, z - .05, z + .05, 0x5a5e62); dbox(x - .6, x + .6, y + h * .8, y + h * .8 + .05, z - .03, z + .03, 0x5a5e62); dbox(x - .4, x + .4, y + h * .6, y + h * .6 + .05, z - .03, z + .03, 0x5a5e62); }
+  if (WD() < .25) { const x = wdr(B.x0 + 1.5, B.x1 - 1.5), z = wdr(B.z0 + 1.5, B.z1 - 1.5), g = new T.CylinderGeometry(.5, .06, .22, 14); g.rotateX(-.9); g.rotateY(WD() * TAU); g.translate(x, y + .85, z); dchunk(x, z).geo(g, null, hexCol(0xd8d8d4)); g.dispose(); dbox(x - .04, x + .04, y, y + .75, z - .04, z + .04, 0x5a5e62); }
+}
+// --- the streets
+const AVE = ['Westway', 'Ember Ave', 'Foundry Ave', 'Union Ave', 'Market Ave', 'Calder Ave', 'Harbor Ave', 'Waterfront'], STR = ['North St', 'Mill St', 'Library St', 'Court St', 'Founders St', 'Steeple St', 'Dock St'];
+// street-name blades: their own little atlas (16 names, 256 x 64 each), white on green with a white border, like the real ones
+const BLADES = AVE.concat(STR), BLADE_TEX = (() => { const c = texCanvas(512), g = c.getContext('2d');
+  BLADES.forEach((t, k) => { const x = (k % 2) * 256, y = Math.floor(k / 2) * 64; g.fillStyle = '#1b5a38'; g.fillRect(x, y, 256, 64); g.strokeStyle = '#e9efe9'; g.lineWidth = 3; g.strokeRect(x + 5, y + 5, 246, 54);
+    g.fillStyle = '#f2f5f0'; g.textAlign = 'center'; g.textBaseline = 'middle'; let fs = 40; g.font = `bold ${fs}px "Arial Narrow", Arial, sans-serif`; while (g.measureText(t).width > 226 && fs > 20) { fs -= 2; g.font = `bold ${fs}px "Arial Narrow", Arial, sans-serif`; } g.fillText(t, x + 128, y + 34); });
+  return asTex(c, false); })();
+defMat('blade', lam({ map: BLADE_TEX }), 1, 1, { cast: false }); PBR_OF.blade = [.42, .1];
+function blade(text, x, y, z, face) { const k = BLADES.indexOf(text), u0 = (k % 2) / 2 + .002, u1 = u0 + .496, v1 = 1 - Math.floor(k / 2) / 8 - .002, v0 = v1 - .121, b = SB('blade'), a = .68, c = .17;
+  if (face === 's') b.quad([x - a, y - c, z], [x + a, y - c, z], [x + a, y + c, z], [x - a, y + c, z], 0, 0, 1, u0, v0, u1, v1);
+  else if (face === 'n') b.quad([x + a, y - c, z], [x - a, y - c, z], [x - a, y + c, z], [x + a, y + c, z], 0, 0, -1, u0, v0, u1, v1);
+  else if (face === 'e') b.quad([x, y - c, z + a], [x, y - c, z - a], [x, y + c, z - a], [x, y + c, z + a], 1, 0, 0, u0, v0, u1, v1);
+  else b.quad([x, y - c, z - a], [x, y - c, z + a], [x, y + c, z + a], [x, y + c, z - a], -1, 0, 0, u0, v0, u1, v1); }
+const SIGNALS = [], SIG_AT = {}, SIG_LAMPS = [];   // the signalled crossings; SIG_AT[i + j * 16]; every lamp in every signal head
+const blockKind = (i, j) => i < 0 || j < 0 || i >= NX || j >= NZ ? '' : DIST[j][i];
+const nearKinds = (i, j) => blockKind(i - 1, j - 1) + blockKind(i, j - 1) + blockKind(i - 1, j) + blockKind(i, j);
+const propNear = (x, z, r) => PROPS.some(p => hyp(p.x - x, p.z - z) < r);
+function dressStreets() {
+  for (let j = 0; j <= NZ; j++) for (let i = 0; i < NX; i++) roadStretch(RX(i), RZ(j), RX(i + 1), RZ(j), nearKinds(i + 1, j));
+  for (let i = 0; i <= NX; i++) for (let j = 0; j < NZ; j++) roadStretch(RX(i), RZ(j), RX(i), RZ(j + 1), nearKinds(i, j + 1));
+  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) crossing(i, j);
+  VENTS.forEach(v => decalG(v[0], v[1], .034, .95, .95, 0, 10));
+  PARK.forEach(p => { if (WD() < .55) decalG(p.x + wdr(-1, 1), p.z + wdr(-1, 1), .022, wdr(1.2, 2.6), wdr(1.2, 2.6), WD() * 3, 0); });
+  // the pavements: stains, gum, litter, a crack or two
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const L = lotOf(i, j); for (let k = 0; k < 9; k++) { const s = (WD() * 4) | 0, t = WD(), o = WD() * (WALK - .8) + .4;
+    const x = s < 2 ? L.x0 + t * (L.x1 - L.x0) : s === 2 ? L.x0 - o : L.x1 + o, z = s === 0 ? L.z0 - o : s === 1 ? L.z1 + o : L.z0 + t * (L.z1 - L.z0), r = WD();
+    decalG(x, z, CURB + .045, wdr(1, 2.2), wdr(1, 2.2), WD() * 3, r < .55 ? 8 : r < .8 ? 11 : 12); } }
+  // utility poles and their wires: along the house and factory streets, one side of each
+  const lines = {};
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) if ('hiJ'.includes(blockKind(i, j))) { const L = lotOf(i, j), z = L.z0 - WALK + .55; (lines[z] || (lines[z] = [])).push(...utilityPoles(L.x0 + 3, L.x1 - 3, z)); }
+  for (const z in lines) { const xs = lines[z].sort((a, b) => a - b); for (let k = 0; k + 1 < xs.length; k++) if (xs[k + 1] - xs[k] < 31) [-1, 0, 1].forEach(o => POLE_WIRES.push([xs[k], +z + o, xs[k + 1], +z + o])); }
+  buildWires();
+}
+// one stretch of road between two crossings: tyre wear down each lane, then patches, cracks, the odd pothole, oil where cars wait
+function roadStretch(ax, az, bx, bz, kinds) {
+  const len = hyp(bx - ax, bz - az), dx = (bx - ax) / len, dz = (bz - az) / len, ang = Math.atan2(dx, dz), x0 = ax + dx * 7, z0 = az + dz * 7, L = len - 14;
+  const rough = /[iJNYQRgdD]/.test(kinds) ? 1.7 : /[hp]/.test(kinds) ? 1.25 : .8, at = (t, o) => [x0 + dx * L * t - dz * o, z0 + dz * L * t + dx * o];
+  [-1, 1].forEach(sd => [-.8, .8].forEach(o => { const c = at(.5, sd * DLANE + o); decalG(c[0], c[1], .02, .9, L, ang, 3); }));
+  const scatter = (n, fn) => { for (let k = 0; k < n; k++) fn(at(.04 + WD() * .92, (WD() - .5) * 10)); };
+  scatter(Math.round(2.2 * rough), c => decalG(c[0], c[1], .024, wdr(1.8, 4.5), wdr(2, 7), ang + (WD() < .5 ? 0 : PI / 2), 6));
+  scatter(Math.round(3 * rough), c => decalG(c[0], c[1], .028, wdr(1.2, 2.2), wdr(3, 7), ang + (WD() < .6 ? 0 : PI / 2) + (WD() - .5) * .3, 4));
+  scatter(WD() < .55 * rough ? 1 + (WD() < .3 * rough ? 1 : 0) : 0, c => decalG(c[0], c[1], .032, wdr(.7, 1.5), wdr(.7, 1.5), WD() * 6, 5));
+  scatter(Math.round(2 * rough), c => decalG(c[0], c[1], .026, wdr(1, 2.5), wdr(1, 2.5), WD() * 6, 0));
+  [.04, .96].forEach(t => [-1, 1].forEach(sd => { if (WD() < .7) { const c = at(t + (t < .5 ? .05 : -.05), sd * DLANE); decalG(c[0], c[1], .03, 1.6, 2.4, ang, 0); } }));   // where the cars stand waiting
+}
+// a crossing: storm drains at the kerbs; signals where the streets are busy; the street names on the north-east corner
+function crossing(i, j) {
+  const x = RX(i), z = RZ(j), k = nearKinds(i, j), c = ROAD / 2 - .33;
+  [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(q => { const ex = x + q[0] * 12, nz = z + q[1] * 12;
+    if (ex > 4 && ex < CITY.w - 4) decalG(ex, z + q[1] * c, .03, .55, 1.1, PI / 2, 7); if (nz > 4 && nz < CITY.d - 4) decalG(x + q[0] * c, nz, .03, .55, 1.1, 0, 7); });
+  const busy = i > 0 && j > 0 && i < NX && j < NZ && ([...k].filter(ch => 'otzVMlKSCLAB'.includes(ch)).length >= 2 || (i + j) % 3 === 0);
+  if (busy) signalAt(i, j);
+  const px = x + 7.1, pz = z - 7.1;
+  if (!busy) { if (propNear(px, pz, 1)) return; dbox(px - .045, px + .045, CURB, CURB + 3.75, pz - .045, pz + .045, 0x2f3437, 'flat', 31); solid(px - .06, px + .06, CURB, CURB + 3.75, pz - .06, pz + .06, { n: false }); }
+  const y = CURB + (busy ? 4.4 : 3.3);
+  if (STR[j]) { dbox(px - .68, px + .68, y - .17, y + .17, pz - .04, pz + .04, 0x1d5c3a, 'flat', 51); blade(STR[j], px, y, pz + .045, 's'); blade(STR[j], px, y, pz - .045, 'n'); }
+  if (AVE[i]) { dbox(px - .04, px + .04, y + .21, y + .55, pz - .68, pz + .68, 0x1d5c3a, 'flat', 60); blade(AVE[i], px + .045, y + .38, pz, 'e'); blade(AVE[i], px - .045, y + .38, pz, 'w'); }
+}
+// a signalled crossing: for each way in, a pole on the far right corner with a mast arm out over the lanes and a three-lamp head facing
+// the oncoming traffic; walk signals on every pole. The stop signs these corners had are taken away.
+const SIG_SET = [{ c: [1, -1], arm: [-1, 0], n: [0, 1], axis: 0 }, { c: [-1, 1], arm: [1, 0], n: [0, -1], axis: 0 },   // northbound, southbound
+                 { c: [1, 1], arm: [0, -1], n: [-1, 0], axis: 1 }, { c: [-1, -1], arm: [0, 1], n: [1, 0], axis: 1 }];  // eastbound, westbound
+function signalAt(i, j) {
+  const x = RX(i), z = RZ(j), cr = 7, S = { i, j, x, z, off: Math.floor(WD() * 4) * 8 }, si = SIGNALS.length; SIGNALS.push(S); SIG_AT[i + j * 16] = S;
+  const pole = 0x30352d, head = 0x23261f;
+  SIG_SET.forEach(q => {
+    const px = x + q.c[0] * cr, pz = z + q.c[1] * cr, armL = 4.6, [ax, az] = q.arm, [nx, nz] = q.n;
+    for (let p = PROPS.length - 1; p >= 0; p--) if (PROPS[p].type === 'sign' && hyp(PROPS[p].x - px, PROPS[p].z - pz) < 1.6) { PROPS[p].box.off = true; PROPS.splice(p, 1); }
+    dcyl(px, CURB, CURB + 6.3, pz, .12, pole, 10, 'm'); solid(px - .15, px + .15, CURB, CURB + 6.3, pz - .15, pz + .15, { n: false });
+    dcyl(px, CURB, CURB + .5, pz, .2, pole, 10, 'm');
+    const ex = px + ax * armL, ez = pz + az * armL, w = .055; dbox(Math.min(px, ex) - w, Math.max(px, ex) + w, CURB + 6.02, CURB + 6.14, Math.min(pz, ez) - w, Math.max(pz, ez) + w, pole, 'flat');
+    const hx = px + ax * (armL - .2), hz = pz + az * (armL - .2), hw = nz ? .19 : .14, hd = nx ? .19 : .14, y0 = CURB + 4.84;
+    dbox(hx - hw, hx + hw, y0, y0 + 1.12, hz - hd, hz + hd, head, 'flat'); dbox(hx - (nz ? .32 : .02) - nx * .16, hx + (nz ? .32 : .02) - nx * .16, y0 - .1, y0 + 1.22, hz - (nx ? .32 : .02) - nz * .16, hz + (nx ? .32 : .02) - nz * .16, 0x1a1c18, 'flat');
+    dbox(hx - .02, hx + .02, y0 + 1.12, CURB + 6.02, hz - .02, hz + .02, pole, 'flat');
+    [0, 1, 2].forEach(l => { const ly = y0 + .9 - l * .35, fx = hx + nx * .15, fz = hz + nz * .15; SIG_LAMPS.push({ x: fx + nx * .005, y: ly, z: fz + nz * .005, nx, nz, sig: si, axis: q.axis, kind: l });
+      dbox(fx - (nz ? .15 : 0) + Math.min(0, nx * .2), fx + (nz ? .15 : 0) + Math.max(0, nx * .2), ly + .14, ly + .16, fz - (nx ? .15 : 0) + Math.min(0, nz * .2), fz + (nx ? .15 : 0) + Math.max(0, nz * .2), head, 'flat'); });   // a hood over each lamp
+    // walk signals: one looking across each of the two crossings that meet at this corner
+    [[-q.c[0], 0, 1], [0, -q.c[1], 0]].forEach(wq => { const [wx, wz, axis] = wq, bx = px + wx * .2, bz = pz + wz * .2, y = CURB + 2.55;
+      dbox(bx - (wz ? .16 : .1), bx + (wz ? .16 : .1), y, y + .34, bz - (wx ? .16 : .1), bz + (wx ? .16 : .1), head, 'flat');
+      SIG_LAMPS.push({ x: bx + wx * .105, y: y + .17, z: bz + wz * .105, nx: wx, nz: wz, sig: si, axis, kind: 3 }); });
+  });
+}
+// a run of wooden poles along a kerb, every 25 m or so: crossarm, insulators, now and then a transformer
+const POLE_WIRES = [], WIRES = { m: null };
+function utilityPoles(xa, xb, z) {
+  const xs = [], n = Math.max(1, Math.round((xb - xa) / 25));
+  for (let k = 0; k <= n; k++) { let px = xa + (xb - xa) * k / n; if (propNear(px, z, 1.3)) px += 1.8; if (propNear(px, z, 1.3)) continue;
+    dcyl(px, CURB, CURB + 9.2, z, .15, 0x5b4a3a, 8, 'm', .12); solid(px - .17, px + .17, CURB, CURB + 9.2, z - .17, z + .17, { n: false });
+    dbox(px - .07, px + .07, CURB + 8.35, CURB + 8.5, z - 1.15, z + 1.15, 0x5b4a3a, 'flat'); [-1, 0, 1].forEach(o => dbox(px - .04, px + .04, CURB + 8.5, CURB + 8.66, z + o - .04, z + o + .04, 0x8a8f86));
+    if (WD() < .3) dcyl(px + .36, CURB + 6.4, CURB + 7.5, z, .27, 0x6e7376, 10);
+    xs.push(px); }
+  return xs;
+}
+function buildWires() {
+  const pos = [], y = CURB + 8.66;
+  POLE_WIRES.forEach(w => { const n = 12, sag = t => Math.sin(t * PI) * .6; for (let s = 0; s < n; s++) { const t0 = s / n, t1 = (s + 1) / n; pos.push(lerp(w[0], w[2], t0), y - sag(t0), w[1], lerp(w[0], w[2], t1), y - sag(t1), w[3]); } });
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); WIRES.m = new T.LineSegments(g, new T.LineBasicMaterial({ color: 0x151515 })); WIRES.m.matrixAutoUpdate = false; scene.add(WIRES.m);
+}
+// --- the whole pass (from 43-assemble.js, before the static meshes are made)
+// houses (41-districts.js) are not building()s: they get the dirt along the foot of their walls and nothing else
+function dressHouses() { FOOT.forEach(f => { if (f[4] !== 'h' || f[2] - f[0] < 2) return; const B = { x0: f[0], z0: f[1], x1: f[2], z1: f[3] }; ['n', 's', 'e', 'w'].forEach(k => grimeRun(faceFrame(k, B), CURB, CURB + 1.1, 1, .7)); }); }
+function dressCity() { BLDS.forEach(dressBuilding); dressHouses(); dressStreets(); PROPS.forEach((p, i) => { p.i = i; }); buildSignalLamps(); finishDetail(); }
+// --- the signals: every lamp is one instance; signalsTick colours them from the cycle. The clock is the time of day, which every
+//     player shares, so all see the same lights and the traffic (run by the host) stops for the same reds.
+//     32 s a cycle: north-south green 12, amber 3, all red 1; east-west the same. 2400 s a day, 75 cycles: it wraps cleanly.
+const sigClock = () => G.tod * 100;
+function signalPhase(S, axis, t) { const c = ((t + S.off) % 32 + 32) % 32, ns = c < 12 ? 0 : c < 15 ? 1 : 2, ew = c >= 16 && c < 28 ? 0 : c >= 28 && c < 31 ? 1 : 2; return axis === 0 ? ns : ew; }   // 0 green, 1 amber, 2 red
+const SIG_LAMP = { mesh: null, key: '' };
+function buildSignalLamps() {
+  const g = new T.CircleGeometry(.12, 14), m = new T.Matrix4(), q = new T.Quaternion(), e = new T.Euler(), p = new T.Vector3(), one = new T.Vector3(1, 1, 1), sq = new T.Vector3(1.25, 1.25, 1);
+  const M = SIG_LAMP.mesh = new T.InstancedMesh(g, new T.MeshBasicMaterial({ color: 0xffffff }), Math.max(1, SIG_LAMPS.length));
+  SIG_LAMPS.forEach((L, k) => { e.set(0, Math.atan2(L.nx, L.nz), 0); m.compose(p.set(L.x, L.y, L.z), q.setFromEuler(e), L.kind === 3 ? sq : one); M.setMatrixAt(k, m); M.setColorAt(k, SIG_OFF); });
+  M.count = SIG_LAMPS.length; M.frustumCulled = false; scene.add(M);
+}
+const SIG_C = [new T.Color(3, .14, .05), new T.Color(3, 1.45, .04), new T.Color(.12, 2.7, 1.05), new T.Color(2.5, 2.55, 2.6), new T.Color(3, 1, .08)], SIG_OFF = new T.Color(.035, .036, .032), _sigc = new T.Color();
+function signalsTick() {
+  const M = SIG_LAMP.mesh; if (!M || !SIG_LAMPS.length) return; const t = sigClock(), blink = (t * 2 % 2) < 1, hdr = POST.on ? 1 : .6, key = Math.floor(t * 4) + (POST.on ? 'h' : 'l'); if (key === SIG_LAMP.key) return; SIG_LAMP.key = key;
+  for (let k = 0; k < SIG_LAMPS.length; k++) { const L = SIG_LAMPS[k], ph = signalPhase(SIGNALS[L.sig], L.axis, t);
+    if (L.kind === 3) { if (ph === 0) _sigc.copy(SIG_C[3]).multiplyScalar(hdr); else if (ph === 2 || blink) _sigc.copy(SIG_C[4]).multiplyScalar(hdr); else _sigc.copy(SIG_OFF); }
+    else { const on = (L.kind === 0 && ph === 2) || (L.kind === 1 && ph === 1) || (L.kind === 2 && ph === 0); if (on) _sigc.copy(SIG_C[L.kind]).multiplyScalar(hdr); else _sigc.copy(SIG_OFF); }
+    M.setColorAt(k, _sigc); }
+  M.instanceColor.needsUpdate = true;
+}
+// for the traffic: is the way into crossing `to`, from crossing `from`, shut? -> 0 go, 1 amber, 2 red
+function signalAhead(from, to) { const S = SIG_AT[to[0] + to[1] * 16]; if (!S) return 0; return signalPhase(S, from[0] === to[0] ? 0 : 1, sigClock()); }
+
 /* ---------------------------------------------------------------------
    4d. Put the city together: one generator per block, then kerbs, lamps, parking and the walking graph.
    --------------------------------------------------------------------- */
@@ -2273,6 +2636,7 @@ ZONES.sort((a, b) => a.id < b.id ? -1 : 1);
 for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) if ((i * 7 + j * 3) % 5 === 0) { const x = RX(i) + 2.6, z = RZ(j) + 14; paint(x - .42, z - .42, x + .42, z + .42, 0x1c1e20); VENTS.push([x, z]); }   // manholes that breathe steam
 billboard(-5.6, 150, 8, 'CALDER LAGER · BREWED BY THE LAKE', 'gold', 'e'); billboard(-5.6, 390, 8, 'WKPC 94.7 · THE BLOCK', 'neon', 'e'); billboard(260, -5.6, 8, 'INJURED? CALL 555-0144', 'white', 's'); billboard(560, -5.6, 8, 'PORT CALDER LOTTERY · $4 MILLION', 'green', 's');
 
+if (!window.__PC_NODRESS) dressCity();   // (the flag is for before/after pictures in testing) ledges, sills, grime, signals, street names, poles and wires: see 42.8-dress.js
 // --- knockable street furniture: one instanced mesh per kind
 const PROP_GEO = {};
 { const b = new GeoBuf(), st = hexCol(0x3a4046);
@@ -4141,12 +4505,12 @@ function aiStart(c, mode, dest) {
   A.next = aiNext(A); c.ai = A; c.asleep = false; c.inp.hb = false; return A;
 }
 function aiBlocked(c, reach, yieldTo) {   // -> [gap ahead in metres, speed of what is there, 1 if it is a person]
-  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); let gap = 1e9, v = 99, who = 0;
-  for (let i = 0; i < cars.length; i++) { const o = cars[i]; if (o === c) continue; const dx = o.x - c.x, dz = o.z - c.z; if (dx * dx + dz * dz > (reach + 6) * (reach + 6)) continue; const ah = dx * fx + dz * fz, lat = dx * rx + dz * rz, turned = Math.abs(Math.sin(o.yaw - c.yaw)), hwid = 1.25 + turned * (o.spec.len / 2 - 1); if (ah < 1 || Math.abs(lat) > hwid + .5) continue; const g = ah - c.spec.len / 2 - lerp(o.spec.len / 2, 1, turned); if (g < gap && g < reach) { gap = g; v = Math.max(0, o.vx * fx + o.vz * fz); } }
-  if (yieldTo) eachActor(a => { if (a.dead || a.car || a.gone || !yieldTo(a)) return; const dx = a.x - c.x, dz = a.z - c.z, ah = dx * fx + dz * fz; if (ah < 1 || ah > reach * .8 + 3 || Math.abs(dx * rx + dz * rz) > 1.5 || Math.abs(a.y - c.y) > 1.5) return; const g = ah - c.spec.len / 2 - .4; if (g < gap) { gap = g; v = 0; who = 1; } });
-  _blk[0] = gap; _blk[1] = v; _blk[2] = who; return _blk;
+  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); let gap = 1e9, v = 99, who = 0, car = null;
+  for (let i = 0; i < cars.length; i++) { const o = cars[i]; if (o === c) continue; const dx = o.x - c.x, dz = o.z - c.z; if (dx * dx + dz * dz > (reach + 6) * (reach + 6)) continue; const ah = dx * fx + dz * fz, lat = dx * rx + dz * rz, turned = Math.abs(Math.sin(o.yaw - c.yaw)), hwid = 1.25 + turned * (o.spec.len / 2 - 1); if (ah < 1 || Math.abs(lat) > hwid + .5) continue; const g = ah - c.spec.len / 2 - lerp(o.spec.len / 2, 1, turned); if (g < gap && g < reach) { gap = g; v = Math.max(0, o.vx * fx + o.vz * fz); car = o; } }
+  if (yieldTo) eachActor(a => { if (a.dead || a.car || a.gone || !yieldTo(a)) return; const dx = a.x - c.x, dz = a.z - c.z, ah = dx * fx + dz * fz; if (ah < 1 || ah > reach * .8 + 3 || Math.abs(dx * rx + dz * rz) > 1.5 || Math.abs(a.y - c.y) > 1.5) return; const g = ah - c.spec.len / 2 - .4; if (g < gap) { gap = g; v = 0; who = 1; car = null; } });
+  _blk[0] = gap; _blk[1] = v; _blk[2] = who; _blk[3] = car; return _blk;
 }
-const _blk = [0, 0, 0];
+const _blk = [0, 0, 0, null];
 function driveAI(c, dt) {
   const A = c.ai, inp = c.inp, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, sp = Math.abs(vf); A.age += dt;
   if (A.wait > 0) { A.wait -= dt; inp.thr = 0; inp.steer = 0; inp.hb = true; return; }
@@ -4163,9 +4527,16 @@ function driveAI(c, dt) {
   if (turning && toX < 34) cruise = Math.min(cruise, lerp(6, cruise, clamp((toX - 3) / 31, 0, 1))); else if (toX < 10 && toX > -10 && (A.mode === 'traffic' || A.mode === 'bus')) cruise = Math.min(cruise, A.mode === 'bus' ? 6.5 : 9);
   if (Math.abs(diff) > .45) cruise = Math.min(cruise, 6.5);
   if (last && s > L - 34) { cruise = Math.min(cruise, Math.max(0, (L - 15 - s) * .7)); if (s > L - 22 && sp < 1.2) A.done = true; }
+  // traffic signals (42.8-dress.js): stop at the line on red, and on amber if there is room to stop without standing on the brakes
+  A.red = false; if ((A.mode === 'traffic' || A.mode === 'bus') && A.panic <= 0) { const ph = signalAhead(A.from, A.to);
+    if (ph) { const toStop = L - 11 - c.spec.len / 2 - s, need = sp * sp / (ph === 2 ? 13 : 8); if (toStop > -.6 && toStop > need + (ph === 2 ? -1.5 : 1)) { cruise = Math.min(cruise, toStop > 1.2 ? Math.sqrt(6 * (toStop - 1)) : 0); A.red = true; } } }   // brake on a curve that ends a metre short of the line
   const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
   if (A.mode === 'cop' && gap < 20 && A.passT <= 0) { A.off = -1.8; A.passT = 3.5; }
-  if (gap < 1e8) { cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8); if (gap < 6 && sp < 1) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0; if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } } }   // a person who will not move: back up and go round else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
+  A.q = !!(blk[3] && blk[3].ai && (blk[3].ai.red || blk[3].ai.q) && gap < 9);   // in a queue at a red light: wait, no horn, no going round
+  if (gap < 1e8) cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8);
+  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0;
+    if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } }   // a person who will not move: back up and go round
+  else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
   if (A.passT > 0 && gap > 1e8) cruise = Math.min(cruise, 9);
   if (A.passT > 0 && blk[2] && gap > 1 && gap < 1e8) cruise = Math.max(cruise, 2.2);       // someone is standing in the road and is not going to move: edge round them
   // stuck against something: back up and try again
@@ -6904,7 +7275,7 @@ NET.host = dt => {
   const sk = a => CREWS.map((c, t) => skullsOf(a.gn ? a.gn[t] : 0)).join('');   // each crew's skulls on this player, one digit each
   const pl = [[0, NET.me || '', P.team, P.kills | 0, P.deaths | 0, 0, P.heat | 0, P.evade ? 1 : 0, sk(P), 0, P.rank || 1]]; for (const k in NET.remotes) { const r = NET.remotes[k]; if (NET.slots[k] === undefined || !(r.lastS && followsMe(r.lastS))) continue; pl.push([r.slot, k, r.team, r.kills | 0, r.deaths | 0, r.earn | 0, r.heat | 0, r.evade ? 1 : 0, sk(r), r.xp | 0, r.rank | 0]); }
   const kn = []; for (let i = 0; i < PROPS.length && kn.length < 60; i++) if (PROPS[i].down) kn.push(i);
-  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 10) / 10, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0, ks: casesWire(), wx: WX.k };
+  const W = { z: ZS.map(s => B36(s.owner + 1, 1) + B36(s.by + 1, 1) + B36(clamp(s.prog, 0, 1) * 35, 1) + (s.hot ? '1' : '0') + B36(clamp(s.ctrl, 0, 100) * .35, 1)).join(''), d: Math.round(G.tod * 1000) / 1000, o: [G.botsPer, G.cops ? 1 : 0, G.rivals ? 1 : 0], c: G.crew, r: ROBS.reduce((m, r, i) => m | (tillOpen(i) ? 1 << i : 0), 0), e: evWire(), pm: prepMask(), gc: G.prep.car | 0, ks: casesWire(), wx: WX.k };
   let bb = encBots(null); const cc = encCars();
   const msg = Object.assign(myBody(), { t: 'h', ep: NET.ep, fw: null, W, bs: bb[0], bv: bb[1], bc: bb[2], cs: cc[0], cp: cc[1], pk: encPicks(), pl, d: Object.keys(NET.dmgOut).map(k => NET.dmgOut[k]), ev: EVQ, kn, h: null, hp: prune(NET.hp, 24), q: null, kd: null, ld: null, rd: null });
   NET.bytes = JSON.stringify(msg).length; NET.cut = 0; if (NET.bytes > NET_MAX - 150) { msg.ev = EVQ.slice(-5); msg.kn = kn.slice(0, 20); NET.bytes = JSON.stringify(msg).length; }
@@ -7609,7 +7980,7 @@ function visuals(dt, now) {
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
   updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt); coopVisuals(dt); caseVisuals(dt);
-  updateProps(dt); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
+  updateProps(dt); signalsTick(); detailTick(); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
   if (G.state !== 'menu') updateHud(dt);
 }
 let last = performance.now();
@@ -7632,7 +8003,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

@@ -21,6 +21,16 @@ An open-world crew game that runs in the browser. One lake-port city and its air
 
 Plays with a keyboard and mouse, a controller, or on a phone or tablet held sideways. The controls are listed on the menu.
 
+## Graphics
+
+Settings → Graphics: **Low, Medium, High, Ultra or Custom** (Advanced lets you set resolution, shadows, textures and detail, view distance, anti-aliasing, reflections, ambient occlusion, bloom, depth of field and motion blur one by one). Phones and tablets start on Low; if the frame rate stays low the game steps down a preset by itself (twice at most).
+
+- **Light.** Medium and up render in high dynamic range with physically based materials: a sun and sky that move with the hour, reflections of the sky in glass, paint and wet streets, soft shadows, ambient occlusion in corners and under things, bloom round lamps, signs and windows at night, filmic tone mapping and a colour grade that shifts from day to dusk to night, and fog that thickens low down and glows toward the sun. Low keeps the old, cheaper lighting.
+- **The city up close.** Buildings have cornices, plinths and corner piers, a sill under every window, air conditioners, balconies, front doors, rooftop plant and dirt down their walls. Roads are asphalt with aggregate in it, worn darker down the wheel tracks, with patches, sealed cracks, potholes, oil where cars wait, storm drains and manhole covers; pavements are laid in slabs. From Medium up, ground and walls have relief maps (stones, joints, mortar, window recesses). Fine detail (sills, air conditioners, vents) is left out beyond a couple of hundred metres and on Low.
+- **Streets.** Busy crossings have traffic signals that run a 32-second cycle with walk signals, the same for everyone in a session, and the traffic stops for them (it runs a red only when someone is shooting). Every crossing has its street names; house and factory streets have wooden utility poles and wires.
+
+What it is not: everything is drawn by code in a web page (no photographed textures, no scanned models), so it is detailed but not photoreal.
+
 ## Controls
 
 **Controls** on the menu (or the pause screen) lists every action on foot, in a car and flying, with two keys or buttons each. Tap a box and press the key, mouse button (side buttons too) or wheel you want; Backspace clears a box. Where two actions share a key the page says so, and the one made for the situation wins (Q is the radio in a car and the next gun on foot). Esc, `, 1–0, - and = stay as they are. **ADS** (aim down sights) can be held or toggled, and the mouse speed is on the same page.
