@@ -31,16 +31,18 @@ function weatherTick(dt) {
 }
 // --- the light: after the hour has set it (applyTod), cloud greys and dims it, fog closes it in, a wet road goes dark
 const _wg = new T.Color(), _wf = new T.Color(), WET_MATS = [['asphalt', .36], ['lot', .32], ['walk', .24], ['plaza', .2], ['concrete', .2], ['court', .22], ['dirt', .28], ['tile', .12], ['turf', .15], ['grass', .15]];
+const WET_ROUGH = { asphalt: .28, lot: .3, walk: .55, plaza: .5, concrete: .55, court: .4, dirt: .7, tile: .35, turf: .85, grass: .85 };   // how glossy each gets when soaked
 const WXL = { hemi: 0, fog: new T.Color(), top: new T.Color(), hor: new T.Color() };
 function applyWeather() {
   const c = WX.cloud, f = WX.fog, r = WX.rain, grey = (col, k) => { const l = col.r * .3 + col.g * .55 + col.b * .15; col.lerp(_wg.setRGB(l * .97, l, l * 1.06), k); };
   sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sun.castShadow = sun.intensity > .05; moon.intensity *= 1 - .75 * c;
   grey(hemi.color, c * .55); grey(hemi.groundColor, c * .4); hemi.intensity *= 1 + c * .1 - r * .12;
   grey(scene.fog.color, c * .7); grey(SKY.top, c * .85); grey(SKY.hor, c * .7); SKY.top.multiplyScalar(1 - c * .3); scene.fog.color.multiplyScalar(1 - r * .15);
-  SKY.sunAmt.value *= 1 - c * .94; SKY.night.value *= 1 - c;                                   // no sun's disc and no stars through it
+  SKY.sunAmt.value *= 1 - c * .94; SKY.cloud.value = c;                                          // the cloud layer itself hides the sun's disc, the moon and the stars
+  SKY.cLit.multiplyScalar(1 - r * .5 - c * .15); SKY.cShade.multiplyScalar(1 - r * .45); FOGU.fogSunCol.value.multiplyScalar(1 - c * .85);
   scene.fog.near = lerp(scene.fog.near * (1 - r * .35), 3, f * .92); scene.fog.far = lerp(lerp(scene.fog.far, 300, r * .8), 105, f * .9);
-  water.material.color.multiplyScalar(1 - c * .3);
-  WET_MATS.forEach(q => { const M = MATS[q[0]]; if (M) M.mat.color.setScalar(1 - q[1] * WX.wet); });
+  WATER.low.color.multiplyScalar(1 - c * .3); WATER.pbr.color.multiplyScalar(1 - c * .3); WATER.pbr.roughness = .12 + r * .1;
+  WET_MATS.forEach(q => { matsOf(q[0]).forEach(m => m.color.setScalar(1 - q[1] * WX.wet)); const M = MATS[q[0]]; if (M && M.pbr && M.pbr.isMeshStandardMaterial) { const b = (PBR_OF[q[0]] || [.85])[0]; M.pbr.roughness = lerp(b, WET_ROUGH[q[0]] || b * .6, WX.wet); } });   // wet: darker, and shiny enough to show the sky
   WXL.hemi = hemi.intensity; WXL.fog.copy(scene.fog.color); WXL.top.copy(SKY.top); WXL.hor.copy(SKY.hor);
 }
 // --- rain: streaks in a box that travels with the camera, each one fixed in the world as it falls (so driving through it reads
@@ -91,7 +93,7 @@ function umbrellas() {
 }
 // --- every frame, on every machine
 function weatherFrame(dt) {
-  const u = rainMat.uniforms, on = WX.rain > .02 && G.state !== 'menu';
+  const u = rainMat.uniforms, on = WX.rain > .02 && G.state !== 'menu'; SKY.time.value = G.time % 20000; SKY.flash.value = WX.flash * .9; refreshEnv(false);
   rainMesh.visible = on; if (on) { u.uTime.value = G.time % 600; u.uCam.value.copy(camera.position); u.uAmt.value = WX.rain * (GFX.low ? .45 : 1); u.uWind.value.set(Math.cos(.7) * WX.wind * .32, Math.sin(.7) * WX.wind * .32);
     u.uCol.value.setRGB(lerp(.78, .5, ENV.night), lerp(.82, .56, ENV.night), lerp(.9, .66, ENV.night)); u.uOp.value = lerp(.38, .26, ENV.night) + WX.flash * .3; }
   if (WX.flash > 0 || WX.lit) { const k = WX.flash; hemi.intensity = WXL.hemi + k * .95; scene.fog.color.copy(WXL.fog).lerp(_wf.setRGB(.62, .66, .8), k * .35); SKY.top.copy(WXL.top).lerp(_wf.setRGB(.5, .55, .72), k * .5); SKY.hor.copy(WXL.hor).lerp(_wf.setRGB(.6, .64, .8), k * .4); WX.lit = k > 0; }

@@ -310,6 +310,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 #dev :focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 @media (max-width:640px){#feed{display:none}#turf .zs b{width:21px;height:21px;font-size:13px}#turf .zs{gap:2px}.crews{grid-template-columns:1fr 1fr}#board{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){#h-banner,#h-area,#h-radio{transition:none}#h-gain.on{animation:none;opacity:1}#turf .zs b.hot,#h-stars.evade{animation:none}#h-stars.evade{opacity:.6}}
+  .row.gq { flex-wrap: wrap; gap: 6px 14px; } .row.gq label { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; } .row.gq select:disabled { opacity: .45; }
 </style>
 </head>
 <body>
@@ -400,7 +401,8 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
       </dl>
       <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. ADS aims down the sights (tap on, tap off, or hold: your pick below). USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work. Move buttons also changes what any button does, hides the ones you never use and adds buttons of your own. A controller works too.</p>
       <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><label for="set-tads">ADS button</label><select id="set-tads"><option value="toggle">Tap on, tap off</option><option value="hold">Hold</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
-      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="high">High</option><option value="low">Low (faster)</option></select><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
+      <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option><option value="custom">Custom</option></select><button class="btn sm" id="gq-more" type="button">Advanced</button><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
+      <div class="row gq" id="gq-adv" hidden><label>Resolution <select id="gq-res"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><label>Shadows <select id="gq-shadow"><option value="0">Off</option><option value="1">Low</option><option value="2">High</option><option value="3">Ultra</option></select></label><label>Textures <select id="gq-tex"><option value="0">Low</option><option value="1">Medium</option><option value="2">High</option></select></label><label>View distance <select id="gq-view"><option value="0">Near</option><option value="1">Medium</option><option value="2">Far</option><option value="3">Max</option></select></label><label>Reflections <select id="gq-env"><option value="0">Off</option><option value="1">On</option></select></label><label>Post-processing <select id="gq-post"><option value="0">Off</option><option value="1">On</option></select></label><label>Anti-aliasing <select id="gq-aa"><option value="0">Off</option><option value="1">FXAA</option></select></label><label>Ambient occlusion <select id="gq-ao"><option value="0">Off</option><option value="1">Half</option><option value="2">Full</option></select></label><label>Bloom <select id="gq-bloom"><option value="0">Off</option><option value="1">On</option></select></label><label>Depth of field <select id="gq-dof"><option value="0">Off</option><option value="1">On</option></select></label><label>Motion blur <select id="gq-mblur"><option value="0">Off</option><option value="1">On</option></select></label></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
       <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns, rank, businesses, your car and your turf are saved as you play, and your turf and businesses keep earning while you are away. A player's headshot kills in one shot. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
     </div>
@@ -418,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 13 Nov 22:47 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 12:30 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -525,6 +527,12 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
 const $ = id => document.getElementById(id);
 if (!window.THREE) { $('o-text').textContent = 'The 3D library could not load, so the game cannot start here. Reload the page to try again.'; $('deploy').hidden = true; return; }
 const T = THREE, rand = Math.random, PI = Math.PI, TAU = PI * 2, hyp = Math.hypot;
+// Colour: every colour in this game is written as it should look on screen (sRGB). The renderer lights the city in linear light
+// and turns the result back into sRGB at the very end, so each colour is converted on the way in: hex colours here, vertex
+// colours in GeoBuf (hexCol), and every canvas texture is marked as sRGB.
+{ const sh = T.Color.prototype.setHex; T.Color.prototype.setHex = function (h) { sh.call(this, h); return this.convertSRGBToLinear(); };
+  const CT = T.CanvasTexture; T.CanvasTexture = function (a, b, c, d, e, f, g, h, i) { const t = new CT(a, b, c, d, e, f, g, h, i); t.encoding = T.sRGBEncoding; return t; }; T.CanvasTexture.prototype = CT.prototype; }
+const s2l = v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);   // one sRGB channel (0..1) to linear
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t;
 const wrapPi = a => { a = (a + PI) % TAU; if (a < 0) a += TAU; return a - PI; };
 const angTo = (a, b) => wrapPi(b - a);                 // shortest signed turn from a to b
@@ -623,6 +631,121 @@ const WX = { k: 0, next: 0, cloud: 0, rain: 0, fog: 0, wind: .2, wet: 0, flash: 
 const sideOf = v => (v | 0) === TEAM_COP ? TEAM_COP : clamp(v | 0, 0, NCREW - 1);
 const HANDLES = ['Ghost', 'Tiny', 'Smoke', 'Lucky', 'Ace', 'Duke', 'Rook', 'Juno', 'Mako', 'Onyx', 'Vega', 'Nix', 'Zed', 'Kilo', 'Moss', 'Rio', 'Sable', 'Jinx', 'Tank', 'Dot', 'Wren', 'Cruz', 'Bishop', 'Echo', 'Pax', 'Lark', 'Ozzy', 'Remy', 'Sol', 'Trey', 'Ivy', 'Knox'];
 
+/* three.js r128 post-processing (MIT, (c) three.js authors): EffectComposer, RenderPass, ShaderPass, CopyShader, LuminosityHighPassShader,
+   UnrealBloomPass. Bundled from node_modules/three/examples/js by tools/fxlib.sh. */
+(function(){class n{constructor(t,i){if(this.renderer=t,i===void 0){const s={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat},r=t.getSize(new THREE.Vector2);this._pixelRatio=t.getPixelRatio(),this._width=r.width,this._height=r.height,i=new THREE.WebGLRenderTarget(this._width*this._pixelRatio,this._height*this._pixelRatio,s),i.texture.name="EffectComposer.rt1"}else this._pixelRatio=1,this._width=i.width,this._height=i.height;this.renderTarget1=i,this.renderTarget2=i.clone(),this.renderTarget2.texture.name="EffectComposer.rt2",this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2,this.renderToScreen=!0,this.passes=[],THREE.CopyShader===void 0&&console.error("THREE.EffectComposer relies on THREE.CopyShader"),THREE.ShaderPass===void 0&&console.error("THREE.EffectComposer relies on THREE.ShaderPass"),this.copyPass=new THREE.ShaderPass(THREE.CopyShader),this.clock=new THREE.Clock}swapBuffers(){const t=this.readBuffer;this.readBuffer=this.writeBuffer,this.writeBuffer=t}addPass(t){this.passes.push(t),t.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}insertPass(t,i){this.passes.splice(i,0,t),t.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}removePass(t){const i=this.passes.indexOf(t);i!==-1&&this.passes.splice(i,1)}isLastEnabledPass(t){for(let i=t+1;i<this.passes.length;i++)if(this.passes[i].enabled)return!1;return!0}render(t){t===void 0&&(t=this.clock.getDelta());const i=this.renderer.getRenderTarget();let s=!1;for(let r=0,f=this.passes.length;r<f;r++){const u=this.passes[r];if(u.enabled!==!1){if(u.renderToScreen=this.renderToScreen&&this.isLastEnabledPass(r),u.render(this.renderer,this.writeBuffer,this.readBuffer,t,s),u.needsSwap){if(s){const d=this.renderer.getContext(),h=this.renderer.state.buffers.stencil;h.setFunc(d.NOTEQUAL,1,4294967295),this.copyPass.render(this.renderer,this.writeBuffer,this.readBuffer,t),h.setFunc(d.EQUAL,1,4294967295)}this.swapBuffers()}THREE.MaskPass!==void 0&&(u instanceof THREE.MaskPass?s=!0:u instanceof THREE.ClearMaskPass&&(s=!1))}}this.renderer.setRenderTarget(i)}reset(t){if(t===void 0){const i=this.renderer.getSize(new THREE.Vector2);this._pixelRatio=this.renderer.getPixelRatio(),this._width=i.width,this._height=i.height,t=this.renderTarget1.clone(),t.setSize(this._width*this._pixelRatio,this._height*this._pixelRatio)}this.renderTarget1.dispose(),this.renderTarget2.dispose(),this.renderTarget1=t,this.renderTarget2=t.clone(),this.writeBuffer=this.renderTarget1,this.readBuffer=this.renderTarget2}setSize(t,i){this._width=t,this._height=i;const s=this._width*this._pixelRatio,r=this._height*this._pixelRatio;this.renderTarget1.setSize(s,r),this.renderTarget2.setSize(s,r);for(let f=0;f<this.passes.length;f++)this.passes[f].setSize(s,r)}setPixelRatio(t){this._pixelRatio=t,this.setSize(this._width,this._height)}}class c{constructor(){this.enabled=!0,this.needsSwap=!0,this.clear=!1,this.renderToScreen=!1}setSize(){}render(){console.error("THREE.Pass: .render() must be implemented in derived pass.")}}const e=new THREE.OrthographicCamera(-1,1,1,-1,0,1),o=new THREE.BufferGeometry;o.setAttribute("position",new THREE.Float32BufferAttribute([-1,3,0,-1,-1,0,3,-1,0],3)),o.setAttribute("uv",new THREE.Float32BufferAttribute([0,2,0,0,2,0],2));class a{constructor(t){this._mesh=new THREE.Mesh(o,t)}dispose(){this._mesh.geometry.dispose()}render(t){t.render(this._mesh,e)}get material(){return this._mesh.material}set material(t){this._mesh.material=t}}THREE.EffectComposer=n,THREE.FullScreenQuad=a,THREE.Pass=c})(),(function(){class n extends THREE.Pass{constructor(e,o,a,l,t){super(),this.scene=e,this.camera=o,this.overrideMaterial=a,this.clearColor=l,this.clearAlpha=t!==void 0?t:0,this.clear=!0,this.clearDepth=!1,this.needsSwap=!1,this._oldClearColor=new THREE.Color}render(e,o,a){const l=e.autoClear;e.autoClear=!1;let t,i;this.overrideMaterial!==void 0&&(i=this.scene.overrideMaterial,this.scene.overrideMaterial=this.overrideMaterial),this.clearColor&&(e.getClearColor(this._oldClearColor),t=e.getClearAlpha(),e.setClearColor(this.clearColor,this.clearAlpha)),this.clearDepth&&e.clearDepth(),e.setRenderTarget(this.renderToScreen?null:a),this.clear&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),e.render(this.scene,this.camera),this.clearColor&&e.setClearColor(this._oldClearColor,t),this.overrideMaterial!==void 0&&(this.scene.overrideMaterial=i),e.autoClear=l}}THREE.RenderPass=n})(),(function(){class n extends THREE.Pass{constructor(e,o){super(),this.textureID=o!==void 0?o:"tDiffuse",e instanceof THREE.ShaderMaterial?(this.uniforms=e.uniforms,this.material=e):e&&(this.uniforms=THREE.UniformsUtils.clone(e.uniforms),this.material=new THREE.ShaderMaterial({defines:Object.assign({},e.defines),uniforms:this.uniforms,vertexShader:e.vertexShader,fragmentShader:e.fragmentShader})),this.fsQuad=new THREE.FullScreenQuad(this.material)}render(e,o,a){this.uniforms[this.textureID]&&(this.uniforms[this.textureID].value=a.texture),this.fsQuad.material=this.material,this.renderToScreen?(e.setRenderTarget(null),this.fsQuad.render(e)):(e.setRenderTarget(o),this.clear&&e.clear(e.autoClearColor,e.autoClearDepth,e.autoClearStencil),this.fsQuad.render(e))}}THREE.ShaderPass=n})(),(function(){var n={uniforms:{tDiffuse:{value:null},opacity:{value:1}},vertexShader:`
+
+		varying vec2 vUv;
+
+		void main() {
+
+			vUv = uv;
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+		}`,fragmentShader:`
+
+		uniform float opacity;
+
+		uniform sampler2D tDiffuse;
+
+		varying vec2 vUv;
+
+		void main() {
+
+			vec4 texel = texture2D( tDiffuse, vUv );
+			gl_FragColor = opacity * texel;
+
+		}`};THREE.CopyShader=n})(),(function(){const n={shaderID:"luminosityHighPass",uniforms:{tDiffuse:{value:null},luminosityThreshold:{value:1},smoothWidth:{value:1},defaultColor:{value:new THREE.Color(0)},defaultOpacity:{value:0}},vertexShader:`
+
+		varying vec2 vUv;
+
+		void main() {
+
+			vUv = uv;
+
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+		}`,fragmentShader:`
+
+		uniform sampler2D tDiffuse;
+		uniform vec3 defaultColor;
+		uniform float defaultOpacity;
+		uniform float luminosityThreshold;
+		uniform float smoothWidth;
+
+		varying vec2 vUv;
+
+		void main() {
+
+			vec4 texel = texture2D( tDiffuse, vUv );
+
+			vec3 luma = vec3( 0.299, 0.587, 0.114 );
+
+			float v = dot( texel.xyz, luma );
+
+			vec4 outputColor = vec4( defaultColor.rgb, defaultOpacity );
+
+			float alpha = smoothstep( luminosityThreshold, luminosityThreshold + smoothWidth, v );
+
+			gl_FragColor = mix( outputColor, texel, alpha );
+
+		}`};THREE.LuminosityHighPassShader=n})(),(function(){class n extends THREE.Pass{constructor(e,o,a,l){super(),this.strength=o!==void 0?o:1,this.radius=a,this.threshold=l,this.resolution=e!==void 0?new THREE.Vector2(e.x,e.y):new THREE.Vector2(256,256),this.clearColor=new THREE.Color(0,0,0);const t={minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat};this.renderTargetsHorizontal=[],this.renderTargetsVertical=[],this.nMips=5;let i=Math.round(this.resolution.x/2),s=Math.round(this.resolution.y/2);this.renderTargetBright=new THREE.WebGLRenderTarget(i,s,t),this.renderTargetBright.texture.name="UnrealBloomPass.bright",this.renderTargetBright.texture.generateMipmaps=!1;for(let h=0;h<this.nMips;h++){const m=new THREE.WebGLRenderTarget(i,s,t);m.texture.name="UnrealBloomPass.h"+h,m.texture.generateMipmaps=!1,this.renderTargetsHorizontal.push(m);const T=new THREE.WebGLRenderTarget(i,s,t);T.texture.name="UnrealBloomPass.v"+h,T.texture.generateMipmaps=!1,this.renderTargetsVertical.push(T),i=Math.round(i/2),s=Math.round(s/2)}THREE.LuminosityHighPassShader===void 0&&console.error("THREE.UnrealBloomPass relies on THREE.LuminosityHighPassShader");const r=THREE.LuminosityHighPassShader;this.highPassUniforms=THREE.UniformsUtils.clone(r.uniforms),this.highPassUniforms.luminosityThreshold.value=l,this.highPassUniforms.smoothWidth.value=.01,this.materialHighPassFilter=new THREE.ShaderMaterial({uniforms:this.highPassUniforms,vertexShader:r.vertexShader,fragmentShader:r.fragmentShader,defines:{}}),this.separableBlurMaterials=[];const f=[3,5,7,9,11];i=Math.round(this.resolution.x/2),s=Math.round(this.resolution.y/2);for(let h=0;h<this.nMips;h++)this.separableBlurMaterials.push(this.getSeperableBlurMaterial(f[h])),this.separableBlurMaterials[h].uniforms.texSize.value=new THREE.Vector2(i,s),i=Math.round(i/2),s=Math.round(s/2);this.compositeMaterial=this.getCompositeMaterial(this.nMips),this.compositeMaterial.uniforms.blurTexture1.value=this.renderTargetsVertical[0].texture,this.compositeMaterial.uniforms.blurTexture2.value=this.renderTargetsVertical[1].texture,this.compositeMaterial.uniforms.blurTexture3.value=this.renderTargetsVertical[2].texture,this.compositeMaterial.uniforms.blurTexture4.value=this.renderTargetsVertical[3].texture,this.compositeMaterial.uniforms.blurTexture5.value=this.renderTargetsVertical[4].texture,this.compositeMaterial.uniforms.bloomStrength.value=o,this.compositeMaterial.uniforms.bloomRadius.value=.1,this.compositeMaterial.needsUpdate=!0;const u=[1,.8,.6,.4,.2];this.compositeMaterial.uniforms.bloomFactors.value=u,this.bloomTintColors=[new THREE.Vector3(1,1,1),new THREE.Vector3(1,1,1),new THREE.Vector3(1,1,1),new THREE.Vector3(1,1,1),new THREE.Vector3(1,1,1)],this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,THREE.CopyShader===void 0&&console.error("THREE.UnrealBloomPass relies on THREE.CopyShader");const d=THREE.CopyShader;this.copyUniforms=THREE.UniformsUtils.clone(d.uniforms),this.copyUniforms.opacity.value=1,this.materialCopy=new THREE.ShaderMaterial({uniforms:this.copyUniforms,vertexShader:d.vertexShader,fragmentShader:d.fragmentShader,blending:THREE.AdditiveBlending,depthTest:!1,depthWrite:!1,transparent:!0}),this.enabled=!0,this.needsSwap=!1,this._oldClearColor=new THREE.Color,this.oldClearAlpha=1,this.basic=new THREE.MeshBasicMaterial,this.fsQuad=new THREE.FullScreenQuad(null)}dispose(){for(let e=0;e<this.renderTargetsHorizontal.length;e++)this.renderTargetsHorizontal[e].dispose();for(let e=0;e<this.renderTargetsVertical.length;e++)this.renderTargetsVertical[e].dispose();this.renderTargetBright.dispose()}setSize(e,o){let a=Math.round(e/2),l=Math.round(o/2);this.renderTargetBright.setSize(a,l);for(let t=0;t<this.nMips;t++)this.renderTargetsHorizontal[t].setSize(a,l),this.renderTargetsVertical[t].setSize(a,l),this.separableBlurMaterials[t].uniforms.texSize.value=new THREE.Vector2(a,l),a=Math.round(a/2),l=Math.round(l/2)}render(e,o,a,l,t){e.getClearColor(this._oldClearColor),this.oldClearAlpha=e.getClearAlpha();const i=e.autoClear;e.autoClear=!1,e.setClearColor(this.clearColor,0),t&&e.state.buffers.stencil.setTest(!1),this.renderToScreen&&(this.fsQuad.material=this.basic,this.basic.map=a.texture,e.setRenderTarget(null),e.clear(),this.fsQuad.render(e)),this.highPassUniforms.tDiffuse.value=a.texture,this.highPassUniforms.luminosityThreshold.value=this.threshold,this.fsQuad.material=this.materialHighPassFilter,e.setRenderTarget(this.renderTargetBright),e.clear(),this.fsQuad.render(e);let s=this.renderTargetBright;for(let r=0;r<this.nMips;r++)this.fsQuad.material=this.separableBlurMaterials[r],this.separableBlurMaterials[r].uniforms.colorTexture.value=s.texture,this.separableBlurMaterials[r].uniforms.direction.value=n.BlurDirectionX,e.setRenderTarget(this.renderTargetsHorizontal[r]),e.clear(),this.fsQuad.render(e),this.separableBlurMaterials[r].uniforms.colorTexture.value=this.renderTargetsHorizontal[r].texture,this.separableBlurMaterials[r].uniforms.direction.value=n.BlurDirectionY,e.setRenderTarget(this.renderTargetsVertical[r]),e.clear(),this.fsQuad.render(e),s=this.renderTargetsVertical[r];this.fsQuad.material=this.compositeMaterial,this.compositeMaterial.uniforms.bloomStrength.value=this.strength,this.compositeMaterial.uniforms.bloomRadius.value=this.radius,this.compositeMaterial.uniforms.bloomTintColors.value=this.bloomTintColors,e.setRenderTarget(this.renderTargetsHorizontal[0]),e.clear(),this.fsQuad.render(e),this.fsQuad.material=this.materialCopy,this.copyUniforms.tDiffuse.value=this.renderTargetsHorizontal[0].texture,t&&e.state.buffers.stencil.setTest(!0),this.renderToScreen?(e.setRenderTarget(null),this.fsQuad.render(e)):(e.setRenderTarget(a),this.fsQuad.render(e)),e.setClearColor(this._oldClearColor,this.oldClearAlpha),e.autoClear=i}getSeperableBlurMaterial(e){return new THREE.ShaderMaterial({defines:{KERNEL_RADIUS:e,SIGMA:e},uniforms:{colorTexture:{value:null},texSize:{value:new THREE.Vector2(.5,.5)},direction:{value:new THREE.Vector2(.5,.5)}},vertexShader:`varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+				}`,fragmentShader:`#include <common>
+				varying vec2 vUv;
+				uniform sampler2D colorTexture;
+				uniform vec2 texSize;
+				uniform vec2 direction;
+
+				float gaussianPdf(in float x, in float sigma) {
+					return 0.39894 * exp( -0.5 * x * x/( sigma * sigma))/sigma;
+				}
+				void main() {
+					vec2 invSize = 1.0 / texSize;
+					float fSigma = float(SIGMA);
+					float weightSum = gaussianPdf(0.0, fSigma);
+					vec3 diffuseSum = texture2D( colorTexture, vUv).rgb * weightSum;
+					for( int i = 1; i < KERNEL_RADIUS; i ++ ) {
+						float x = float(i);
+						float w = gaussianPdf(x, fSigma);
+						vec2 uvOffset = direction * invSize * x;
+						vec3 sample1 = texture2D( colorTexture, vUv + uvOffset).rgb;
+						vec3 sample2 = texture2D( colorTexture, vUv - uvOffset).rgb;
+						diffuseSum += (sample1 + sample2) * w;
+						weightSum += 2.0 * w;
+					}
+					gl_FragColor = vec4(diffuseSum/weightSum, 1.0);
+				}`})}getCompositeMaterial(e){return new THREE.ShaderMaterial({defines:{NUM_MIPS:e},uniforms:{blurTexture1:{value:null},blurTexture2:{value:null},blurTexture3:{value:null},blurTexture4:{value:null},blurTexture5:{value:null},dirtTexture:{value:null},bloomStrength:{value:1},bloomFactors:{value:null},bloomTintColors:{value:null},bloomRadius:{value:0}},vertexShader:`varying vec2 vUv;
+				void main() {
+					vUv = uv;
+					gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+				}`,fragmentShader:`varying vec2 vUv;
+				uniform sampler2D blurTexture1;
+				uniform sampler2D blurTexture2;
+				uniform sampler2D blurTexture3;
+				uniform sampler2D blurTexture4;
+				uniform sampler2D blurTexture5;
+				uniform sampler2D dirtTexture;
+				uniform float bloomStrength;
+				uniform float bloomRadius;
+				uniform float bloomFactors[NUM_MIPS];
+				uniform vec3 bloomTintColors[NUM_MIPS];
+
+				float lerpBloomFactor(const in float factor) {
+					float mirrorFactor = 1.2 - factor;
+					return mix(factor, mirrorFactor, bloomRadius);
+				}
+
+				void main() {
+					gl_FragColor = bloomStrength * ( lerpBloomFactor(bloomFactors[0]) * vec4(bloomTintColors[0], 1.0) * texture2D(blurTexture1, vUv) +
+						lerpBloomFactor(bloomFactors[1]) * vec4(bloomTintColors[1], 1.0) * texture2D(blurTexture2, vUv) +
+						lerpBloomFactor(bloomFactors[2]) * vec4(bloomTintColors[2], 1.0) * texture2D(blurTexture3, vUv) +
+						lerpBloomFactor(bloomFactors[3]) * vec4(bloomTintColors[3], 1.0) * texture2D(blurTexture4, vUv) +
+						lerpBloomFactor(bloomFactors[4]) * vec4(bloomTintColors[4], 1.0) * texture2D(blurTexture5, vUv) );
+				}`})}}n.BlurDirectionX=new THREE.Vector2(1,0),n.BlurDirectionY=new THREE.Vector2(0,1),THREE.UnrealBloomPass=n})();
+
 /* =====================================================================
    2. RENDERER, SKY, LIGHT, MATERIALS
    ===================================================================== */
@@ -630,13 +753,23 @@ const canvas = $('view');
 let renderer;
 try { renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
 catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so the game cannot run here.'; $('deploy').hidden = true; return; }
-const GFX = { low: false };
-try { GFX.low = localStorage.getItem('pc-gfx') === 'low'; } catch (e) {}
-function applyGfx() {
-  renderer.setPixelRatio(GFX.low ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
-  renderer.shadowMap.enabled = !GFX.low; renderer.shadowMap.needsUpdate = true;
-  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); });
-}
+// --- graphics quality: a preset from Low (phones, old laptops) to Ultra, or each setting by hand (Custom). What each one does is in
+//     21-post.js. res caps the pixel ratio; shadow 0-3; tex 0-2 (texture filtering and size); view 0-3 (how far you see); aa 0/1 (FXAA);
+//     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
+//     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
+const GQ_PRESETS = {
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0 },
+};
+const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
+{ let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}
+  if (!sv || typeof sv !== 'object') { let old = null; try { old = localStorage.getItem('pc-gfx'); } catch (e) {} sv = { preset: old === 'low' || (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 'low' : 'high' }; }
+  if (GQ_PRESETS[sv.preset]) Object.assign(GQ, GQ_PRESETS[sv.preset], { preset: sv.preset });
+  else if (sv.preset === 'custom') { GQ.preset = 'custom'; GQ_KEYS.forEach(k => { if (typeof sv[k] === 'number') GQ[k] = sv[k]; }); } }
+const GFX = { get low() { return GQ.preset === 'low'; }, auto: false };   // older code asks this
+renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
 renderer.autoClear = false;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
 const scene = new T.Scene();
@@ -655,19 +788,47 @@ sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalB
 scene.add(sun); scene.add(sun.target);
 const moon = new T.DirectionalLight(0x7f9bd0, 0); moon.position.set(-.45, 1, .35); scene.add(moon);
 
-// --- sky: a gradient dome with a sun glow and a few stars, moved with the camera
-const SKY = { top: new T.Color(), hor: new T.Color(), sunCol: new T.Color(), sunDir: new T.Vector3(0, 1, 0), sunAmt: { value: 1 }, night: { value: 0 } };
+// --- sky: the hour's gradient, the sun and its glow, a layer of cloud that drifts with the wind and thickens with the weather (lit
+//     by the sun by day, by the moon and the city's own glow at night), stars and the moon. The same material is drawn into the
+//     environment map that lights and reflects off everything (21-post.js).
+const SKY = { top: new T.Color(), hor: new T.Color(), sunCol: new T.Color(), sunDir: new T.Vector3(0, 1, 0), sunAmt: { value: 1 }, night: { value: 0 },
+  cloud: { value: 0 }, time: { value: 0 }, cLit: new T.Color(1, 1, 1), cShade: new T.Color(.5, .5, .55), glow: new T.Color(0, 0, 0), flash: { value: 0 }, moonDir: new T.Vector3(-.4, .6, .5).normalize(), stars: { value: 0 } };
 const skyMat = new T.ShaderMaterial({
-  uniforms: { top: { value: SKY.top }, hor: { value: SKY.hor }, sunCol: { value: SKY.sunCol }, sunDir: { value: SKY.sunDir }, sunAmt: SKY.sunAmt, night: SKY.night },
+  uniforms: { top: { value: SKY.top }, hor: { value: SKY.hor }, sunCol: { value: SKY.sunCol }, sunDir: { value: SKY.sunDir }, sunAmt: SKY.sunAmt, night: SKY.night, cloud: SKY.cloud, time: SKY.time,
+    cLit: { value: SKY.cLit }, cShade: { value: SKY.cShade }, glow: { value: SKY.glow }, flash: SKY.flash, moonDir: { value: SKY.moonDir }, stars: SKY.stars },
   vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform vec3 top; uniform vec3 hor; uniform vec3 sunCol; uniform vec3 sunDir; uniform float sunAmt; uniform float night; varying vec3 vDir;
-    void main(){ vec3 d = normalize(vDir); float h = max(d.y, 0.0); vec3 c = mix(hor, top, pow(h, 0.5));
-      float s = max(dot(d, sunDir), 0.0); c += sunCol * (smoothstep(0.9992, 0.9996, s) * 1.2 + pow(s, 60.0) * 0.35 + pow(s, 7.0) * 0.22) * sunAmt;
-      vec3 q = floor(d * 190.0); float st = step(0.9982, fract(sin(dot(q, vec3(12.9898, 78.233, 37.719))) * 43758.5453)); c += vec3(st) * smoothstep(0.55, 1.0, night) * smoothstep(0.05, 0.3, d.y) * 0.8;
-      gl_FragColor = vec4(c, 1.0); }`,
+  fragmentShader: `uniform vec3 top; uniform vec3 hor; uniform vec3 sunCol; uniform vec3 sunDir; uniform float sunAmt; uniform float night; uniform float cloud; uniform float time;
+    uniform vec3 cLit; uniform vec3 cShade; uniform vec3 glow; uniform float flash; uniform vec3 moonDir; uniform float stars; varying vec3 vDir;
+    float hsh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hsh(i), hsh(i + vec2(1.0, 0.0)), f.x), mix(hsh(i + vec2(0.0, 1.0)), hsh(i + vec2(1.0, 1.0)), f.x), f.y); }
+    float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * vn(p); p = p * 2.07 + vec2(3.1, 1.7); a *= 0.5; } return v; }
+    void main() {
+      vec3 d = normalize(vDir); float h = max(d.y, 0.0), s = max(dot(d, sunDir), 0.0);
+      vec3 c = mix(hor, top, pow(h, 0.45));
+      if (d.y < 0.0) c = mix(hor, hor * 0.55 + glow * 0.4, clamp(-d.y * 3.0, 0.0, 1.0));                       // below the horizon: the haze over the land
+      c += glow * pow(1.0 - h, 6.0) * 0.6;                                                                       // the city's glow low in the night sky
+      c += sunCol * (pow(s, 6.0) * 0.28 + pow(s, 48.0) * 0.5) * sunAmt;                                         // the glow round the sun
+      vec3 q = floor(d * 190.0); float st = step(0.9982, fract(sin(dot(q, vec3(12.9898, 78.233, 37.719))) * 43758.5453));
+      float sky = 1.0;
+      // cloud: one layer, seen in perspective, drifting; how much of it there is comes from the weather
+      if (d.y > 0.0) {
+        vec2 p = d.xz / (d.y + 0.06) * 1.25 + vec2(time * 0.006, time * 0.0025);
+        float n = fbm(p), n2 = fbm(p * 2.3 + vec2(time * 0.01, 0.0));
+        float cov = mix(0.66, 0.08, cloud), den = smoothstep(cov, cov + 0.3, n * 0.8 + n2 * 0.25) * smoothstep(0.0, 0.18, d.y);
+        float lit = clamp(0.55 + 0.45 * pow(s, 4.0) - (n - 0.5) * 0.6, 0.0, 1.0);
+        vec3 cc = mix(cShade, cLit, lit) + sunCol * pow(s, 10.0) * 0.6 * sunAmt + glow * 0.5 + vec3(flash);
+        c = mix(c, cc, den); sky = 1.0 - den;
+      }
+      c += sunCol * smoothstep(0.9993, 0.9997, s) * 2.5 * sunAmt * sky;                                           // the sun itself
+      float m = max(dot(d, moonDir), 0.0); c += vec3(0.9, 0.92, 1.0) * (smoothstep(0.99955, 0.99975, m) * 1.4 + pow(m, 80.0) * 0.08) * night * sky;
+      c += vec3(st) * stars * smoothstep(0.05, 0.3, d.y) * sky * 0.9;
+      gl_FragColor = vec4(c, 1.0);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+    }`,
   side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
 });
-const skyDome = new T.Mesh(new T.SphereGeometry(1800, 24, 14), skyMat); skyDome.renderOrder = -10; skyDome.frustumCulled = false; scene.add(skyDome);
+const skyDome = new T.Mesh(new T.SphereGeometry(1800, 32, 16), skyMat); skyDome.renderOrder = -10; skyDome.frustumCulled = false; scene.add(skyDome);
 
 // --- procedural textures
 function texCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h || w; return c; }
@@ -684,7 +845,8 @@ function noiseTex(base, vary, o) {
 }
 // A building face: `bays` windows across by `floors` up on one tile. The wall is drawn pale so each building's own colour can tint it.
 function facadeTex(o) {
-  const S = 512, c = texCanvas(S), g = c.getContext('2d'), e = texCanvas(S), x = e.getContext('2d');
+  const S = 512, c = texCanvas(S), g = c.getContext('2d'), e = texCanvas(S), x = e.getContext('2d'), rc = texCanvas(S), rg = rc.getContext('2d');   // rc: roughness, for the lit (PBR) look: walls rough, glass smooth
+  rg.fillStyle = o.style === 'glass' ? 'rgb(70,70,70)' : 'rgb(220,220,220)'; rg.fillRect(0, 0, S, S); rg.fillStyle = 'rgb(22,22,22)';
   const cw = S / o.bays, ch = S / o.floors;
   g.fillStyle = o.wall || '#d9d2c8'; g.fillRect(0, 0, S, S); x.fillStyle = '#000'; x.fillRect(0, 0, S, S);
   for (let i = 0; i < 5000; i++) { const v = rand() < .5 ? 0 : 255; g.fillStyle = `rgba(${v},${v},${v},${rand() * .07})`; g.fillRect(rand() * S, rand() * S, 2 + rand() * 4, 1 + rand() * 2); }
@@ -694,7 +856,7 @@ function facadeTex(o) {
   for (let j = 0; j < o.floors; j++) for (let i = 0; i < o.bays; i++) {
     const ww = cw * o.ww, wh = ch * o.wh, wx = i * cw + (cw - ww) / 2, wy = j * ch + (ch - wh) * (o.wy === undefined ? .45 : o.wy);
     if (o.style !== 'glass') { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(wx - 3, wy - 5, ww + 6, 5); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(wx - 3, wy + wh, ww + 6, 4); }
-    const gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, o.glass0 || '#27323f'); gr.addColorStop(1, o.glass1 || '#3d4c5c'); g.fillStyle = gr; g.fillRect(wx, wy, ww, wh);
+    rg.fillRect(wx, wy, ww, wh); const gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, o.glass0 || '#27323f'); gr.addColorStop(1, o.glass1 || '#3d4c5c'); g.fillStyle = gr; g.fillRect(wx, wy, ww, wh);
     g.fillStyle = 'rgba(190,215,235,.12)'; g.beginPath(); g.moveTo(wx, wy + wh); g.lineTo(wx + ww * .55, wy); g.lineTo(wx + ww * .8, wy); g.lineTo(wx + ww * .25, wy + wh); g.fill();
     const r = rand();
     if (o.style !== 'glass' && r < .45) { g.fillStyle = pick(rand, ['rgba(226,214,190,.75)', 'rgba(200,205,210,.7)', 'rgba(170,120,95,.6)', 'rgba(120,140,150,.6)']); g.fillRect(wx, wy, ww, wh * (.25 + rand() * .5)); }
@@ -702,7 +864,7 @@ function facadeTex(o) {
     if (o.mull) { g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); if (o.mull > 1) { g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2); } g.stroke(); }
     if (rand() < (o.lit === undefined ? .4 : o.lit)) { const k = pick(rand, o.lights || ['#ffd9a0', '#ffe8c0', '#f3c27a', '#cfe2ff']); const lg = x.createLinearGradient(0, wy, 0, wy + wh); lg.addColorStop(0, k); lg.addColorStop(1, '#6b4a2a'); x.fillStyle = lg; x.globalAlpha = .55 + rand() * .45; x.fillRect(wx + 1, wy + 1, ww - 2, wh - 2); x.globalAlpha = 1; if (o.mull) { x.fillStyle = '#000'; x.fillRect(wx + ww / 2 - 1, wy, 2, wh); } }
   }
-  return { map: asTex(c), em: asTex(e) };
+  const rough = asTex(rc); rough.encoding = T.LinearEncoding; return { map: asTex(c), em: asTex(e), rough };
 }
 // --- geometry buffers: everything that never moves is poured into a handful of big meshes, one per material
 class GeoBuf {
@@ -733,7 +895,7 @@ class GeoBuf {
     g.computeBoundingSphere(); return g;
   }
 }
-const hexCol = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
+const hexCol = h => [s2l((h >> 16 & 255) / 255), s2l((h >> 8 & 255) / 255), s2l((h & 255) / 255)];   // linear, for vertex colours
 const colOf = c => c === undefined || c === null ? null : Array.isArray(c) ? c : hexCol(c);
 
 // --- materials for the standing city. tu/tv: metres covered by one repeat of the texture.
@@ -741,7 +903,7 @@ const MATS = {};
 const lam = o => new T.MeshLambertMaterial(Object.assign({ vertexColors: true }, o));
 function defMat(key, mat, tu, tv, o) { MATS[key] = Object.assign({ mat, tu: tu || 4, tv: tv || tu || 4, cast: true, recv: true }, o || {}); return mat; }
 const FACADES = [];   // materials whose windows light up after dark
-function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
+function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); m.userData.rough = t.rough; FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
 defMat('asphalt', lam({ map: noiseTex('#3a3c40', .1, { cracks: 14, blots: 16 }) }), 12, 12, { cast: false });
 defMat('walk',    lam({ map: noiseTex('#a9a7a0', .07, { lines: 64, vlines: 64, lineCol: 'rgba(0,0,0,.18)', blots: 8 }) }), 6, 6, { cast: false });
 defMat('plaza',   lam({ map: noiseTex('#b9b4a8', .05, { lines: 32, vlines: 32, lineCol: 'rgba(0,0,0,.12)' }) }), 4, 4, { cast: false });
@@ -775,8 +937,230 @@ const SBUF = {};   // material key -> GeoBuf
 const SB = key => SBUF[key] || (SBUF[key] = new GeoBuf());
 const staticMeshes = [];
 function finishStatic() {
-  for (const key in SBUF) { const d = MATS[key], m = new T.Mesh(SBUF[key].build(), d.mat); m.castShadow = !!d.cast; m.receiveShadow = !!d.recv; m.matrixAutoUpdate = false; if (d.order) m.renderOrder = d.order; scene.add(m); staticMeshes.push(m); delete SBUF[key]; }
+  for (const key in SBUF) { const d = MATS[key], m = new T.Mesh(SBUF[key].build(), d.mat); m.userData.key = key; m.castShadow = !!d.cast; m.receiveShadow = !!d.recv; m.matrixAutoUpdate = false; if (d.order) m.renderOrder = d.order; scene.add(m); staticMeshes.push(m); delete SBUF[key]; }
 }
+
+/* =====================================================================
+   2b. THE LOOK — how a frame is made, on top of the plain renderer in 20-render.js:
+       · fog that is thicker near the ground and brighter toward the sun (every material, through three's shader chunks)
+       · physically based twins of the city's materials, lit by and reflecting an environment map made from the sky itself
+       · an HDR pipeline: the scene in linear light, ambient occlusion from the depth buffer, bloom on what is truly bright,
+         then exposure, filmic tone mapping, colour grading, vignette and grain, then FXAA; optional depth of field and
+         motion blur. The first-person gun is drawn last, straight to the screen.
+       · the graphics presets and their settings (GQ, in 20-render.js), and the menu that sets them.
+   ===================================================================== */
+// --- fog. The fog chunks are replaced for every material: distance fog as before (scene.fog near/far), but it thins with height so
+//     towers rise out of the haze, and it takes the sun's colour when you look toward the sun. The extra uniforms are shared by every
+//     material through onBeforeCompile.
+const FOGU = { fogSunDir: { value: new T.Vector3(0, 1, 0) }, fogSunCol: { value: new T.Color(0, 0, 0) }, fogHeight: { value: .011 } };
+T.ShaderChunk.fog_pars_vertex = '#ifdef USE_FOG\n varying float fogDepth; varying vec3 vFogW;\n#endif';
+T.ShaderChunk.fog_vertex = '#ifdef USE_FOG\n fogDepth = - mvPosition.z; vFogW = cameraPosition + transposeMat3( mat3( viewMatrix ) ) * mvPosition.xyz;\n#endif';
+T.ShaderChunk.fog_pars_fragment = '#ifdef USE_FOG\n uniform vec3 fogColor; varying float fogDepth; varying vec3 vFogW; uniform vec3 fogSunDir; uniform vec3 fogSunCol; uniform float fogHeight;\n #ifdef FOG_EXP2\n uniform float fogDensity;\n #else\n uniform float fogNear; uniform float fogFar;\n #endif\n#endif';
+T.ShaderChunk.fog_fragment = `#ifdef USE_FOG
+  vec3 fogRay = vFogW - cameraPosition; float fogDist = length(fogRay);
+  #ifdef FOG_EXP2
+    float fogFactor = 1.0 - exp(- fogDensity * fogDensity * fogDist * fogDist);
+  #else
+    float fogT = max(fogDist - fogNear, 0.0) / max(fogFar - fogNear, 1.0), fogH = exp(- max(vFogW.y, 0.0) * fogHeight);
+    float fogFactor = 1.0 - exp(- (fogT * fogT * 3.0 + fogT * 0.7) * mix(0.4, 1.0, fogH));
+  #endif
+  vec3 fogC = fogColor + fogSunCol * pow(max(dot(fogRay / max(fogDist, 0.001), fogSunDir), 0.0), 6.0);
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogC, clamp(fogFactor, 0.0, 1.0));
+#endif`;
+T.Material.prototype.onBeforeCompile = function (sh) { sh.uniforms.fogSunDir = FOGU.fogSunDir; sh.uniforms.fogSunCol = FOGU.fogSunCol; sh.uniforms.fogHeight = FOGU.fogHeight; };
+// --- physically based twins for the standing city: roughness and metalness for each material. Low keeps the old matte ones.
+const PBR_OF = { asphalt: [.86, 0], lot: [.84, 0], walk: [.9, 0], plaza: [.82, 0], grass: [1, 0], turf: [1, 0], dirt: [1, 0], court: [.62, 0], roof: [.92, 0], shingle: [.85, 0],
+  concrete: [.9, 0], corr: [.48, .55], tile: [.5, 0], plaster: [.92, 0], flat: [.72, 0], flatnc: [.72, 0], paint: [.65, 0], glass: [.05, .2], fence: [.45, .6], sign: [.55, 0] };
+function makePBR() {
+  for (const key in MATS) { const M = MATS[key], m = M.mat; if (M.low) continue; M.low = m; if (!(m instanceof T.MeshLambertMaterial)) { M.pbr = m; continue; }
+    const fac = FACADES.includes(m), q = PBR_OF[key] || [.85, 0];
+    const p = new T.MeshStandardMaterial({ vertexColors: m.vertexColors, map: m.map, emissiveMap: m.emissiveMap, emissive: m.emissive.clone(), color: m.color.clone(), transparent: m.transparent, opacity: m.opacity,
+      alphaTest: m.alphaTest, side: m.side, polygonOffset: m.polygonOffset, polygonOffsetFactor: m.polygonOffsetFactor, polygonOffsetUnits: m.polygonOffsetUnits, roughness: fac ? 1 : q[0], metalness: fac ? 0 : q[1],
+      roughnessMap: fac && m.userData.rough ? m.userData.rough : null, depthWrite: m.depthWrite, envMapIntensity: key === 'glass' ? 1.2 : fac ? .8 : LOOK.envI });
+    if (fac) FACADES.push(p); M.pbr = p; }
+}
+function setStaticPBR(on) {
+  for (const key in MATS) { const M = MATS[key]; if (!M.pbr) continue; M.mat = on ? M.pbr : M.low; }
+  staticMeshes.forEach(s => { const M = MATS[s.userData.key]; if (M) s.material = M.mat; });
+}
+const matsOf = key => { const M = MATS[key]; return M ? [M.low || M.mat, M.pbr].filter((m, i, a) => m && a.indexOf(m) === i) : []; };   // both versions, for anything that changes a material's colour
+// --- the environment map: the sky (and a plain ground below the horizon) rendered into a cube and prefiltered, redone when the hour
+//     or the weather has moved on enough to show
+const ENVM = { pm: null, rt: null, scene: new T.Scene(), tod: -9, cloud: -9, rain: -9, t: -99, busy: false };
+{ const dome = new T.Mesh(new T.SphereGeometry(40, 32, 16), skyMat); ENVM.scene.add(dome);
+  ENVM.ground = new T.Mesh(new T.CircleGeometry(38, 24), new T.MeshBasicMaterial({ color: 0x3a3c40, fog: false })); ENVM.ground.rotation.x = -PI / 2; ENVM.ground.position.y = -3; ENVM.scene.add(ENVM.ground); }
+function refreshEnv(force) {
+  if (!GQ.env) { if (scene.environment) scene.environment = null; return; }
+  if (!force && Math.abs(G.tod - ENVM.tod) < .12 && Math.abs(WX.cloud - ENVM.cloud) < .06 && Math.abs(WX.rain - ENVM.rain) < .1 && scene.environment) return;
+  if (!force && G.time - ENVM.t < 1.5 && scene.environment) return;
+  ENVM.tod = G.tod; ENVM.cloud = WX.cloud; ENVM.rain = WX.rain; ENVM.t = G.time;
+  if (!ENVM.pm) { ENVM.pm = new T.PMREMGenerator(renderer); }
+  ENVM.ground.material.color.copy(hemi.groundColor).multiplyScalar(.5 + hemi.intensity * .3);
+  const tm = renderer.toneMapping; renderer.toneMapping = T.NoToneMapping;   // the map holds light, not a picture of it
+  const was = SKY.flash.value; SKY.flash.value = 0; const rt = ENVM.pm.fromScene(ENVM.scene, 0, .1, 100); SKY.flash.value = was; renderer.toneMapping = tm;
+  if (ENVM.rt) ENVM.rt.dispose(); ENVM.rt = rt; scene.environment = rt.texture;
+}
+// --- the HDR pipeline
+const POST = { on: false, w: 0, h: 0, scene: null, ao: null, ao2: null, ldr: null, bloom: null, quad: null, cam: new T.OrthographicCamera(-1, 1, 1, -1, 0, 1), exp: 1, prevVP: new T.Matrix4(), vp: new T.Matrix4(), first: true };
+const HDR_TYPE = renderer.capabilities.isWebGL2 || renderer.extensions.get('OES_texture_half_float') ? T.HalfFloatType : T.UnsignedByteType;
+POST.quad = new T.Mesh(new T.PlaneGeometry(2, 2)); POST.quadScene = new T.Scene(); POST.quadScene.add(POST.quad); POST.quad.frustumCulled = false;
+const QUAD_VS = 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+// ambient occlusion from depth alone (no second pass over the city): each pixel's position and normal are rebuilt from the depth
+// buffer, and twelve samples round it ask how much of the space above it is filled
+const aoMat = new T.ShaderMaterial({
+  uniforms: { tDepth: { value: null }, res: { value: new T.Vector2() }, projInv: { value: new T.Matrix4() }, projScale: { value: 1 }, radius: { value: 1.6 }, intensity: { value: 1 }, aspect: { value: 1 } },
+  vertexShader: QUAD_VS,
+  fragmentShader: `uniform sampler2D tDepth; uniform vec2 res; uniform mat4 projInv; uniform float projScale; uniform float radius; uniform float intensity; uniform float aspect; varying vec2 vUv;
+    vec3 vpos(vec2 uv) { float d = texture2D(tDepth, uv).x; vec4 p = projInv * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); return p.xyz / p.w; }
+    void main() {
+      float d0 = texture2D(tDepth, vUv).x; if (d0 >= 0.99999) { gl_FragColor = vec4(1.0); return; }
+      vec2 px = 1.0 / res; vec3 P = vpos(vUv), Pr = vpos(vUv + vec2(px.x, 0.0)), Pl = vpos(vUv - vec2(px.x, 0.0)), Pu = vpos(vUv + vec2(0.0, px.y)), Pd = vpos(vUv - vec2(0.0, px.y));
+      vec3 dx = abs(Pr.z - P.z) < abs(P.z - Pl.z) ? Pr - P : P - Pl, dy = abs(Pu.z - P.z) < abs(P.z - Pd.z) ? Pu - P : P - Pd, N = normalize(cross(dx, dy));
+      if (dot(N, P) > 0.0) N = -N;
+      float ssr = min(radius * projScale / -P.z, 0.12), rot = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) * 6.2831, r2 = radius * radius, sum = 0.0;
+      for (int i = 0; i < 12; i++) { float fi = float(i) + 0.5, a = fi * 2.39996 + rot, r = ssr * sqrt(fi / 12.0);
+        vec3 v = vpos(vUv + vec2(cos(a), sin(a) * aspect) * r) - P; float vv = dot(v, v), f = max(r2 - vv, 0.0);
+        sum += f * f * f * max((dot(v, N) - 0.01 * -P.z) / (vv + 0.01), 0.0); }
+      float ao = max(0.0, 1.0 - sum * intensity * 5.0 / (r2 * r2 * r2 * 12.0));
+      gl_FragColor = vec4(ao, ao, ao, 1.0);
+    }`,
+  depthTest: false, depthWrite: false,
+});
+// a blur that does not smear the occlusion across a depth edge
+const aoBlurMat = new T.ShaderMaterial({
+  uniforms: { tAO: { value: null }, tDepth: { value: null }, res: { value: new T.Vector2() }, near: { value: .12 }, far: { value: 1000 } },
+  vertexShader: QUAD_VS,
+  fragmentShader: `uniform sampler2D tAO; uniform sampler2D tDepth; uniform vec2 res; uniform float near; uniform float far; varying vec2 vUv;
+    float lin(float d) { float z = d * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
+    void main() { float z0 = lin(texture2D(tDepth, vUv).x), s = 0.0, w = 0.0;
+      for (int x = -2; x <= 2; x++) for (int y = -2; y <= 2; y++) { vec2 o = vec2(float(x), float(y)) / res; float z = lin(texture2D(tDepth, vUv + o).x), k = 1.0 / (0.02 + abs(z - z0) / max(z0, 1.0) * 30.0);
+        s += texture2D(tAO, vUv + o).r * k; w += k; }
+      float a = s / w; gl_FragColor = vec4(a, a, a, 1.0); }`,
+  depthTest: false, depthWrite: false,
+});
+// the last step in linear light and the first on the screen: (motion blur, depth of field,) occlusion, exposure, filmic tone mapping,
+// then colour grading, vignette and a little grain
+function gradeMat(o) {
+  return new T.ShaderMaterial({
+    defines: Object.assign({}, o.ao ? { USE_AO: 1 } : {}, o.dof ? { USE_DOF: 1 } : {}, o.mblur ? { USE_MBLUR: 1 } : {}),
+    uniforms: { tColor: { value: null }, tAO: { value: null }, tDepth: { value: null }, exposure: { value: 1 }, aoAmt: { value: .75 }, sat: { value: 1.06 }, contrast: { value: 1.06 }, tintLo: { value: new T.Vector3(1, 1, 1) },
+      tintHi: { value: new T.Vector3(1, 1, 1) }, vign: { value: .32 }, grain: { value: .018 }, time: { value: 0 }, res: { value: new T.Vector2() }, near: { value: .12 }, far: { value: 1000 }, focus: { value: 6 },
+      projInv: { value: new T.Matrix4() }, viewInv: { value: new T.Matrix4() }, prevVP: { value: new T.Matrix4() }, mbAmt: { value: 1 } },
+    vertexShader: QUAD_VS,
+    fragmentShader: `uniform sampler2D tColor; uniform sampler2D tAO; uniform sampler2D tDepth; uniform float exposure; uniform float aoAmt; uniform float sat; uniform float contrast; uniform vec3 tintLo; uniform vec3 tintHi;
+      uniform float vign; uniform float grain; uniform float time; uniform vec2 res; uniform float near; uniform float far; uniform float focus; uniform mat4 projInv; uniform mat4 viewInv; uniform mat4 prevVP; uniform float mbAmt; varying vec2 vUv;
+      float lin(float d) { float z = d * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
+      vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
+      vec3 aces(vec3 c) { const mat3 I = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777)); const mat3 O = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
+        c = I * (c / 0.6); c = RRTAndODTFit(c); return clamp(O * c, 0.0, 1.0); }
+      vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
+      float hsh(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+      void main() {
+        vec3 c = texture2D(tColor, vUv).rgb;
+        #ifdef USE_MBLUR
+        { float d = texture2D(tDepth, vUv).x; if (d < 0.99999 && lin(d) > 7.0) { vec4 v = projInv * vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); v /= v.w; vec4 w = viewInv * v; vec4 pp = prevVP * w; vec2 puv = pp.xy / pp.w * 0.5 + 0.5;
+          vec2 vel = clamp((vUv - puv) * mbAmt, -0.03, 0.03); if (dot(vel, vel) > 1e-7) { vec3 acc = c; for (int i = 1; i < 8; i++) acc += texture2D(tColor, vUv - vel * (float(i) / 7.0 - 0.5)).rgb; c = acc / 8.0; } } }
+        #endif
+        #ifdef USE_DOF
+        { float z = lin(texture2D(tDepth, vUv).x), coc = clamp((z - focus * 3.0) / (focus * 14.0), 0.0, 1.0) * 6.0; if (coc > 0.3) { vec3 acc = c; float n = 1.0;
+          for (int i = 0; i < 12; i++) { float a = float(i) * 2.39996, r = coc * sqrt((float(i) + 0.5) / 12.0); vec2 o = vec2(cos(a), sin(a)) * r / res; float zz = lin(texture2D(tDepth, vUv + o).x); if (zz > focus * 2.0) { acc += texture2D(tColor, vUv + o).rgb; n += 1.0; } }
+          c = acc / n; } }
+        #endif
+        #ifdef USE_AO
+        c *= mix(1.0, texture2D(tAO, vUv).r, aoAmt);
+        #endif
+        c = toSRGB(aces(c * exposure));
+        float l = dot(c, vec3(0.2126, 0.7152, 0.0722)); c = mix(vec3(l), c, sat); c = (c - 0.5) * contrast + 0.5; c *= mix(tintLo, tintHi, smoothstep(0.1, 0.9, l));
+        vec2 q = vUv - 0.5; c *= 1.0 - vign * dot(q, q) * 1.5; c += (hsh(vUv * res + fract(time) * 61.0) - 0.5) * grain;
+        gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+      }`,
+    depthTest: false, depthWrite: false,
+  });
+}
+// FXAA, after grading (it wants the picture as it will be seen)
+const fxaaMat = new T.ShaderMaterial({
+  uniforms: { tColor: { value: null }, res: { value: new T.Vector2() } }, vertexShader: QUAD_VS,
+  fragmentShader: `uniform sampler2D tColor; uniform vec2 res; varying vec2 vUv;
+    void main() { vec2 inv = 1.0 / res, fc = vUv * res; vec3 L = vec3(0.299, 0.587, 0.114);
+      vec3 nw = texture2D(tColor, (fc + vec2(-1.0, -1.0)) * inv).rgb, ne = texture2D(tColor, (fc + vec2(1.0, -1.0)) * inv).rgb, sw = texture2D(tColor, (fc + vec2(-1.0, 1.0)) * inv).rgb, se = texture2D(tColor, (fc + vec2(1.0, 1.0)) * inv).rgb, m = texture2D(tColor, vUv).rgb;
+      float lnw = dot(nw, L), lne = dot(ne, L), lsw = dot(sw, L), lse = dot(se, L), lm = dot(m, L), lmin = min(lm, min(min(lnw, lne), min(lsw, lse))), lmax = max(lm, max(max(lnw, lne), max(lsw, lse)));
+      vec2 dir = vec2(-((lnw + lne) - (lsw + lse)), (lnw + lsw) - (lne + lse)); float red = max((lnw + lne + lsw + lse) * 0.03125, 1.0 / 128.0), rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + red);
+      dir = clamp(dir * rcp, -8.0, 8.0) * inv;
+      vec3 a = 0.5 * (texture2D(tColor, vUv + dir * (1.0 / 3.0 - 0.5)).rgb + texture2D(tColor, vUv + dir * (2.0 / 3.0 - 0.5)).rgb), b = a * 0.5 + 0.25 * (texture2D(tColor, vUv - dir * 0.5).rgb + texture2D(tColor, vUv + dir * 0.5).rgb);
+      float lb = dot(b, L); gl_FragColor = vec4(lb < lmin || lb > lmax ? a : b, 1.0); }`,
+  depthTest: false, depthWrite: false,
+});
+function disposePost() { ['scene', 'ao', 'ao2', 'ldr'].forEach(k => { if (POST[k]) { POST[k].dispose(); if (POST[k].depthTexture) POST[k].depthTexture.dispose(); POST[k] = null; } }); if (POST.bloom) { POST.bloom.dispose(); POST.bloom = null; } if (POST.grade) { POST.grade.dispose(); POST.grade = null; } }
+function buildPost() {
+  disposePost(); POST.on = !!GQ.post; if (!POST.on) return;
+  const v = renderer.getDrawingBufferSize(new T.Vector2()), w = Math.max(2, v.x | 0), h = Math.max(2, v.y | 0); POST.w = w; POST.h = h;
+  const opt = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, type: HDR_TYPE, depthBuffer: true, stencilBuffer: false };
+  POST.scene = new T.WebGLRenderTarget(w, h, opt); POST.scene.depthTexture = new T.DepthTexture(w, h); POST.scene.depthTexture.type = renderer.capabilities.isWebGL2 || renderer.extensions.get('WEBGL_depth_texture') ? T.UnsignedIntType : T.UnsignedShortType;
+  if (GQ.ao) { const k = GQ.ao === 2 ? 1 : .5, o2 = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false }; POST.ao = new T.WebGLRenderTarget(Math.max(2, w * k | 0), Math.max(2, h * k | 0), o2); POST.ao2 = POST.ao.clone(); }
+  if (GQ.aa) POST.ldr = new T.WebGLRenderTarget(w, h, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false });
+  if (GQ.bloom) { POST.bloom = new T.UnrealBloomPass(new T.Vector2(w, h), .55, .5, 2.5); [POST.bloom.renderTargetBright].concat(POST.bloom.renderTargetsHorizontal, POST.bloom.renderTargetsVertical).forEach(rt => { rt.texture.type = HDR_TYPE; }); }
+  POST.grade = gradeMat({ ao: !!GQ.ao, dof: !!GQ.dof, mblur: !!GQ.mblur }); POST.first = true;
+}
+function quad(mat, target) { POST.quad.material = mat; renderer.setRenderTarget(target); renderer.render(POST.quadScene, POST.cam); }
+// one frame, whatever the settings. The first-person gun goes on last, straight to the screen.
+function drawFrame() {
+  if (!POST.on) { renderer.setRenderTarget(null); renderer.clear(); renderer.render(scene, camera); }
+  else {
+    const v = renderer.getDrawingBufferSize(_dsz); if ((v.x | 0) !== POST.w || (v.y | 0) !== POST.h) buildPost();
+    renderer.setRenderTarget(POST.scene); renderer.clear(); renderer.render(scene, camera);
+    const pi = camera.projectionMatrixInverse, U = POST.grade.uniforms;
+    if (POST.ao) { const a = aoMat.uniforms; a.tDepth.value = POST.scene.depthTexture; a.res.value.set(POST.w, POST.h); a.projInv.value.copy(pi); a.projScale.value = camera.projectionMatrix.elements[5] * .5; a.aspect.value = camera.aspect; quad(aoMat, POST.ao);
+      const b = aoBlurMat.uniforms; b.tAO.value = POST.ao.texture; b.tDepth.value = POST.scene.depthTexture; b.res.value.set(POST.ao.width, POST.ao.height); b.near.value = camera.near; b.far.value = camera.far; quad(aoBlurMat, POST.ao2); U.tAO.value = POST.ao2.texture; }
+    if (POST.bloom) { POST.bloom.threshold = POST.bthr; POST.bloom.strength = POST.bstr; POST.bloom.render(renderer, null, POST.scene, 0, false); }
+    U.tColor.value = POST.scene.texture; U.tDepth.value = POST.scene.depthTexture; U.exposure.value = POST.exp; U.res.value.set(POST.w, POST.h); U.time.value = G.time; U.near.value = camera.near; U.far.value = camera.far;
+    if (GQ.mblur || GQ.dof) { U.projInv.value.copy(pi); U.viewInv.value.copy(camera.matrixWorld); POST.vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); U.prevVP.value.copy(POST.first ? POST.vp : POST.prevVP); POST.prevVP.copy(POST.vp); POST.first = false;
+      U.focus.value = Math.max(2, hyp(camera.position.x - P.x, camera.position.y - P.y - 1.2, camera.position.z - P.z)); }
+    if (POST.ldr) { quad(POST.grade, POST.ldr); fxaaMat.uniforms.tColor.value = POST.ldr.texture; fxaaMat.uniforms.res.value.set(POST.w, POST.h); quad(fxaaMat, null); } else quad(POST.grade, null);
+  }
+  if (vmRoot.visible) { const tm = renderer.toneMapping, ex = renderer.toneMappingExposure; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = POST.on ? POST.exp : ex; renderer.setRenderTarget(null); renderer.clearDepth(); renderer.render(vmScene, vmCam); renderer.toneMapping = tm; renderer.toneMappingExposure = ex; }
+}
+const _dsz = new T.Vector2();
+// how the hour and the weather want the picture: exposure, bloom, grading (called with the lighting, from applyTod)
+function lookTick() {
+  const n = ENV.night, c = WX.cloud, dusk = clamp(1 - Math.abs(G.tod - 19.3) / 1.6, 0, 1) + clamp(1 - Math.abs(G.tod - 6.6) / 1.2, 0, 1);
+  POST.exp = lerp(.9, 1.45, n) * (1 + c * .15) * LOOK.exp; renderer.toneMappingExposure = POST.on ? 1 : POST.exp;
+  POST.bthr = lerp(3.4, 1.3, n); POST.bstr = lerp(.3, .55, n) * (1 + WX.rain * .25);
+  if (POST.grade) { const U = POST.grade.uniforms; U.sat.value = lerp(1.08, .96, n) - c * .12; U.contrast.value = lerp(1.07, 1.1, n);
+    U.tintHi.value.set(1 + dusk * .05, 1 + dusk * .01, 1 - dusk * .06); U.tintLo.value.set(lerp(1, .96, n), lerp(1, .99, n), lerp(1, 1.06, n)); U.vign.value = .3 + n * .15; U.grain.value = .012 + n * .014; U.aoAmt.value = GQ.ao === 2 ? .85 : .75; U.mbAmt.value = 1; }
+}
+// --- applying the settings
+const VIEW = { far: 1000 };
+function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
+function applyQuality(save) {
+  const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res));
+  renderer.shadowMap.enabled = GQ.shadow > 0;
+  if (GQ.shadow > 0) { const sz = [0, 1024, 2048, 4096][GQ.shadow], r = [0, 70, 95, 120][GQ.shadow], c = sun.shadow.camera;
+    if (sun.shadow.mapSize.x !== sz) { sun.shadow.mapSize.set(sz, sz); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+    c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.updateProjectionMatrix(); SHADOW.tex = r * 2 / sz; }
+  renderer.shadowMap.needsUpdate = true;
+  anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
+  VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
+  makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
+  renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
+  buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
+  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
+  applyTod(G.tod || 17.5); applyWeather(); lookTick();
+  if (save) { const sv = { preset: GQ.preset }; if (GQ.preset === 'custom') GQ_KEYS.forEach(k => { sv[k] = GQ[k]; }); try { localStorage.setItem('pc-gfx2', JSON.stringify(sv)); } catch (e) {} }
+  gqUi();
+}
+function setPreset(p, save) { if (GQ_PRESETS[p]) Object.assign(GQ, GQ_PRESETS[p]); GQ.preset = p; applyQuality(save); }
+const SHADOW = { tex: 190 / 2048 };
+// --- the settings menu: the preset, and every setting by hand behind Advanced
+const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur']];
+function gqUi() {
+  const sel = $('set-gfx'); if (sel) sel.value = GQ.preset;
+  GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa'); });
+}
+if ($('set-gfx')) $('set-gfx').addEventListener('change', e => { const v = e.target.value; if (v === 'custom') { GQ.preset = 'custom'; applyQuality(true); } else setPreset(v, true); GFX.auto = true; });
+GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', () => { GQ[q[0]] = +el.value; GQ.preset = 'custom'; applyQuality(true); GFX.auto = true; }); });
+if ($('gq-more')) $('gq-more').addEventListener('click', () => { const a = $('gq-adv'); a.hidden = !a.hidden; $('gq-more').textContent = a.hidden ? 'Advanced' : 'Hide advanced'; });
+// a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session
+function slowerPreset() { const order = ['ultra', 'high', 'medium', 'low'], i = order.indexOf(GQ.preset), next = i < 0 ? 'medium' : order[Math.min(order.length - 1, i + 1)]; if (next === GQ.preset) return false; setPreset(next, true); return next; }
 
 /* =====================================================================
    3. COLLISION + RAYS — every solid is an axis-aligned box that is both
@@ -1092,6 +1476,10 @@ addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, BRIDGE.z - BRIDGE.w, 'concrete', { no
   addBox(CITY.w + 20, CITY.w + 66, -2, 1, 56, 64, 'concrete', { nocol: true }); }
 const water = new T.Mesh(new T.PlaneGeometry(2600, 2600, 1, 1), new T.MeshLambertMaterial({ color: 0x35607a, map: noiseTex('#8fa9b8', .1, { blots: 20, grain: 4 }) }));
 water.material.map.repeat.set(90, 90); water.rotation.x = -PI / 2; water.position.set(CITY.w / 2, -1.4, CITY.d / 2); water.receiveShadow = false; scene.add(water);
+// the lit (PBR) look: darker water that reflects the sky, brightest at a low angle
+const WATER = { low: water.material, pbr: new T.MeshStandardMaterial({ color: 0x1f4458, map: water.material.map, roughness: .12, metalness: 0, envMapIntensity: 1.15 }), a: new T.Color(), b: new T.Color() };
+function waterLook() { water.material = GQ.env ? WATER.pbr : WATER.low; }
+function waterTone(night) { WATER.low.color.copy(WATER.a.setHex(0x35607a)).lerp(WATER.b.setHex(0x0b1826), night); WATER.pbr.color.copy(WATER.a.setHex(0x26506a)).lerp(WATER.b.setHex(0x050b12), night); }
 
 /* ---------------------------------------------------------------------
    4b. Districts: the ordinary blocks. Each generator fills one 80 x 64 m lot.
@@ -2018,37 +2406,46 @@ const TOD_KEYS = [
   [20.9, 0x000000, 0,    0x3d5480, 0x191c26, .92, 0x0e1524, 0x03050d, 0x121d33, 1],
   [24,   0x000000, 0,    0x3d5480, 0x191c26, .92, 0x0e1524, 0x03050d, 0x121d33, 1],
 ];
-const _ca = new T.Color(), _cb = new T.Color(), ENV = { night: 0, hour: 17.3, sunI: 1 };
+const _ca = new T.Color(), _cb = new T.Color(), _cWhite = new T.Color(1, 1, 1), ENV = { night: 0, hour: 17.3, sunI: 1, base: 1 };
+// how strong each light is in linear light, how bright lit windows and signs are, and an overall exposure (21-post.js uses these)
+const LOOK = { sun: 2.35, hemi: .82, hemiEnv: .3, moon: .45, win: 1.25, winHDR: 2.4, sign: .8, signHDR: 2.2, lamp: 1.5, exp: 1, envI: .48 };
+const LAMP_COL = new T.Color(0xffc47a);
 const mixCol = (out, a, b, t) => out.copy(_ca.setHex(a)).lerp(_cb.setHex(b), t);
 const sunDirV = new T.Vector3(.4, .6, .5).normalize();
 function applyTod(h) {
   h = ((h % 24) + 24) % 24; ENV.hour = h;
   let k = 0; while (k < TOD_KEYS.length - 2 && TOD_KEYS[k + 1][0] <= h) k++;
-  const A = TOD_KEYS[k], B = TOD_KEYS[k + 1], t = clamp((h - A[0]) / (B[0] - A[0]), 0, 1), night = lerp(A[9], B[9], t);
-  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = lerp(A[2], B[2], t); sun.castShadow = sun.intensity > .05;
-  mixCol(hemi.color, A[3], B[3], t); mixCol(hemi.groundColor, A[4], B[4], t); hemi.intensity = lerp(A[5], B[5], t);
+  const A = TOD_KEYS[k], B = TOD_KEYS[k + 1], t = clamp((h - A[0]) / (B[0] - A[0]), 0, 1), night = lerp(A[9], B[9], t), base = lerp(A[2], B[2], t), hdr = POST.on;
+  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = base * LOOK.sun; ENV.base = base; sun.castShadow = sun.intensity > .05;
+  mixCol(hemi.color, A[3], B[3], t); mixCol(hemi.groundColor, A[4], B[4], t); hemi.intensity = lerp(A[5], B[5], t) * (GQ.env ? LOOK.hemiEnv : LOOK.hemi);
   mixCol(scene.fog.color, A[6], B[6], t); mixCol(SKY.top, A[7], B[7], t); mixCol(SKY.hor, A[8], B[8], t);
-  scene.fog.near = lerp(90, 40, night); scene.fog.far = lerp(660, 460, night);
-  moon.intensity = night * .55; ENV.night = night; SKY.night.value = night;
+  scene.fog.near = lerp(70, 30, night); scene.fog.far = Math.min(lerp(1050, 620, night), VIEW.far);
+  moon.intensity = night * .55 * LOOK.moon; ENV.night = night; SKY.night.value = night; SKY.stars.value = night;
   const d = clamp((h - 6) / 14, 0, 1), el = Math.max(.14, Math.sin(d * PI) * 1.02), az = .22 + d * (PI - .44);
   sunDirV.set(Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)).normalize();
-  SKY.sunDir.copy(sunDirV); SKY.sunCol.copy(sun.color); SKY.sunAmt.value = Math.min(1, sun.intensity * 1.4);
+  SKY.sunDir.copy(sunDirV); SKY.sunCol.copy(sun.color); SKY.sunAmt.value = Math.min(1, base * 1.4);
+  // cloud: white by day, the low sun's colour at either end of it, dim blue-grey at night with the city's orange glow under it
+  SKY.cLit.copy(sun.color).lerp(_cWhite, .45).multiplyScalar(.25 + base * .95).lerp(_ca.setRGB(.035, .04, .055), night);
+  SKY.cShade.copy(SKY.hor).lerp(_cb.setRGB(.42, .44, .48), .55).multiplyScalar(lerp(.75, .22, night));
+  SKY.glow.setRGB(.11, .055, .022).multiplyScalar(night);
+  FOGU.fogSunDir.value.copy(sunDirV); FOGU.fogSunCol.value.copy(sun.color).multiplyScalar(.45 * base);
   const em = clamp((night - .15) / .6, 0, 1);
-  FACADES.forEach(m => m.emissive.setScalar(em * .9)); MATS.sign.mat.emissive.setScalar(.06 + em * .75);
-  lampGlow.material.opacity = em; lampPool.material.opacity = em * .5; lampGlow.visible = lampPool.visible = em > .02;
-  water.material.color.copy(_ca.setHex(0x35607a)).lerp(_cb.setHex(0x0b1826), night);
+  FACADES.forEach(m => m.emissive.setScalar(em * (hdr ? LOOK.winHDR : LOOK.win))); matsOf('sign').forEach(m => m.emissive.setScalar(.06 + em * (hdr ? LOOK.signHDR : LOOK.sign)));
+  lampGlow.material.opacity = em; lampPool.material.opacity = em * .5; lampGlow.visible = lampPool.visible = em > .02; lampGlow.material.color.copy(LAMP_COL).multiplyScalar(hdr ? LOOK.lamp : 1); lampGlow.material.size = hdr ? 2.8 : 5.5;
+  waterTone(night);
   vmHemi.color.copy(hemi.color); vmHemi.groundColor.copy(hemi.groundColor); vmKey.color.copy(night > .5 ? _ca.setHex(0x8aa0c8) : sun.color); vmKey.intensity = lerp(.75, .4, night);
   mallLights.forEach(l => l.intensity = .55 + night * .35);
+  lookTick();
 }
 // the shadow map follows the action, snapped to its own texels so shadows do not shimmer
 const _lr = new T.Vector3(), _lu = new T.Vector3(), _UP = new T.Vector3(0, 1, 0);
 function updateSun(fx, fy, fz) {
   _lr.crossVectors(_UP, sunDirV).normalize(); _lu.crossVectors(sunDirV, _lr);
-  const tex = 190 / 2048, a = Math.round((fx * _lr.x + fy * _lr.y + fz * _lr.z) / tex) * tex, b = Math.round((fx * _lu.x + fy * _lu.y + fz * _lu.z) / tex) * tex, c = fx * sunDirV.x + fy * sunDirV.y + fz * sunDirV.z;
+  const tex = SHADOW.tex, a = Math.round((fx * _lr.x + fy * _lr.y + fz * _lr.z) / tex) * tex, b = Math.round((fx * _lu.x + fy * _lu.y + fz * _lu.z) / tex) * tex, c = fx * sunDirV.x + fy * sunDirV.y + fz * sunDirV.z;
   sun.target.position.set(_lr.x * a + _lu.x * b + sunDirV.x * c, _lr.y * a + _lu.y * b + sunDirV.y * c, _lr.z * a + _lu.z * b + sunDirV.z * c);
   sun.position.copy(sun.target.position).addScaledVector(sunDirV, 260); sun.target.updateMatrixWorld();
 }
-applyTod(18);
+
 
 /* =====================================================================
    5b. AUDIO — everything is synthesised: guns, engines, tyres, and three radio stations that write their own beats
@@ -2382,7 +2779,13 @@ const wheelGeo = (() => { const b = new GeoBuf(), c = new T.CylinderGeometry(1, 
 const wheelMesh = new T.InstancedMesh(wheelGeo, lam({}), CAR_MAX * 4); wheelMesh.castShadow = true; wheelMesh.frustumCulled = false; for (let i = 0; i < CAR_MAX * 4; i++) wheelMesh.setMatrixAt(i, ZERO_M); scene.add(wheelMesh);
 const carTrimMat = lam({}), carLampMat = new T.MeshBasicMaterial({ vertexColors: true }), carGlassMat = new T.MeshLambertMaterial({ color: 0x26323b, transparent: true, opacity: .64, depthWrite: false }), wreckMat = new T.MeshLambertMaterial({ color: 0x1a1816 });
 const beamGeo = (() => { const g = new T.PlaneGeometry(7, 15); g.rotateX(-PI / 2); g.translate(0, .16, 9.5); return g; })(), beamMat = new T.MeshBasicMaterial({ map: glowTex, color: 0xfff0cc, transparent: true, opacity: .34, blending: T.AdditiveBlending, depthWrite: false });
-const paintMats = {}; const paintMat = hex => paintMats[hex] || (paintMats[hex] = new T.MeshPhongMaterial({ color: hex, specular: 0x4a4a4a, shininess: 38 }));
+const paintMats = {}, paintPBR = {};
+// paint: plain shiny on Low; on anything with reflections, metallic paint under a clear coat that mirrors the sky
+const paintMat = hex => GQ.env ? paintPBR[hex] || (paintPBR[hex] = new T.MeshPhysicalMaterial({ color: hex, roughness: .4, metalness: .45, clearcoat: 1, clearcoatRoughness: .05 }))
+  : paintMats[hex] || (paintMats[hex] = new T.MeshPhongMaterial({ color: hex, specular: 0x4a4a4a, shininess: 38 }));
+const CARLOOK = { trim: [carTrimMat, new T.MeshStandardMaterial({ vertexColors: true, roughness: .55, metalness: .25 })], glass: [carGlassMat, new T.MeshStandardMaterial({ color: 0x1a2229, transparent: true, opacity: .72, depthWrite: false, roughness: .03, metalness: .3, envMapIntensity: 1.4 })],
+  wreck: [wreckMat, new T.MeshStandardMaterial({ color: 0x1a1816, roughness: .95, metalness: .1 })] };
+function carLook() { const k = GQ.env ? 1 : 0; cars.forEach(c => { c.tm.material = CARLOOK.trim[k]; c.gm.material = CARLOOK.glass[k]; c.pm.material = c.wreck ? CARLOOK.wreck[k] : paintMat(c.color); }); }
 const CAR_GEO = {};
 function carGeo(type) {
   if (CAR_GEO[type]) return CAR_GEO[type];
@@ -2427,9 +2830,9 @@ function spawnCar(type, x, z, yaw, o) {
   if (!carFree.length && !(AUTH() && evictCar())) return null; o = o || {};
   const S = CARS[type], geo = S.air === 'plane' ? planeGeo(type) : S.air ? heliGeo(type) : carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
   const g = new T.Group(), body = new T.Group(); g.rotation.order = 'YXZ'; g.add(body);
-  const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, carTrimMat), gm = new T.Mesh(geo.glass, carGlassMat), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
+  const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, CARLOOK.trim[GQ.env ? 1 : 0]), gm = new T.Mesh(geo.glass, CARLOOK.glass[GQ.env ? 1 : 0]), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
   pm.castShadow = tm.castShadow = true; pm.receiveShadow = true; gm.renderOrder = 3; bm.renderOrder = 4; bm.visible = false; body.add(pm, tm, gm, lm, bm); scene.add(g);
-  const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm,
+  const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm, tm, gm, lm,
     occ: [null, null, null, null], inp: { thr: 0, steer: 0, hb: false }, wreck: false, burn: 0, spin: 0, roll: 0, dive: 0, asleep: true, home: o.home || null, team: o.team === undefined ? -1 : o.team, horn: 0, smokeT: 0, lastHit: null, idle: 0, buf: [], slip: 0, crash: 0 };
   if (c.id > carSeq) carSeq = c.id;
   if (S.air === 'plane') planeDress(c); else if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
@@ -2537,7 +2940,7 @@ function updateCarVisual(c, dt) {
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
   const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), hx = c.x + fx * (c.spec.len / 2 - .8), hz = c.z + fz * (c.spec.len / 2 - .8), frac = c.hp / c.spec.hp;
   c.smokeT -= dt;
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .07; FX.fire(hx, c.y + c.geo.belt, hz, .8); if (rand() < .5) FX.smoke(hx, c.y + c.geo.belt + .4, hz, 1, true); } }
@@ -3087,7 +3490,7 @@ function heliVisual(c, dt) {
   const r = c.rotor || 0; c.rotA = (c.rotA + r * 31 * dt) % TAU; c.rot.rotation.y = c.rotA; c.trot.rotation.x = c.rotA * 2.6;
   const blur = r > .35 ? (r - .35) / .65 : 0; c.disc.visible = blur > .02; if (c.disc.visible) c.disc.material.opacity = blur * .24;
   c.bea.visible = r > .1 && !c.wreck && (G.time * 1.15 + c.id * .37) % 1 < .1;
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.4, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.2); }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.4, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.2); }
     if (c.cone) { c.cone.visible = c.spot.visible = false; } if (c.lb) c.lb.forEach(L => { L.s.visible = false; }); return; }
   const frac = c.hp / c.spec.hp; c.smokeT -= dt; heliPoint(c, 0, 2.2, -1.2, _hp);
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .06; FX.fire(_hp.x, _hp.y, _hp.z, 1); FX.smoke(_hp.x, _hp.y + .4, _hp.z, 1.2, true); } }
@@ -3328,7 +3731,7 @@ function planeVisual(c, dt) {
   if (G.time - (c.stepT || -9) > .25) c.rotor = approach(c.rotor || 0, (c.eng || c.occ[0]) && !c.wreck ? .8 : 0, dt * .45);
   const r = c.rotor || 0; if (c.prop) { c.rotA = (c.rotA + r * 46 * dt) % TAU; c.prop.rotation.z = c.rotA; const blur = r > .3 ? (r - .3) / .7 : 0; c.pdisc.visible = blur > .02; if (c.pdisc.visible) c.pdisc.material.opacity = blur * .3; }
   c.bea.visible = r > .1 && !c.wreck && (G.time * 1.2 + c.id * .37) % 1 < .1;
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.6, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.4); } return; }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.6, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.4); } return; }
   const frac = c.hp / c.spec.hp; c.smokeT -= dt; heliPoint(c, 0, PLANE_PIVOT + .4, c.geo.prop ? 2.6 : -4, _pp);
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .06; FX.fire(_pp.x, _pp.y, _pp.z, 1); FX.smoke(_pp.x, _pp.y + .4, _pp.z, 1.2, true); } }
   else if (frac < .45 && c.smokeT <= 0) { c.smokeT = frac < .25 ? .09 : .2; FX.smoke(_pp.x, _pp.y, _pp.z, .9, frac < .25); }
@@ -4349,16 +4752,18 @@ function weatherTick(dt) {
 }
 // --- the light: after the hour has set it (applyTod), cloud greys and dims it, fog closes it in, a wet road goes dark
 const _wg = new T.Color(), _wf = new T.Color(), WET_MATS = [['asphalt', .36], ['lot', .32], ['walk', .24], ['plaza', .2], ['concrete', .2], ['court', .22], ['dirt', .28], ['tile', .12], ['turf', .15], ['grass', .15]];
+const WET_ROUGH = { asphalt: .28, lot: .3, walk: .55, plaza: .5, concrete: .55, court: .4, dirt: .7, tile: .35, turf: .85, grass: .85 };   // how glossy each gets when soaked
 const WXL = { hemi: 0, fog: new T.Color(), top: new T.Color(), hor: new T.Color() };
 function applyWeather() {
   const c = WX.cloud, f = WX.fog, r = WX.rain, grey = (col, k) => { const l = col.r * .3 + col.g * .55 + col.b * .15; col.lerp(_wg.setRGB(l * .97, l, l * 1.06), k); };
   sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sun.castShadow = sun.intensity > .05; moon.intensity *= 1 - .75 * c;
   grey(hemi.color, c * .55); grey(hemi.groundColor, c * .4); hemi.intensity *= 1 + c * .1 - r * .12;
   grey(scene.fog.color, c * .7); grey(SKY.top, c * .85); grey(SKY.hor, c * .7); SKY.top.multiplyScalar(1 - c * .3); scene.fog.color.multiplyScalar(1 - r * .15);
-  SKY.sunAmt.value *= 1 - c * .94; SKY.night.value *= 1 - c;                                   // no sun's disc and no stars through it
+  SKY.sunAmt.value *= 1 - c * .94; SKY.cloud.value = c;                                          // the cloud layer itself hides the sun's disc, the moon and the stars
+  SKY.cLit.multiplyScalar(1 - r * .5 - c * .15); SKY.cShade.multiplyScalar(1 - r * .45); FOGU.fogSunCol.value.multiplyScalar(1 - c * .85);
   scene.fog.near = lerp(scene.fog.near * (1 - r * .35), 3, f * .92); scene.fog.far = lerp(lerp(scene.fog.far, 300, r * .8), 105, f * .9);
-  water.material.color.multiplyScalar(1 - c * .3);
-  WET_MATS.forEach(q => { const M = MATS[q[0]]; if (M) M.mat.color.setScalar(1 - q[1] * WX.wet); });
+  WATER.low.color.multiplyScalar(1 - c * .3); WATER.pbr.color.multiplyScalar(1 - c * .3); WATER.pbr.roughness = .12 + r * .1;
+  WET_MATS.forEach(q => { matsOf(q[0]).forEach(m => m.color.setScalar(1 - q[1] * WX.wet)); const M = MATS[q[0]]; if (M && M.pbr && M.pbr.isMeshStandardMaterial) { const b = (PBR_OF[q[0]] || [.85])[0]; M.pbr.roughness = lerp(b, WET_ROUGH[q[0]] || b * .6, WX.wet); } });   // wet: darker, and shiny enough to show the sky
   WXL.hemi = hemi.intensity; WXL.fog.copy(scene.fog.color); WXL.top.copy(SKY.top); WXL.hor.copy(SKY.hor);
 }
 // --- rain: streaks in a box that travels with the camera, each one fixed in the world as it falls (so driving through it reads
@@ -4409,7 +4814,7 @@ function umbrellas() {
 }
 // --- every frame, on every machine
 function weatherFrame(dt) {
-  const u = rainMat.uniforms, on = WX.rain > .02 && G.state !== 'menu';
+  const u = rainMat.uniforms, on = WX.rain > .02 && G.state !== 'menu'; SKY.time.value = G.time % 20000; SKY.flash.value = WX.flash * .9; refreshEnv(false);
   rainMesh.visible = on; if (on) { u.uTime.value = G.time % 600; u.uCam.value.copy(camera.position); u.uAmt.value = WX.rain * (GFX.low ? .45 : 1); u.uWind.value.set(Math.cos(.7) * WX.wind * .32, Math.sin(.7) * WX.wind * .32);
     u.uCol.value.setRGB(lerp(.78, .5, ENV.night), lerp(.82, .56, ENV.night), lerp(.9, .66, ENV.night)); u.uOp.value = lerp(.38, .26, ENV.night) + WX.flash * .3; }
   if (WX.flash > 0 || WX.lit) { const k = WX.flash; hemi.intensity = WXL.hemi + k * .95; scene.fog.color.copy(WXL.fog).lerp(_wf.setRGB(.62, .66, .8), k * .35); SKY.top.copy(WXL.top).lerp(_wf.setRGB(.5, .55, .72), k * .5); SKY.hor.copy(WXL.hor).lerp(_wf.setRGB(.6, .64, .8), k * .4); WX.lit = k > 0; }
@@ -6877,7 +7282,7 @@ window.addEventListener('resize', layoutTouch); window.addEventListener('orienta
 // turning the controls on or off; the first time, a phone gets the lighter graphics as well
 function setTouch(on) {
   if (TOUCH.on === on) return; TOUCH.on = on; document.body.classList.toggle('touch', on); releaseAll();
-  if (on) { layoutTouch(); let pref = null; try { pref = localStorage.getItem('pc-gfx'); } catch (e) {} if (!pref && !GFX.low) { GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); } }
+  if (on) { layoutTouch(); let pref = null; try { pref = localStorage.getItem('pc-gfx2') || localStorage.getItem('pc-gfx'); } catch (e) {} if (!pref && GQ.preset !== 'low') { setPreset('low', false); resize(); } }
   touchMenu(); updateTouchUi();
 }
 const wantTouch = () => TOUCH.cfg.mode === 'on' || (TOUCH.cfg.mode === 'auto' && TOUCH.coarse);
@@ -7112,14 +7517,14 @@ $('deploy').addEventListener('click', () => {
 $('leave').addEventListener('click', leaveSession);
 $('set-bots').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-cops').addEventListener('change', () => { readSettings(); NET.say(); }); $('set-sides').addEventListener('change', () => { readSettings(); NET.say(); NET.lobby(); });
 $('set-view').addEventListener('change', () => { P.view = +$('set-view').value === 1 ? 1 : 3; try { localStorage.setItem('pc-view', String(P.view)); } catch (e) {} });
-$('set-gfx').addEventListener('change', () => { GFX.low = $('set-gfx').value === 'low'; try { localStorage.setItem('pc-gfx', GFX.low ? 'low' : 'high'); } catch (e) {} applyGfx(); resize(); });
+$('set-gfx').addEventListener('change', () => resize());   // the presets themselves: 21-post.js
 $('co-host').addEventListener('click', () => lobbySet({ lead: true, ready: true }));
 $('co-join').addEventListener('click', () => { if (NET.room && NET.room.peers().some(p => !(p.isMe && p.sameTab) && p.presence && p.presence.t === 'h')) coopBegin('client'); else lobbySet({ lead: false, ready: false }); });
 $('co-ready').addEventListener('click', () => { if (NET.lob) lobbySet({ lead: NET.lob.lead, ready: !NET.lob.ready }); });
 $('co-start').addEventListener('click', () => { if (NET.lob && NET.lob.lead) { readSettings(); coopBegin('host'); } });
 $('co-leave').addEventListener('click', () => { ownCrew(); lobbySet(null); });
 try { $('co-name').value = cleanName(localStorage.getItem('pc-name') || '').replace(/^Player$/, ''); if (savedCrew() >= 0) P.team = savedCrew(); if (localStorage.getItem('pc-view') === '1') P.view = 1; } catch (e) {}
-$('set-view').value = String(P.view); $('set-gfx').value = GFX.low ? 'low' : 'high';
+$('set-view').value = String(P.view); gqUi();
 $('co-name').addEventListener('change', () => { try { localStorage.setItem('pc-name', myName()); } catch (e) {} NET.say(); if (!NET.mode) NET.lobby(); });
 $('co-name').addEventListener('keydown', e => e.stopPropagation());
 document.addEventListener('pointerlockchange', () => { if (locked()) wasLocked = true; else if (wasLocked && G.state === 'playing') pause(); });
@@ -7218,18 +7623,17 @@ function frame(now) {
   visuals(live ? dt : 0, now);
   if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash), rp = Math.round(P.rp || 0); if (c !== SAVE.lastC || rp !== SAVE.lastR) { SAVE.lastC = c; SAVE.lastR = rp; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
   // a machine that cannot keep up drops to the lighter settings by itself, once
-  if (G.state === 'playing' && !GFX.low && !GFX.auto && !TEST) { if (DBG.fps < 27) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 5) { GFX.auto = true; GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); banner('Graphics set to Low', 'to keep the game smooth · change it in the pause menu', 3.5); } }
-  renderer.clear(); renderer.render(scene, camera);
-  if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); }
+  if (G.state === 'playing' && GQ.preset !== 'low' && (GFX.drops | 0) < 2 && !GFX.auto && !TEST) { if (DBG.fps < 27) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 6) { slowT = 0; GFX.drops = (GFX.drops | 0) + 1; const p = slowerPreset(); resize(); if (p) banner('Graphics set to ' + p[0].toUpperCase() + p.slice(1), 'to keep the game smooth · change it in the pause menu', 3.5); } }
+  drawFrame();
 }
 // a host whose tab is hidden would freeze the city for everyone, so a worker keeps the world ticking while the page is out of sight
 let bgWorker = null, bgLast = 0;
 function bgTick() { if (!document.hidden || !NET.mode) return; const now = performance.now(); let left = Math.min(.3, (now - bgLast) / 1000); bgLast = now; while (left > .001) { const d = Math.min(.05, left); step(d); left -= d; } }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
-applyGfx(); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
+resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
 if (TEST) window.__pc = { carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
-  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => { renderer.clear(); renderer.render(scene, camera); if (vmRoot.visible) { renderer.clearDepth(); renderer.render(vmScene, vmCam); } }, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
+  step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);
 

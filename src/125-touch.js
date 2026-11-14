@@ -65,7 +65,7 @@ window.addEventListener('resize', layoutTouch); window.addEventListener('orienta
 // turning the controls on or off; the first time, a phone gets the lighter graphics as well
 function setTouch(on) {
   if (TOUCH.on === on) return; TOUCH.on = on; document.body.classList.toggle('touch', on); releaseAll();
-  if (on) { layoutTouch(); let pref = null; try { pref = localStorage.getItem('pc-gfx'); } catch (e) {} if (!pref && !GFX.low) { GFX.low = true; $('set-gfx').value = 'low'; applyGfx(); resize(); } }
+  if (on) { layoutTouch(); let pref = null; try { pref = localStorage.getItem('pc-gfx2') || localStorage.getItem('pc-gfx'); } catch (e) {} if (!pref && GQ.preset !== 'low') { setPreset('low', false); resize(); } }
   touchMenu(); updateTouchUi();
 }
 const wantTouch = () => TOUCH.cfg.mode === 'on' || (TOUCH.cfg.mode === 'auto' && TOUCH.coarse);

@@ -209,3 +209,7 @@ addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, BRIDGE.z - BRIDGE.w, 'concrete', { no
   addBox(CITY.w + 20, CITY.w + 66, -2, 1, 56, 64, 'concrete', { nocol: true }); }
 const water = new T.Mesh(new T.PlaneGeometry(2600, 2600, 1, 1), new T.MeshLambertMaterial({ color: 0x35607a, map: noiseTex('#8fa9b8', .1, { blots: 20, grain: 4 }) }));
 water.material.map.repeat.set(90, 90); water.rotation.x = -PI / 2; water.position.set(CITY.w / 2, -1.4, CITY.d / 2); water.receiveShadow = false; scene.add(water);
+// the lit (PBR) look: darker water that reflects the sky, brightest at a low angle
+const WATER = { low: water.material, pbr: new T.MeshStandardMaterial({ color: 0x1f4458, map: water.material.map, roughness: .12, metalness: 0, envMapIntensity: 1.15 }), a: new T.Color(), b: new T.Color() };
+function waterLook() { water.material = GQ.env ? WATER.pbr : WATER.low; }
+function waterTone(night) { WATER.low.color.copy(WATER.a.setHex(0x35607a)).lerp(WATER.b.setHex(0x0b1826), night); WATER.pbr.color.copy(WATER.a.setHex(0x26506a)).lerp(WATER.b.setHex(0x050b12), night); }

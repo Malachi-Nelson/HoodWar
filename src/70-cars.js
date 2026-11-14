@@ -8,7 +8,13 @@ const wheelGeo = (() => { const b = new GeoBuf(), c = new T.CylinderGeometry(1, 
 const wheelMesh = new T.InstancedMesh(wheelGeo, lam({}), CAR_MAX * 4); wheelMesh.castShadow = true; wheelMesh.frustumCulled = false; for (let i = 0; i < CAR_MAX * 4; i++) wheelMesh.setMatrixAt(i, ZERO_M); scene.add(wheelMesh);
 const carTrimMat = lam({}), carLampMat = new T.MeshBasicMaterial({ vertexColors: true }), carGlassMat = new T.MeshLambertMaterial({ color: 0x26323b, transparent: true, opacity: .64, depthWrite: false }), wreckMat = new T.MeshLambertMaterial({ color: 0x1a1816 });
 const beamGeo = (() => { const g = new T.PlaneGeometry(7, 15); g.rotateX(-PI / 2); g.translate(0, .16, 9.5); return g; })(), beamMat = new T.MeshBasicMaterial({ map: glowTex, color: 0xfff0cc, transparent: true, opacity: .34, blending: T.AdditiveBlending, depthWrite: false });
-const paintMats = {}; const paintMat = hex => paintMats[hex] || (paintMats[hex] = new T.MeshPhongMaterial({ color: hex, specular: 0x4a4a4a, shininess: 38 }));
+const paintMats = {}, paintPBR = {};
+// paint: plain shiny on Low; on anything with reflections, metallic paint under a clear coat that mirrors the sky
+const paintMat = hex => GQ.env ? paintPBR[hex] || (paintPBR[hex] = new T.MeshPhysicalMaterial({ color: hex, roughness: .4, metalness: .45, clearcoat: 1, clearcoatRoughness: .05 }))
+  : paintMats[hex] || (paintMats[hex] = new T.MeshPhongMaterial({ color: hex, specular: 0x4a4a4a, shininess: 38 }));
+const CARLOOK = { trim: [carTrimMat, new T.MeshStandardMaterial({ vertexColors: true, roughness: .55, metalness: .25 })], glass: [carGlassMat, new T.MeshStandardMaterial({ color: 0x1a2229, transparent: true, opacity: .72, depthWrite: false, roughness: .03, metalness: .3, envMapIntensity: 1.4 })],
+  wreck: [wreckMat, new T.MeshStandardMaterial({ color: 0x1a1816, roughness: .95, metalness: .1 })] };
+function carLook() { const k = GQ.env ? 1 : 0; cars.forEach(c => { c.tm.material = CARLOOK.trim[k]; c.gm.material = CARLOOK.glass[k]; c.pm.material = c.wreck ? CARLOOK.wreck[k] : paintMat(c.color); }); }
 const CAR_GEO = {};
 function carGeo(type) {
   if (CAR_GEO[type]) return CAR_GEO[type];
@@ -53,9 +59,9 @@ function spawnCar(type, x, z, yaw, o) {
   if (!carFree.length && !(AUTH() && evictCar())) return null; o = o || {};
   const S = CARS[type], geo = S.air === 'plane' ? planeGeo(type) : S.air ? heliGeo(type) : carGeo(type), color = o.color === undefined ? PAINTS[Math.floor(rand() * PAINTS.length)] : o.color;   // any colour off the chart
   const g = new T.Group(), body = new T.Group(); g.rotation.order = 'YXZ'; g.add(body);
-  const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, carTrimMat), gm = new T.Mesh(geo.glass, carGlassMat), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
+  const pm = new T.Mesh(geo.paint, paintMat(color)), tm = new T.Mesh(geo.trim, CARLOOK.trim[GQ.env ? 1 : 0]), gm = new T.Mesh(geo.glass, CARLOOK.glass[GQ.env ? 1 : 0]), lm = new T.Mesh(geo.lamp, carLampMat), bm = new T.Mesh(beamGeo, beamMat);
   pm.castShadow = tm.castShadow = true; pm.receiveShadow = true; gm.renderOrder = 3; bm.renderOrder = 4; bm.visible = false; body.add(pm, tm, gm, lm, bm); scene.add(g);
-  const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm,
+  const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm, tm, gm, lm,
     occ: [null, null, null, null], inp: { thr: 0, steer: 0, hb: false }, wreck: false, burn: 0, spin: 0, roll: 0, dive: 0, asleep: true, home: o.home || null, team: o.team === undefined ? -1 : o.team, horn: 0, smokeT: 0, lastHit: null, idle: 0, buf: [], slip: 0, crash: 0 };
   if (c.id > carSeq) carSeq = c.id;
   if (S.air === 'plane') planeDress(c); else if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
@@ -163,7 +169,7 @@ function updateCarVisual(c, dt) {
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
   const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), hx = c.x + fx * (c.spec.len / 2 - .8), hz = c.z + fz * (c.spec.len / 2 - .8), frac = c.hp / c.spec.hp;
   c.smokeT -= dt;
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .07; FX.fire(hx, c.y + c.geo.belt, hz, .8); if (rand() < .5) FX.smoke(hx, c.y + c.geo.belt + .4, hz, 1, true); } }

@@ -119,7 +119,7 @@ function heliVisual(c, dt) {
   const r = c.rotor || 0; c.rotA = (c.rotA + r * 31 * dt) % TAU; c.rot.rotation.y = c.rotA; c.trot.rotation.x = c.rotA * 2.6;
   const blur = r > .35 ? (r - .35) / .65 : 0; c.disc.visible = blur > .02; if (c.disc.visible) c.disc.material.opacity = blur * .24;
   c.bea.visible = r > .1 && !c.wreck && (G.time * 1.15 + c.id * .37) % 1 < .1;
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.4, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.2); }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.4, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.2); }
     if (c.cone) { c.cone.visible = c.spot.visible = false; } if (c.lb) c.lb.forEach(L => { L.s.visible = false; }); return; }
   const frac = c.hp / c.spec.hp; c.smokeT -= dt; heliPoint(c, 0, 2.2, -1.2, _hp);
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .06; FX.fire(_hp.x, _hp.y, _hp.z, 1); FX.smoke(_hp.x, _hp.y + .4, _hp.z, 1.2, true); } }

@@ -5,13 +5,23 @@ const canvas = $('view');
 let renderer;
 try { renderer = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' }); }
 catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so the game cannot run here.'; $('deploy').hidden = true; return; }
-const GFX = { low: false };
-try { GFX.low = localStorage.getItem('pc-gfx') === 'low'; } catch (e) {}
-function applyGfx() {
-  renderer.setPixelRatio(GFX.low ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
-  renderer.shadowMap.enabled = !GFX.low; renderer.shadowMap.needsUpdate = true;
-  scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); });
-}
+// --- graphics quality: a preset from Low (phones, old laptops) to Ultra, or each setting by hand (Custom). What each one does is in
+//     21-post.js. res caps the pixel ratio; shadow 0-3; tex 0-2 (texture filtering and size); view 0-3 (how far you see); aa 0/1 (FXAA);
+//     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
+//     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
+const GQ_PRESETS = {
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0 },
+};
+const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
+{ let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}
+  if (!sv || typeof sv !== 'object') { let old = null; try { old = localStorage.getItem('pc-gfx'); } catch (e) {} sv = { preset: old === 'low' || (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 'low' : 'high' }; }
+  if (GQ_PRESETS[sv.preset]) Object.assign(GQ, GQ_PRESETS[sv.preset], { preset: sv.preset });
+  else if (sv.preset === 'custom') { GQ.preset = 'custom'; GQ_KEYS.forEach(k => { if (typeof sv[k] === 'number') GQ[k] = sv[k]; }); } }
+const GFX = { get low() { return GQ.preset === 'low'; }, auto: false };   // older code asks this
+renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
 renderer.autoClear = false;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
 const scene = new T.Scene();
@@ -30,19 +40,47 @@ sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalB
 scene.add(sun); scene.add(sun.target);
 const moon = new T.DirectionalLight(0x7f9bd0, 0); moon.position.set(-.45, 1, .35); scene.add(moon);
 
-// --- sky: a gradient dome with a sun glow and a few stars, moved with the camera
-const SKY = { top: new T.Color(), hor: new T.Color(), sunCol: new T.Color(), sunDir: new T.Vector3(0, 1, 0), sunAmt: { value: 1 }, night: { value: 0 } };
+// --- sky: the hour's gradient, the sun and its glow, a layer of cloud that drifts with the wind and thickens with the weather (lit
+//     by the sun by day, by the moon and the city's own glow at night), stars and the moon. The same material is drawn into the
+//     environment map that lights and reflects off everything (21-post.js).
+const SKY = { top: new T.Color(), hor: new T.Color(), sunCol: new T.Color(), sunDir: new T.Vector3(0, 1, 0), sunAmt: { value: 1 }, night: { value: 0 },
+  cloud: { value: 0 }, time: { value: 0 }, cLit: new T.Color(1, 1, 1), cShade: new T.Color(.5, .5, .55), glow: new T.Color(0, 0, 0), flash: { value: 0 }, moonDir: new T.Vector3(-.4, .6, .5).normalize(), stars: { value: 0 } };
 const skyMat = new T.ShaderMaterial({
-  uniforms: { top: { value: SKY.top }, hor: { value: SKY.hor }, sunCol: { value: SKY.sunCol }, sunDir: { value: SKY.sunDir }, sunAmt: SKY.sunAmt, night: SKY.night },
+  uniforms: { top: { value: SKY.top }, hor: { value: SKY.hor }, sunCol: { value: SKY.sunCol }, sunDir: { value: SKY.sunDir }, sunAmt: SKY.sunAmt, night: SKY.night, cloud: SKY.cloud, time: SKY.time,
+    cLit: { value: SKY.cLit }, cShade: { value: SKY.cShade }, glow: { value: SKY.glow }, flash: SKY.flash, moonDir: { value: SKY.moonDir }, stars: SKY.stars },
   vertexShader: 'varying vec3 vDir; void main(){ vDir = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: `uniform vec3 top; uniform vec3 hor; uniform vec3 sunCol; uniform vec3 sunDir; uniform float sunAmt; uniform float night; varying vec3 vDir;
-    void main(){ vec3 d = normalize(vDir); float h = max(d.y, 0.0); vec3 c = mix(hor, top, pow(h, 0.5));
-      float s = max(dot(d, sunDir), 0.0); c += sunCol * (smoothstep(0.9992, 0.9996, s) * 1.2 + pow(s, 60.0) * 0.35 + pow(s, 7.0) * 0.22) * sunAmt;
-      vec3 q = floor(d * 190.0); float st = step(0.9982, fract(sin(dot(q, vec3(12.9898, 78.233, 37.719))) * 43758.5453)); c += vec3(st) * smoothstep(0.55, 1.0, night) * smoothstep(0.05, 0.3, d.y) * 0.8;
-      gl_FragColor = vec4(c, 1.0); }`,
+  fragmentShader: `uniform vec3 top; uniform vec3 hor; uniform vec3 sunCol; uniform vec3 sunDir; uniform float sunAmt; uniform float night; uniform float cloud; uniform float time;
+    uniform vec3 cLit; uniform vec3 cShade; uniform vec3 glow; uniform float flash; uniform vec3 moonDir; uniform float stars; varying vec3 vDir;
+    float hsh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hsh(i), hsh(i + vec2(1.0, 0.0)), f.x), mix(hsh(i + vec2(0.0, 1.0)), hsh(i + vec2(1.0, 1.0)), f.x), f.y); }
+    float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * vn(p); p = p * 2.07 + vec2(3.1, 1.7); a *= 0.5; } return v; }
+    void main() {
+      vec3 d = normalize(vDir); float h = max(d.y, 0.0), s = max(dot(d, sunDir), 0.0);
+      vec3 c = mix(hor, top, pow(h, 0.45));
+      if (d.y < 0.0) c = mix(hor, hor * 0.55 + glow * 0.4, clamp(-d.y * 3.0, 0.0, 1.0));                       // below the horizon: the haze over the land
+      c += glow * pow(1.0 - h, 6.0) * 0.6;                                                                       // the city's glow low in the night sky
+      c += sunCol * (pow(s, 6.0) * 0.28 + pow(s, 48.0) * 0.5) * sunAmt;                                         // the glow round the sun
+      vec3 q = floor(d * 190.0); float st = step(0.9982, fract(sin(dot(q, vec3(12.9898, 78.233, 37.719))) * 43758.5453));
+      float sky = 1.0;
+      // cloud: one layer, seen in perspective, drifting; how much of it there is comes from the weather
+      if (d.y > 0.0) {
+        vec2 p = d.xz / (d.y + 0.06) * 1.25 + vec2(time * 0.006, time * 0.0025);
+        float n = fbm(p), n2 = fbm(p * 2.3 + vec2(time * 0.01, 0.0));
+        float cov = mix(0.66, 0.08, cloud), den = smoothstep(cov, cov + 0.3, n * 0.8 + n2 * 0.25) * smoothstep(0.0, 0.18, d.y);
+        float lit = clamp(0.55 + 0.45 * pow(s, 4.0) - (n - 0.5) * 0.6, 0.0, 1.0);
+        vec3 cc = mix(cShade, cLit, lit) + sunCol * pow(s, 10.0) * 0.6 * sunAmt + glow * 0.5 + vec3(flash);
+        c = mix(c, cc, den); sky = 1.0 - den;
+      }
+      c += sunCol * smoothstep(0.9993, 0.9997, s) * 2.5 * sunAmt * sky;                                           // the sun itself
+      float m = max(dot(d, moonDir), 0.0); c += vec3(0.9, 0.92, 1.0) * (smoothstep(0.99955, 0.99975, m) * 1.4 + pow(m, 80.0) * 0.08) * night * sky;
+      c += vec3(st) * stars * smoothstep(0.05, 0.3, d.y) * sky * 0.9;
+      gl_FragColor = vec4(c, 1.0);
+      #include <tonemapping_fragment>
+      #include <encodings_fragment>
+    }`,
   side: T.BackSide, depthWrite: false, depthTest: false, fog: false,
 });
-const skyDome = new T.Mesh(new T.SphereGeometry(1800, 24, 14), skyMat); skyDome.renderOrder = -10; skyDome.frustumCulled = false; scene.add(skyDome);
+const skyDome = new T.Mesh(new T.SphereGeometry(1800, 32, 16), skyMat); skyDome.renderOrder = -10; skyDome.frustumCulled = false; scene.add(skyDome);
 
 // --- procedural textures
 function texCanvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h || w; return c; }
@@ -59,7 +97,8 @@ function noiseTex(base, vary, o) {
 }
 // A building face: `bays` windows across by `floors` up on one tile. The wall is drawn pale so each building's own colour can tint it.
 function facadeTex(o) {
-  const S = 512, c = texCanvas(S), g = c.getContext('2d'), e = texCanvas(S), x = e.getContext('2d');
+  const S = 512, c = texCanvas(S), g = c.getContext('2d'), e = texCanvas(S), x = e.getContext('2d'), rc = texCanvas(S), rg = rc.getContext('2d');   // rc: roughness, for the lit (PBR) look: walls rough, glass smooth
+  rg.fillStyle = o.style === 'glass' ? 'rgb(70,70,70)' : 'rgb(220,220,220)'; rg.fillRect(0, 0, S, S); rg.fillStyle = 'rgb(22,22,22)';
   const cw = S / o.bays, ch = S / o.floors;
   g.fillStyle = o.wall || '#d9d2c8'; g.fillRect(0, 0, S, S); x.fillStyle = '#000'; x.fillRect(0, 0, S, S);
   for (let i = 0; i < 5000; i++) { const v = rand() < .5 ? 0 : 255; g.fillStyle = `rgba(${v},${v},${v},${rand() * .07})`; g.fillRect(rand() * S, rand() * S, 2 + rand() * 4, 1 + rand() * 2); }
@@ -69,7 +108,7 @@ function facadeTex(o) {
   for (let j = 0; j < o.floors; j++) for (let i = 0; i < o.bays; i++) {
     const ww = cw * o.ww, wh = ch * o.wh, wx = i * cw + (cw - ww) / 2, wy = j * ch + (ch - wh) * (o.wy === undefined ? .45 : o.wy);
     if (o.style !== 'glass') { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(wx - 3, wy - 5, ww + 6, 5); g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(wx - 3, wy + wh, ww + 6, 4); }
-    const gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, o.glass0 || '#27323f'); gr.addColorStop(1, o.glass1 || '#3d4c5c'); g.fillStyle = gr; g.fillRect(wx, wy, ww, wh);
+    rg.fillRect(wx, wy, ww, wh); const gr = g.createLinearGradient(0, wy, 0, wy + wh); gr.addColorStop(0, o.glass0 || '#27323f'); gr.addColorStop(1, o.glass1 || '#3d4c5c'); g.fillStyle = gr; g.fillRect(wx, wy, ww, wh);
     g.fillStyle = 'rgba(190,215,235,.12)'; g.beginPath(); g.moveTo(wx, wy + wh); g.lineTo(wx + ww * .55, wy); g.lineTo(wx + ww * .8, wy); g.lineTo(wx + ww * .25, wy + wh); g.fill();
     const r = rand();
     if (o.style !== 'glass' && r < .45) { g.fillStyle = pick(rand, ['rgba(226,214,190,.75)', 'rgba(200,205,210,.7)', 'rgba(170,120,95,.6)', 'rgba(120,140,150,.6)']); g.fillRect(wx, wy, ww, wh * (.25 + rand() * .5)); }
@@ -77,7 +116,7 @@ function facadeTex(o) {
     if (o.mull) { g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); if (o.mull > 1) { g.moveTo(wx, wy + wh / 2); g.lineTo(wx + ww, wy + wh / 2); } g.stroke(); }
     if (rand() < (o.lit === undefined ? .4 : o.lit)) { const k = pick(rand, o.lights || ['#ffd9a0', '#ffe8c0', '#f3c27a', '#cfe2ff']); const lg = x.createLinearGradient(0, wy, 0, wy + wh); lg.addColorStop(0, k); lg.addColorStop(1, '#6b4a2a'); x.fillStyle = lg; x.globalAlpha = .55 + rand() * .45; x.fillRect(wx + 1, wy + 1, ww - 2, wh - 2); x.globalAlpha = 1; if (o.mull) { x.fillStyle = '#000'; x.fillRect(wx + ww / 2 - 1, wy, 2, wh); } }
   }
-  return { map: asTex(c), em: asTex(e) };
+  const rough = asTex(rc); rough.encoding = T.LinearEncoding; return { map: asTex(c), em: asTex(e), rough };
 }
 // --- geometry buffers: everything that never moves is poured into a handful of big meshes, one per material
 class GeoBuf {
@@ -108,7 +147,7 @@ class GeoBuf {
     g.computeBoundingSphere(); return g;
   }
 }
-const hexCol = h => [(h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255];
+const hexCol = h => [s2l((h >> 16 & 255) / 255), s2l((h >> 8 & 255) / 255), s2l((h & 255) / 255)];   // linear, for vertex colours
 const colOf = c => c === undefined || c === null ? null : Array.isArray(c) ? c : hexCol(c);
 
 // --- materials for the standing city. tu/tv: metres covered by one repeat of the texture.
@@ -116,7 +155,7 @@ const MATS = {};
 const lam = o => new T.MeshLambertMaterial(Object.assign({ vertexColors: true }, o));
 function defMat(key, mat, tu, tv, o) { MATS[key] = Object.assign({ mat, tu: tu || 4, tv: tv || tu || 4, cast: true, recv: true }, o || {}); return mat; }
 const FACADES = [];   // materials whose windows light up after dark
-function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
+function defFacade(key, o, bayW, floorH) { const t = facadeTex(o), m = lam({ map: t.map, emissiveMap: t.em, emissive: 0x000000 }); m.userData.rough = t.rough; FACADES.push(m); return defMat(key, m, o.bays * (bayW || 3), o.floors * (floorH || 3.2)); }
 defMat('asphalt', lam({ map: noiseTex('#3a3c40', .1, { cracks: 14, blots: 16 }) }), 12, 12, { cast: false });
 defMat('walk',    lam({ map: noiseTex('#a9a7a0', .07, { lines: 64, vlines: 64, lineCol: 'rgba(0,0,0,.18)', blots: 8 }) }), 6, 6, { cast: false });
 defMat('plaza',   lam({ map: noiseTex('#b9b4a8', .05, { lines: 32, vlines: 32, lineCol: 'rgba(0,0,0,.12)' }) }), 4, 4, { cast: false });
@@ -150,5 +189,5 @@ const SBUF = {};   // material key -> GeoBuf
 const SB = key => SBUF[key] || (SBUF[key] = new GeoBuf());
 const staticMeshes = [];
 function finishStatic() {
-  for (const key in SBUF) { const d = MATS[key], m = new T.Mesh(SBUF[key].build(), d.mat); m.castShadow = !!d.cast; m.receiveShadow = !!d.recv; m.matrixAutoUpdate = false; if (d.order) m.renderOrder = d.order; scene.add(m); staticMeshes.push(m); delete SBUF[key]; }
+  for (const key in SBUF) { const d = MATS[key], m = new T.Mesh(SBUF[key].build(), d.mat); m.userData.key = key; m.castShadow = !!d.cast; m.receiveShadow = !!d.recv; m.matrixAutoUpdate = false; if (d.order) m.renderOrder = d.order; scene.add(m); staticMeshes.push(m); delete SBUF[key]; }
 }

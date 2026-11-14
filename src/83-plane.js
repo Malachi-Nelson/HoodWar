@@ -113,7 +113,7 @@ function planeVisual(c, dt) {
   if (G.time - (c.stepT || -9) > .25) c.rotor = approach(c.rotor || 0, (c.eng || c.occ[0]) && !c.wreck ? .8 : 0, dt * .45);
   const r = c.rotor || 0; if (c.prop) { c.rotA = (c.rotA + r * 46 * dt) % TAU; c.prop.rotation.z = c.rotA; const blur = r > .3 ? (r - .3) / .7 : 0; c.pdisc.visible = blur > .02; if (c.pdisc.visible) c.pdisc.material.opacity = blur * .3; }
   c.bea.visible = r > .1 && !c.wreck && (G.time * 1.2 + c.id * .37) % 1 < .1;
-  if (c.wreck) { if (c.pm.material !== wreckMat) c.pm.material = wreckMat; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.6, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.4); } return; }
+  if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (!c.sunk && c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .16; FX.smoke(c.x, c.y + 1.4, c.z, 1.6, true); if (c.wreckT < 6) FX.fire(c.x, c.y + 1, c.z, 1.4); } return; }
   const frac = c.hp / c.spec.hp; c.smokeT -= dt; heliPoint(c, 0, PLANE_PIVOT + .4, c.geo.prop ? 2.6 : -4, _pp);
   if (c.burn > 0) { if (c.smokeT <= 0) { c.smokeT = .06; FX.fire(_pp.x, _pp.y, _pp.z, 1); FX.smoke(_pp.x, _pp.y + .4, _pp.z, 1.2, true); } }
   else if (frac < .45 && c.smokeT <= 0) { c.smokeT = frac < .25 ? .09 : .2; FX.smoke(_pp.x, _pp.y, _pp.z, .9, frac < .25); }

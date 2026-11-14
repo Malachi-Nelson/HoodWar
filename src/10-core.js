@@ -3,6 +3,12 @@
 const $ = id => document.getElementById(id);
 if (!window.THREE) { $('o-text').textContent = 'The 3D library could not load, so the game cannot start here. Reload the page to try again.'; $('deploy').hidden = true; return; }
 const T = THREE, rand = Math.random, PI = Math.PI, TAU = PI * 2, hyp = Math.hypot;
+// Colour: every colour in this game is written as it should look on screen (sRGB). The renderer lights the city in linear light
+// and turns the result back into sRGB at the very end, so each colour is converted on the way in: hex colours here, vertex
+// colours in GeoBuf (hexCol), and every canvas texture is marked as sRGB.
+{ const sh = T.Color.prototype.setHex; T.Color.prototype.setHex = function (h) { sh.call(this, h); return this.convertSRGBToLinear(); };
+  const CT = T.CanvasTexture; T.CanvasTexture = function (a, b, c, d, e, f, g, h, i) { const t = new CT(a, b, c, d, e, f, g, h, i); t.encoding = T.sRGBEncoding; return t; }; T.CanvasTexture.prototype = CT.prototype; }
+const s2l = v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);   // one sRGB channel (0..1) to linear
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t;
 const wrapPi = a => { a = (a + PI) % TAU; if (a < 0) a += TAU; return a - PI; };
 const angTo = (a, b) => wrapPi(b - a);                 // shortest signed turn from a to b
