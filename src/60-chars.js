@@ -7,7 +7,21 @@ const charMat = new T.MeshLambertMaterial({ color: 0xffffff }), gunMat = lam({})
 const ZERO_M = new T.Matrix4().makeScale(0, 0, 0), _wc = new T.Color();
 const CP = {};
 const bxg = (w, h, d, x, y, z) => { const g = new T.BoxGeometry(w, h, d); g.translate(x || 0, y || 0, z || 0); return g; };
-function charPart(name, geo, per, mat) { const m = new T.InstancedMesh(geo, mat || charMat, CHAR_MAX * per); m.castShadow = true; m.frustumCulled = false; m.userData.per = per; for (let i = 0; i < CHAR_MAX * per; i++) { m.setMatrixAt(i, ZERO_M); if (!mat) m.setColorAt(i, _wc.setHex(0xffffff)); } scene.add(m); CP[name] = m; return m; }
+// Each person keeps a fixed slot in every part, but only the slots in use are drawn: setMatrixAt and setColorAt write to a store on
+// the side, and packPart copies the shown ones (anything not scaled to nothing) to the front of the mesh each frame and draws that many.
+// A gun nobody is holding then costs nothing, and neither do the empty slots.
+function charPart(name, geo, per, mat) { const n = CHAR_MAX * per, m = new T.InstancedMesh(geo, mat || charMat, n); m.castShadow = true; m.frustumCulled = false; m.userData.per = per;
+  if (!mat) for (let i = 0; i < n; i++) m.setColorAt(i, _wc.setHex(0xffffff));
+  const M = m.userData.M = new Float32Array(n * 16), C = m.userData.C = m.instanceColor ? m.instanceColor.array.slice() : null;   // all zero: nothing shown
+  m.setMatrixAt = (i, mt) => { mt.toArray(M, i * 16); }; if (C) m.setColorAt = (i, col) => { col.toArray(C, i * 3); };
+  m.count = 0; scene.add(m); CP[name] = m; return m; }
+function packPart(m) {
+  const M = m.userData.M, C = m.userData.C, A = m.instanceMatrix.array, AC = C && m.instanceColor.array, n = M.length >> 4; let k = 0;
+  for (let i = 0; i < n; i++) { const o = i << 4; if (M[o] === 0 && M[o + 1] === 0 && M[o + 2] === 0) continue;
+    for (let j = 0; j < 16; j++) A[(k << 4) + j] = M[o + j]; if (C) { AC[k * 3] = C[i * 3]; AC[k * 3 + 1] = C[i * 3 + 1]; AC[k * 3 + 2] = C[i * 3 + 2]; } k++; }
+  m.count = k; m.instanceMatrix.updateRange.offset = 0; m.instanceMatrix.updateRange.count = Math.max(1, k * 16); m.instanceMatrix.needsUpdate = true;
+  if (C) { m.instanceColor.updateRange.offset = 0; m.instanceColor.updateRange.count = Math.max(1, k * 3); m.instanceColor.needsUpdate = true; }
+}
 charPart('pelvis', bxg(.36, .2, .22), 1); charPart('chest', bxg(.43, .5, .245, 0, .29, 0), 1); charPart('head', bxg(.21, .24, .23, 0, .13, 0), 1);
 { const b = new GeoBuf(); b.box(-.118, .118, .215, .3, -.125, .125); b.box(-.105, .105, .215, .24, .12, .26); charPart('cap', b.build(), 1); }
 charPart('beanie', bxg(.228, .13, .246, 0, .24, -.004), 1); charPart('hood', bxg(.262, .29, .255, 0, .15, -.035), 1); charPart('hair', bxg(.222, .085, .242, 0, .262, -.006), 1); charPart('mask', bxg(.218, .105, .07, 0, .065, .092), 1);
@@ -202,7 +216,7 @@ function poseChar(c, s, dt) {
   if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
   if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
-function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; flushNear(); }
+function flushChars() { for (const k in CP) packPart(CP[k]); flushNear(); }
 
 // name tags over other players
 function nameTag(text, css, down, rank) {   // rank: drawn in a little badge before the name, the way online players show theirs

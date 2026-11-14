@@ -48,15 +48,17 @@ function emsTick(dt) {
     if (E.leg === 0) { c.horn = 1; const dv = hyp(c.x - E.v.x, c.z - E.v.z);
       if (E.ph === 0 && A && (A.done || hyp(c.x - RX(E.c1[0]), c.z - RZ(E.c1[1])) < 16)) { E.ph = 1; aiStart(c, 'ems', E.c2); c.ai.cruise = 12; }   // at the end of their street: now down it
       if (!A || !c.occ[0]) { E.leg = 2; continue; }   // lost its driver: it is no use to anyone
-      if (dv < 20 || (E.ph === 1 && c.ai && c.ai.done) || G.time > E.give) { E.leg = 1; E.t = G.time + 7; c.horn = 0; c.inp.thr = 0; c.inp.hb = true; if (c.ai) c.ai.wait = 99; } }   // there (or near as it can get)
+      E.slow = carSpeed(c) < 1 ? (E.slow || 0) + dt : 0; E.why = dv < 20 ? 'near' : dv < 60 && E.slow > 5 ? 'held' : E.ph === 1 && c.ai && c.ai.done ? 'end' : G.time > E.give ? 'gave up' : ''; if (E.why) { E.leg = 1; E.t = G.time + 7; c.horn = 0; c.inp.thr = 0; c.inp.hb = true; if (c.ai) c.ai.wait = 99; } }   // there (or near as it can get)
     else if (E.leg === 1) { c.inp.hb = true; if (G.time > E.t) { E.v.emsHold = false; E.v.deadT = 99; E.leg = 2; const far = [E.v.x < CITY.w / 2 ? NX : 0, E.v.z < CITY.d / 2 ? NZ : 0]; const B = c.occ[0]; if (B) { aiStart(c, 'ems', far); c.ai.cruise = 13; } } }   // taken away
     else if (E.leg === 2 && (nearHuman(c.x, c.z) > 220 || (c.ai && c.ai.done))) { const B = c.occ[0]; if (B) removeBot(B); removeCar(c); EMS.list.splice(i, 1); } }
 }
 function emsSend(v) {
-  const hs = humans(); let best = null, bd = 1e9;
-  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - v.x, z - v.z), nh = nearHuman(x, z); if (d < 150 || d > 330 || nh < 95) continue; if (d < bd) { bd = d; best = [i, j]; } }
-  if (!best) return; const [i, j] = best, dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(q => i + q[0] >= 0 && i + q[0] <= NX && j + q[1] >= 0 && j + q[1] <= NZ), q = dirs[(rand() * dirs.length) | 0];
-  lanePoint([i, j], [i + q[0], j + q[1]], 16, LANE, _lp); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) return;
+  const cand = []; for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - v.x, z - v.z); if (d < 150 || d > 330 || nearHuman(x, z) < 95) continue; cand.push([d, i, j]); }
+  cand.sort((p, q) => p[0] - q[0]); let q = null, i = 0, j = 0;   // the nearest crossing out of sight whose lane is clear (a parked or passing car can be in the way)
+  for (const k of cand) { i = k[1]; j = k[2]; const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(e => i + e[0] >= 0 && i + e[0] <= NX && j + e[1] >= 0 && j + e[1] <= NZ), e = dirs[(rand() * dirs.length) | 0];
+    lanePoint([i, j], [i + e[0], j + e[1]], 16, LANE, _lp); if (!cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) { q = e; break; } }
+  if (!q) return;
+  if (!charFree.length) { const far = bots.find(o => o.team === TEAM_CIV && !o.dead && !o.car && !o.ems && nearHuman(o.x, o.z) > 160); if (far) removeBot(far); }   // every figure in use: someone a long way off goes home
   const c = spawnCar('van', _lp.x, _lp.z, yawOf(q[0], q[1]), { color: AMB_PAINT }); if (!c) return; const b = spawnBot(TEAM_CIV, _lp.x, 0, _lp.z, {}); if (!b) { removeCar(c); return; }
   // the street they are lying on: its two crossings; drive to the nearer end, then down the street to them
   const ci = clamp(Math.round((v.x - EDGE) / PX), 0, NX), cj = clamp(Math.round((v.z - EDGE) / PZ), 0, NZ), alongNS = Math.abs(v.x - RX(ci)) < Math.abs(v.z - RZ(cj));

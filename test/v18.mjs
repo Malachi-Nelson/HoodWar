@@ -38,11 +38,11 @@ expect('people come out of shop doors', D && D.n > 0 && D.atDoor === D.n);
 const E = await run('an ambulance', () => { const g = __pc; const onWalk = b => { const dx = Math.abs(((b.x - 10) % 100 + 100) % 100), dz = Math.abs(((b.z - 10) % 84 + 84) % 84); return Math.min(dx, 100 - dx) < 11 || Math.min(dz, 84 - dz) < 11; };   // down on a pavement, by a street
   const v = g.bots.find(b => b.team === g.TEAM_CIV && !b.dead && !b.car && onWalk(b) && Math.hypot(b.x - g.P.x, b.z - g.P.z) < 120);
   if (!v) return 'nobody'; for (let f = 0; f < 30 * 90 && g.EMS.list.length; f++) g.step(1, 1 / 30);   // one at a time: let any ambulance already out finish
-  v.dead = true; v.deadT = 3; v.hp = 0; const log = []; let near = 1e9, sent = null;
-  for (let f = 0; f < 30 * 150; f++) { g.step(1, 1 / 30); if (f % 5 === 0) g.visuals(1 / 6); const E = g.EMS.list.find(q => q.v === v); if (E && !sent) sent = { paint: E.car.color === 0xf3f1ea, ems: !!E.car.ems, siren: E.car.horn, type: E.car.type };
-    if (E) { near = Math.min(near, Math.hypot(E.car.x - v.x, E.car.z - v.z)); if (!log.includes(E.leg)) log.push(E.leg); } if (sent && !g.EMS.list.some(q => q.v === v)) break; }
-  return { sent, legs: log, nearest: Math.round(near), bodyGone: !g.bots.includes(v), left: !g.EMS.list.length }; });
-expect('an ambulance comes with its siren, stops by the body, takes them and goes', E && E.sent && E.sent.ems && E.sent.siren && E.legs.includes(1) && E.legs.includes(2) && E.nearest < 26 && E.bodyGone);
+  v.dead = true; v.deadT = 3; v.hp = 0; const log = []; let near = 1e9, sent = null, E = null;   // follow the first ambulance out after this (someone else killed nearby at the same moment may be the one it comes for)
+  for (let f = 0; f < 30 * 150; f++) { g.step(1, 1 / 30); if (f % 5 === 0) g.visuals(1 / 6); if (!E && g.EMS.list.length) { E = g.EMS.list[0]; sent = { paint: E.car.color === 0xf3f1ea, ems: !!E.car.ems, siren: E.car.horn, type: E.car.type, ours: E.v === v }; }
+    if (E) { near = Math.min(near, Math.hypot(E.car.x - E.v.x, E.car.z - E.v.z)); if (!log.includes(E.leg)) log.push(E.leg); if (!g.EMS.list.includes(E)) break; } }
+  return { sent, legs: log, nearest: Math.round(near), why: E && E.why, bodyGone: E ? !g.bots.includes(E.v) : null, left: E ? !g.EMS.list.includes(E) : null }; });
+expect('an ambulance comes with its siren, stops by the body, takes them and goes', E && E.sent && E.sent.ems && E.sent.siren && E.legs.includes(1) && E.legs.includes(2) && (E.nearest < 26 || (E.why === 'held' && E.nearest < 62)) && E.bodyGone);
 const FD = await run('past the expressway', () => { const g = __pc, inBlock = q => g.FAR_BL.some(L => q[0] >= L.x0 - .5 && q[2] <= L.x1 + .5 && q[1] >= L.z0 - .5 && q[3] <= L.z1 + .5);
   const nw = g.FAR_B.filter(q => q[1] < g.CITY.d), off = nw.filter(q => !inBlock(q)).length, wet = nw.filter(q => q[0] < g.FAR_LAND.x0 || q[1] < g.FAR_LAND.z0).length;
   const city = g.FAR_BL.filter(L => L.x1 > -6 && L.z1 > -6).length; return { blocks: g.FAR_BL.length, towers: nw.length, off, wet, city }; });

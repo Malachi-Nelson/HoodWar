@@ -36,7 +36,7 @@ const WET_ROUGH = { asphalt: .28, lot: .3, walk: .55, plaza: .5, concrete: .55, 
 const WXL = { hemi: 0, fog: new T.Color(), top: new T.Color(), hor: new T.Color() };
 function applyWeather() {
   const c = WX.cloud, f = WX.fog, r = WX.rain, grey = (col, k) => { const l = col.r * .3 + col.g * .55 + col.b * .15; col.lerp(_wg.setRGB(l * .97, l, l * 1.06), k); };
-  sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sun.castShadow = sun.intensity > .05; moon.intensity *= 1 - .75 * c;
+  sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sunShadow(); moon.intensity *= 1 - .75 * c;
   grey(hemi.color, c * .55); grey(hemi.groundColor, c * .4); hemi.intensity *= 1 + c * .1 - r * .12;
   grey(scene.fog.color, c * .7); grey(SKY.top, c * .85); grey(SKY.hor, c * .7); SKY.top.multiplyScalar(1 - c * .3); scene.fog.color.multiplyScalar(1 - r * .15);
   SKY.sunAmt.value *= 1 - c * .94; SKY.cloud.value = c;                                          // the cloud layer itself hides the sun's disc, the moon and the stars

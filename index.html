@@ -402,7 +402,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
       <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. ADS aims down the sights (tap on, tap off, or hold: your pick below). USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work. Move buttons also changes what any button does, hides the ones you never use and adds buttons of your own. A controller works too.</p>
       <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><label for="set-tads">ADS button</label><select id="set-tads"><option value="toggle">Tap on, tap off</option><option value="hold">Hold</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
       <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option><option value="custom">Custom</option></select><button class="btn sm" id="gq-more" type="button">Advanced</button><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
-      <div class="row gq" id="gq-adv" hidden><label>Resolution <select id="gq-res"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><label>Shadows <select id="gq-shadow"><option value="0">Off</option><option value="1">Low</option><option value="2">High</option><option value="3">Ultra</option></select></label><label>Textures <select id="gq-tex"><option value="0">Low</option><option value="1">Medium</option><option value="2">High</option></select></label><label>View distance <select id="gq-view"><option value="0">Near</option><option value="1">Medium</option><option value="2">Far</option><option value="3">Max</option></select></label><label>Reflections <select id="gq-env"><option value="0">Off</option><option value="1">On</option></select></label><label>Post-processing <select id="gq-post"><option value="0">Off</option><option value="1">On</option></select></label><label>Anti-aliasing <select id="gq-aa"><option value="0">Off</option><option value="1">FXAA</option></select></label><label>Ambient occlusion <select id="gq-ao"><option value="0">Off</option><option value="1">Half</option><option value="2">Full</option></select></label><label>Street reflections <select id="gq-ssr"><option value="0">Off</option><option value="1">On</option><option value="2">Fine</option></select></label><label>Bloom <select id="gq-bloom"><option value="0">Off</option><option value="1">On</option></select></label><label>Depth of field <select id="gq-dof"><option value="0">Off</option><option value="1">On</option></select></label><label>Motion blur <select id="gq-mblur"><option value="0">Off</option><option value="1">On</option></select></label></div>
+      <div class="row gq" id="gq-adv" hidden><label>Resolution <select id="gq-res"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><label>Shadows <select id="gq-shadow"><option value="0">Off</option><option value="1">Low</option><option value="2">High</option><option value="3">Ultra</option></select></label><label>Textures <select id="gq-tex"><option value="0">Low</option><option value="1">Medium</option><option value="2">High</option></select></label><label>View distance <select id="gq-view"><option value="0">Near</option><option value="1">Medium</option><option value="2">Far</option><option value="3">Max</option></select></label><label>Reflections <select id="gq-env"><option value="0">Off</option><option value="1">On</option></select></label><label>Post-processing <select id="gq-post"><option value="0">Off</option><option value="1">On</option></select></label><label>Anti-aliasing <select id="gq-aa"><option value="0">Off</option><option value="1">FXAA</option></select></label><label>Ambient occlusion <select id="gq-ao"><option value="0">Off</option><option value="1">Half</option><option value="2">Full</option></select></label><label>Street reflections <select id="gq-ssr"><option value="0">Off</option><option value="1">On</option><option value="2">Fine</option></select></label><label>Keep it smooth <select id="gq-dres"><option value="0">Off</option><option value="1">Lower resolution when needed</option></select></label><label>Bloom <select id="gq-bloom"><option value="0">Off</option><option value="1">On</option></select></label><label>Depth of field <select id="gq-dof"><option value="0">Off</option><option value="1">On</option></select></label><label>Motion blur <select id="gq-mblur"><option value="0">Off</option><option value="1">On</option></select></label></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
       <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns, rank, businesses, your car and your turf are saved as you play, and your turf and businesses keep earning while you are away. A player's headshot kills in one shot. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
     </div>
@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 15:43 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 17:47 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -757,19 +757,20 @@ catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so th
 // --- graphics quality: a preset from Low (phones, old laptops) to Ultra, or each setting by hand (Custom). What each one does is in
 //     21-post.js. res caps the pixel ratio; shadow 0-3; tex 0-2 (texture filtering and size); view 0-3 (how far you see); aa 0/1 (FXAA);
 //     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
-//     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
+//     bloom and colour grading; dof, mblur: optional depth of field and motion blur; dres: drop the resolution a step at a time when the
+//     frame rate cannot keep up, and raise it again when it can.
 const GQ_PRESETS = {
-  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0 },
-  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0 },
-  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1 },
-  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2 },
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0, dres: 1 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0, dres: 1 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1, dres: 1 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2, dres: 1 },
 };
 const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
 { let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}
   if (!sv || typeof sv !== 'object') { let old = null; try { old = localStorage.getItem('pc-gfx'); } catch (e) {} sv = { preset: old === 'low' || (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 'low' : 'high' }; }
   if (GQ_PRESETS[sv.preset]) Object.assign(GQ, GQ_PRESETS[sv.preset], { preset: sv.preset });
   else if (sv.preset === 'custom') { GQ.preset = 'custom'; GQ_KEYS.forEach(k => { if (typeof sv[k] === 'number') GQ[k] = sv[k]; }); } }
-const GFX = { get low() { return GQ.preset === 'low'; }, auto: false };   // older code asks this
+const GFX = { get low() { return GQ.preset === 'low'; }, auto: false, scale: 1 };   // older code asks this; scale: the dynamic resolution step (21-post.js)
 renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
 renderer.autoClear = false;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -784,6 +785,10 @@ vmKey.position.set(-1.2, 2, 1.4); vmScene.add(vmHemi); vmScene.add(vmKey);
 
 const hemi = new T.HemisphereLight(0xbcd0e8, 0x4a4238, .7); scene.add(hemi);
 const sun = new T.DirectionalLight(0xffe0b0, 1); sun.castShadow = true;
+// The sun always casts (switching castShadow on and off makes every material in the city compile its shaders again: a stall at each
+// dusk and dawn, and over and over under passing cloud). When it is too dim to throw a visible shadow the shadow map is simply not
+// redrawn.
+function sunShadow() { renderer.shadowMap.autoUpdate = sun.intensity > .05; }
 sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .06;
 { const c = sun.shadow.camera; c.left = -95; c.right = 95; c.top = 95; c.bottom = -95; c.near = 1; c.far = 520; c.updateProjectionMatrix(); }
 scene.add(sun); scene.add(sun.target);
@@ -1155,7 +1160,8 @@ function lookTick() {
 const VIEW = { far: 1000 };
 function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap', 'normalMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
 function applyQuality(save) {
-  const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res));
+  if (save) { GFX.scale = 1; DRS.ceil = 1; DRS.off = false; DRS.floorT = 0; }   // new settings: start again from the full resolution
+  const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res) * (GQ.dres ? GFX.scale : 1));
   renderer.shadowMap.enabled = GQ.shadow > 0;
   if (GQ.shadow > 0) { const sz = [0, 1024, 2048, 4096][GQ.shadow], r = [0, 70, 95, 120][GQ.shadow], c = sun.shadow.camera;
     if (sun.shadow.mapSize.x !== sz) { sun.shadow.mapSize.set(sz, sz); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
@@ -1174,7 +1180,7 @@ function applyQuality(save) {
 function setPreset(p, save) { if (GQ_PRESETS[p]) Object.assign(GQ, GQ_PRESETS[p]); GQ.preset = p; applyQuality(save); }
 const SHADOW = { tex: 190 / 2048 };
 // --- the settings menu: the preset, and every setting by hand behind Advanced
-const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr']];
+const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr'], ['dres', 'gq-dres']];
 function gqUi() {
   const sel = $('set-gfx'); if (sel) sel.value = GQ.preset;
   GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa' || q[0] === 'ssr'); });
@@ -1182,7 +1188,21 @@ function gqUi() {
 if ($('set-gfx')) $('set-gfx').addEventListener('change', e => { const v = e.target.value; if (v === 'custom') { GQ.preset = 'custom'; applyQuality(true); } else setPreset(v, true); GFX.auto = true; });
 GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', () => { GQ[q[0]] = +el.value; GQ.preset = 'custom'; applyQuality(true); GFX.auto = true; }); });
 if ($('gq-more')) $('gq-more').addEventListener('click', () => { const a = $('gq-adv'); a.hidden = !a.hidden; $('gq-more').textContent = a.hidden ? 'Advanced' : 'Hide advanced'; });
-// a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session
+// dynamic resolution: below 48 frames a second for a second and a half, the picture is drawn a tenth smaller (down to 60%); above 57 for
+// six seconds, a tenth bigger again. A step up that is undone within ten seconds was one too many, so it is not tried again. If the
+// smallest picture has bought nothing (the browser caps the frame rate, as battery saving does, or the processor is what holds it
+// back), it goes back to full size and stays there.
+const DRS = { t: 0, lowT: 0, highT: 0, upAt: -99, ceil: 1, f0: 0, floorT: 0, off: false, wt: 0, wn: 0, fps: 60 };
+function drsFrame(raw) { const D = DRS; D.wt += raw; D.wn++; if (D.wt >= .5) { D.fps = D.wn / D.wt; D.wt = D.wn = 0; } drsTick(raw, D.fps); }   // frames counted over half a second (or one slow frame)
+function drsSet(s) { GFX.scale = Math.round(clamp(s, .6, 1) * 10) / 10; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, GQ.res) * GFX.scale); resize(); }
+function drsTick(raw, fps) {
+  const D = DRS; if (D.off) return; D.t += raw; D.lowT = fps < 48 ? D.lowT + raw : 0; D.highT = fps > 57 ? D.highT + raw : 0;
+  if (GFX.scale < .65) { D.floorT += raw; if (D.floorT > 4 && fps < D.f0 * 1.2) { D.off = true; drsSet(1); return; } } else D.floorT = 0;
+  if (D.lowT > 1.5 && GFX.scale > .65) { if (GFX.scale > .95) D.f0 = fps; if (D.t - D.upAt < 10) D.ceil = Math.round(GFX.scale * 10 - 1) / 10; drsSet(GFX.scale - .1); D.lowT = D.highT = 0; }
+  else if (D.highT > 6 && GFX.scale < D.ceil - .05) { drsSet(GFX.scale + .1); D.upAt = D.t; D.lowT = D.highT = 0; }
+}
+// a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session (with dynamic resolution
+// on, only once the resolution has gone as low as it goes)
 function slowerPreset() { const order = ['ultra', 'high', 'medium', 'low'], i = order.indexOf(GQ.preset), next = i < 0 ? 'medium' : order[Math.min(order.length - 1, i + 1)]; if (next === GQ.preset) return false; setPreset(next, true); return next; }
 
 /* =====================================================================
@@ -2904,7 +2924,7 @@ function applyTod(h) {
   h = ((h % 24) + 24) % 24; ENV.hour = h;
   let k = 0; while (k < TOD_KEYS.length - 2 && TOD_KEYS[k + 1][0] <= h) k++;
   const A = TOD_KEYS[k], B = TOD_KEYS[k + 1], t = clamp((h - A[0]) / (B[0] - A[0]), 0, 1), night = lerp(A[9], B[9], t), base = lerp(A[2], B[2], t), hdr = POST.on;
-  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = base * LOOK.sun; ENV.base = base; sun.castShadow = sun.intensity > .05;
+  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = base * LOOK.sun; ENV.base = base; sunShadow();
   mixCol(hemi.color, A[3], B[3], t); mixCol(hemi.groundColor, A[4], B[4], t); hemi.intensity = lerp(A[5], B[5], t) * (GQ.env ? LOOK.hemiEnv : LOOK.hemi);
   mixCol(scene.fog.color, A[6], B[6], t); mixCol(SKY.top, A[7], B[7], t); mixCol(SKY.hor, A[8], B[8], t);
   scene.fog.near = lerp(70, 30, night); scene.fog.far = Math.min(lerp(1050, 620, night), VIEW.far);
@@ -3065,7 +3085,21 @@ const charMat = new T.MeshLambertMaterial({ color: 0xffffff }), gunMat = lam({})
 const ZERO_M = new T.Matrix4().makeScale(0, 0, 0), _wc = new T.Color();
 const CP = {};
 const bxg = (w, h, d, x, y, z) => { const g = new T.BoxGeometry(w, h, d); g.translate(x || 0, y || 0, z || 0); return g; };
-function charPart(name, geo, per, mat) { const m = new T.InstancedMesh(geo, mat || charMat, CHAR_MAX * per); m.castShadow = true; m.frustumCulled = false; m.userData.per = per; for (let i = 0; i < CHAR_MAX * per; i++) { m.setMatrixAt(i, ZERO_M); if (!mat) m.setColorAt(i, _wc.setHex(0xffffff)); } scene.add(m); CP[name] = m; return m; }
+// Each person keeps a fixed slot in every part, but only the slots in use are drawn: setMatrixAt and setColorAt write to a store on
+// the side, and packPart copies the shown ones (anything not scaled to nothing) to the front of the mesh each frame and draws that many.
+// A gun nobody is holding then costs nothing, and neither do the empty slots.
+function charPart(name, geo, per, mat) { const n = CHAR_MAX * per, m = new T.InstancedMesh(geo, mat || charMat, n); m.castShadow = true; m.frustumCulled = false; m.userData.per = per;
+  if (!mat) for (let i = 0; i < n; i++) m.setColorAt(i, _wc.setHex(0xffffff));
+  const M = m.userData.M = new Float32Array(n * 16), C = m.userData.C = m.instanceColor ? m.instanceColor.array.slice() : null;   // all zero: nothing shown
+  m.setMatrixAt = (i, mt) => { mt.toArray(M, i * 16); }; if (C) m.setColorAt = (i, col) => { col.toArray(C, i * 3); };
+  m.count = 0; scene.add(m); CP[name] = m; return m; }
+function packPart(m) {
+  const M = m.userData.M, C = m.userData.C, A = m.instanceMatrix.array, AC = C && m.instanceColor.array, n = M.length >> 4; let k = 0;
+  for (let i = 0; i < n; i++) { const o = i << 4; if (M[o] === 0 && M[o + 1] === 0 && M[o + 2] === 0) continue;
+    for (let j = 0; j < 16; j++) A[(k << 4) + j] = M[o + j]; if (C) { AC[k * 3] = C[i * 3]; AC[k * 3 + 1] = C[i * 3 + 1]; AC[k * 3 + 2] = C[i * 3 + 2]; } k++; }
+  m.count = k; m.instanceMatrix.updateRange.offset = 0; m.instanceMatrix.updateRange.count = Math.max(1, k * 16); m.instanceMatrix.needsUpdate = true;
+  if (C) { m.instanceColor.updateRange.offset = 0; m.instanceColor.updateRange.count = Math.max(1, k * 3); m.instanceColor.needsUpdate = true; }
+}
 charPart('pelvis', bxg(.36, .2, .22), 1); charPart('chest', bxg(.43, .5, .245, 0, .29, 0), 1); charPart('head', bxg(.21, .24, .23, 0, .13, 0), 1);
 { const b = new GeoBuf(); b.box(-.118, .118, .215, .3, -.125, .125); b.box(-.105, .105, .215, .24, .12, .26); charPart('cap', b.build(), 1); }
 charPart('beanie', bxg(.228, .13, .246, 0, .24, -.004), 1); charPart('hood', bxg(.262, .29, .255, 0, .15, -.035), 1); charPart('hair', bxg(.222, .085, .242, 0, .262, -.006), 1); charPart('mask', bxg(.218, .105, .07, 0, .065, .092), 1);
@@ -3260,7 +3294,7 @@ function poseChar(c, s, dt) {
   if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
   if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
-function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; flushNear(); }
+function flushChars() { for (const k in CP) packPart(CP[k]); flushNear(); }
 
 // name tags over other players
 function nameTag(text, css, down, rank) {   // rank: drawn in a little badge before the name, the way online players show theirs
@@ -4759,7 +4793,9 @@ function botFollow(b, speed, dt) {   // true once the last node is reached
   if (!b.path || b.pi >= b.path.length) return true;
   const n = NAV[b.path[b.pi]]; if (hyp(n.x - b.x, n.z - b.z) < 1.15 && Math.abs(n.y - b.y) < 1.3) { b.pi++; if (b.pi >= b.path.length) return true; }
   const m = NAV[b.path[b.pi]];
-  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]]; if (hyp(a.x - b.x, a.z - b.z) < 1.9 && walkWait(a, m)) { botWalk(b, b.x, b.z, 0, dt); return false; } }   // waiting for the walk signal (109.5-city.js)
+  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]], d = hyp(a.x - b.x, a.z - b.z);   // waiting for the walk signal (109.5-city.js)
+    if ((d < 1.9 || (b.waitPi === b.pi && b.path === b.waitP && d < 4)) && walkWait(a, m)) { b.waitPi = b.pi; b.waitP = b.path; if (d > 1.4) botWalk(b, a.x, a.z, 1, dt); else botWalk(b, b.x, b.z, 0, dt); return false; }   // jostled off the kerb: step back
+    b.waitPi = -1; }
   botWalk(b, m.x, m.z, speed, dt); return false;
 }
 // --- seeing and shooting
@@ -5464,7 +5500,7 @@ const WET_ROUGH = { asphalt: .28, lot: .3, walk: .55, plaza: .5, concrete: .55, 
 const WXL = { hemi: 0, fog: new T.Color(), top: new T.Color(), hor: new T.Color() };
 function applyWeather() {
   const c = WX.cloud, f = WX.fog, r = WX.rain, grey = (col, k) => { const l = col.r * .3 + col.g * .55 + col.b * .15; col.lerp(_wg.setRGB(l * .97, l, l * 1.06), k); };
-  sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sun.castShadow = sun.intensity > .05; moon.intensity *= 1 - .75 * c;
+  sun.intensity *= 1 - .82 * c; ENV.sunI = sun.intensity; sunShadow(); moon.intensity *= 1 - .75 * c;
   grey(hemi.color, c * .55); grey(hemi.groundColor, c * .4); hemi.intensity *= 1 + c * .1 - r * .12;
   grey(scene.fog.color, c * .7); grey(SKY.top, c * .85); grey(SKY.hor, c * .7); SKY.top.multiplyScalar(1 - c * .3); scene.fog.color.multiplyScalar(1 - r * .15);
   SKY.sunAmt.value *= 1 - c * .94; SKY.cloud.value = c;                                          // the cloud layer itself hides the sun's disc, the moon and the stars
@@ -7546,15 +7582,17 @@ function emsTick(dt) {
     if (E.leg === 0) { c.horn = 1; const dv = hyp(c.x - E.v.x, c.z - E.v.z);
       if (E.ph === 0 && A && (A.done || hyp(c.x - RX(E.c1[0]), c.z - RZ(E.c1[1])) < 16)) { E.ph = 1; aiStart(c, 'ems', E.c2); c.ai.cruise = 12; }   // at the end of their street: now down it
       if (!A || !c.occ[0]) { E.leg = 2; continue; }   // lost its driver: it is no use to anyone
-      if (dv < 20 || (E.ph === 1 && c.ai && c.ai.done) || G.time > E.give) { E.leg = 1; E.t = G.time + 7; c.horn = 0; c.inp.thr = 0; c.inp.hb = true; if (c.ai) c.ai.wait = 99; } }   // there (or near as it can get)
+      E.slow = carSpeed(c) < 1 ? (E.slow || 0) + dt : 0; E.why = dv < 20 ? 'near' : dv < 60 && E.slow > 5 ? 'held' : E.ph === 1 && c.ai && c.ai.done ? 'end' : G.time > E.give ? 'gave up' : ''; if (E.why) { E.leg = 1; E.t = G.time + 7; c.horn = 0; c.inp.thr = 0; c.inp.hb = true; if (c.ai) c.ai.wait = 99; } }   // there (or near as it can get)
     else if (E.leg === 1) { c.inp.hb = true; if (G.time > E.t) { E.v.emsHold = false; E.v.deadT = 99; E.leg = 2; const far = [E.v.x < CITY.w / 2 ? NX : 0, E.v.z < CITY.d / 2 ? NZ : 0]; const B = c.occ[0]; if (B) { aiStart(c, 'ems', far); c.ai.cruise = 13; } } }   // taken away
     else if (E.leg === 2 && (nearHuman(c.x, c.z) > 220 || (c.ai && c.ai.done))) { const B = c.occ[0]; if (B) removeBot(B); removeCar(c); EMS.list.splice(i, 1); } }
 }
 function emsSend(v) {
-  const hs = humans(); let best = null, bd = 1e9;
-  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - v.x, z - v.z), nh = nearHuman(x, z); if (d < 150 || d > 330 || nh < 95) continue; if (d < bd) { bd = d; best = [i, j]; } }
-  if (!best) return; const [i, j] = best, dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(q => i + q[0] >= 0 && i + q[0] <= NX && j + q[1] >= 0 && j + q[1] <= NZ), q = dirs[(rand() * dirs.length) | 0];
-  lanePoint([i, j], [i + q[0], j + q[1]], 16, LANE, _lp); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) return;
+  const cand = []; for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - v.x, z - v.z); if (d < 150 || d > 330 || nearHuman(x, z) < 95) continue; cand.push([d, i, j]); }
+  cand.sort((p, q) => p[0] - q[0]); let q = null, i = 0, j = 0;   // the nearest crossing out of sight whose lane is clear (a parked or passing car can be in the way)
+  for (const k of cand) { i = k[1]; j = k[2]; const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(e => i + e[0] >= 0 && i + e[0] <= NX && j + e[1] >= 0 && j + e[1] <= NZ), e = dirs[(rand() * dirs.length) | 0];
+    lanePoint([i, j], [i + e[0], j + e[1]], 16, LANE, _lp); if (!cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) { q = e; break; } }
+  if (!q) return;
+  if (!charFree.length) { const far = bots.find(o => o.team === TEAM_CIV && !o.dead && !o.car && !o.ems && nearHuman(o.x, o.z) > 160); if (far) removeBot(far); }   // every figure in use: someone a long way off goes home
   const c = spawnCar('van', _lp.x, _lp.z, yawOf(q[0], q[1]), { color: AMB_PAINT }); if (!c) return; const b = spawnBot(TEAM_CIV, _lp.x, 0, _lp.z, {}); if (!b) { removeCar(c); return; }
   // the street they are lying on: its two crossings; drive to the nearer end, then down the street to them
   const ci = clamp(Math.round((v.x - EDGE) / PX), 0, NX), cj = clamp(Math.round((v.z - EDGE) / PZ), 0, NZ), alongNS = Math.abs(v.x - RX(ci)) < Math.abs(v.z - RZ(cj));
@@ -8519,7 +8557,8 @@ function frame(now) {
   visuals(live ? dt : 0, now);
   if (G.state === 'playing') { saveT -= raw; const c = Math.round(P.cash), rp = Math.round(P.rp || 0); if (c !== SAVE.lastC || rp !== SAVE.lastR) { SAVE.lastC = c; SAVE.lastR = rp; saveT = Math.min(saveT, 1.5); } if (saveT <= 0) { saveT = 15; saveGame(); } }   // a moment after the money changes, and every fifteen seconds
   // a machine that cannot keep up drops to the lighter settings by itself, once
-  if (G.state === 'playing' && GQ.preset !== 'low' && (GFX.drops | 0) < 2 && !GFX.auto && !TEST) { if (DBG.fps < 27) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 6) { slowT = 0; GFX.drops = (GFX.drops | 0) + 1; const p = slowerPreset(); resize(); if (p) banner('Graphics set to ' + p[0].toUpperCase() + p.slice(1), 'to keep the game smooth · change it in the pause menu', 3.5); } }
+  if (G.state === 'playing' && GQ.dres && !TEST && raw < 3) drsFrame(raw);   // (a gap of more than 3 s is the tab coming back, not a slow frame)
+  if (G.state === 'playing' && GQ.preset !== 'low' && (GFX.drops | 0) < 2 && !GFX.auto && !TEST) { if (DBG.fps < 27 && (!GQ.dres || GFX.scale < .65 || DRS.off)) slowT += raw; else slowT = Math.max(0, slowT - raw); if (slowT > 6) { slowT = 0; GFX.drops = (GFX.drops | 0) + 1; const p = slowerPreset(); resize(); if (p) banner('Graphics set to ' + p[0].toUpperCase() + p.slice(1), 'to keep the game smooth · change it in the pause menu', 3.5); } }
   drawFrame();
 }
 // a host whose tab is hidden would freeze the city for everyone, so a worker keeps the world ticking while the page is out of sight
@@ -8528,7 +8567,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { FAR_B, FAR_BL, FAR_LAND, CITY, humans, walkWait, shopIn, shopOut, EMS, emsSend, emsTick, CRANE, SCAFF, CITYSND, meChar, poseChar, flushChars, rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { CP, chars, GUNMESH, GFX, DRS, drsTick, FAR_B, FAR_BL, FAR_LAND, CITY, humans, walkWait, shopIn, shopOut, EMS, emsSend, emsTick, CRANE, SCAFF, CITYSND, meChar, poseChar, flushChars, rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

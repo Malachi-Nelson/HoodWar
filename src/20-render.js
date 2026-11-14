@@ -8,19 +8,20 @@ catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so th
 // --- graphics quality: a preset from Low (phones, old laptops) to Ultra, or each setting by hand (Custom). What each one does is in
 //     21-post.js. res caps the pixel ratio; shadow 0-3; tex 0-2 (texture filtering and size); view 0-3 (how far you see); aa 0/1 (FXAA);
 //     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
-//     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
+//     bloom and colour grading; dof, mblur: optional depth of field and motion blur; dres: drop the resolution a step at a time when the
+//     frame rate cannot keep up, and raise it again when it can.
 const GQ_PRESETS = {
-  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0 },
-  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0 },
-  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1 },
-  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2 },
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0, dres: 1 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0, dres: 1 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1, dres: 1 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2, dres: 1 },
 };
 const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
 { let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}
   if (!sv || typeof sv !== 'object') { let old = null; try { old = localStorage.getItem('pc-gfx'); } catch (e) {} sv = { preset: old === 'low' || (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 'low' : 'high' }; }
   if (GQ_PRESETS[sv.preset]) Object.assign(GQ, GQ_PRESETS[sv.preset], { preset: sv.preset });
   else if (sv.preset === 'custom') { GQ.preset = 'custom'; GQ_KEYS.forEach(k => { if (typeof sv[k] === 'number') GQ[k] = sv[k]; }); } }
-const GFX = { get low() { return GQ.preset === 'low'; }, auto: false };   // older code asks this
+const GFX = { get low() { return GQ.preset === 'low'; }, auto: false, scale: 1 };   // older code asks this; scale: the dynamic resolution step (21-post.js)
 renderer.outputEncoding = T.sRGBEncoding; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1;
 renderer.autoClear = false;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
@@ -35,6 +36,10 @@ vmKey.position.set(-1.2, 2, 1.4); vmScene.add(vmHemi); vmScene.add(vmKey);
 
 const hemi = new T.HemisphereLight(0xbcd0e8, 0x4a4238, .7); scene.add(hemi);
 const sun = new T.DirectionalLight(0xffe0b0, 1); sun.castShadow = true;
+// The sun always casts (switching castShadow on and off makes every material in the city compile its shaders again: a stall at each
+// dusk and dawn, and over and over under passing cloud). When it is too dim to throw a visible shadow the shadow map is simply not
+// redrawn.
+function sunShadow() { renderer.shadowMap.autoUpdate = sun.intensity > .05; }
 sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0004; sun.shadow.normalBias = .06;
 { const c = sun.shadow.camera; c.left = -95; c.right = 95; c.top = 95; c.bottom = -95; c.near = 1; c.far = 520; c.updateProjectionMatrix(); }
 scene.add(sun); scene.add(sun.target);

@@ -23,7 +23,7 @@ function applyTod(h) {
   h = ((h % 24) + 24) % 24; ENV.hour = h;
   let k = 0; while (k < TOD_KEYS.length - 2 && TOD_KEYS[k + 1][0] <= h) k++;
   const A = TOD_KEYS[k], B = TOD_KEYS[k + 1], t = clamp((h - A[0]) / (B[0] - A[0]), 0, 1), night = lerp(A[9], B[9], t), base = lerp(A[2], B[2], t), hdr = POST.on;
-  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = base * LOOK.sun; ENV.base = base; sun.castShadow = sun.intensity > .05;
+  mixCol(sun.color, A[1], B[1], t); sun.intensity = ENV.sunI = base * LOOK.sun; ENV.base = base; sunShadow();
   mixCol(hemi.color, A[3], B[3], t); mixCol(hemi.groundColor, A[4], B[4], t); hemi.intensity = lerp(A[5], B[5], t) * (GQ.env ? LOOK.hemiEnv : LOOK.hemi);
   mixCol(scene.fog.color, A[6], B[6], t); mixCol(SKY.top, A[7], B[7], t); mixCol(SKY.hor, A[8], B[8], t);
   scene.fog.near = lerp(70, 30, night); scene.fog.far = Math.min(lerp(1050, 620, night), VIEW.far);

@@ -212,7 +212,8 @@ function lookTick() {
 const VIEW = { far: 1000 };
 function anisoAll(a) { const seen = new Set(); for (const k in MATS) [MATS[k].low, MATS[k].pbr, MATS[k].mat].forEach(m => { if (!m) return; ['map', 'emissiveMap', 'roughnessMap', 'normalMap'].forEach(t => { const x = m[t]; if (x && !seen.has(x)) { seen.add(x); x.anisotropy = a; x.needsUpdate = true; } }); }); }
 function applyQuality(save) {
-  const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res));
+  if (save) { GFX.scale = 1; DRS.ceil = 1; DRS.off = false; DRS.floorT = 0; }   // new settings: start again from the full resolution
+  const dpr = window.devicePixelRatio || 1; renderer.setPixelRatio(Math.min(dpr, GQ.res) * (GQ.dres ? GFX.scale : 1));
   renderer.shadowMap.enabled = GQ.shadow > 0;
   if (GQ.shadow > 0) { const sz = [0, 1024, 2048, 4096][GQ.shadow], r = [0, 70, 95, 120][GQ.shadow], c = sun.shadow.camera;
     if (sun.shadow.mapSize.x !== sz) { sun.shadow.mapSize.set(sz, sz); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
@@ -231,7 +232,7 @@ function applyQuality(save) {
 function setPreset(p, save) { if (GQ_PRESETS[p]) Object.assign(GQ, GQ_PRESETS[p]); GQ.preset = p; applyQuality(save); }
 const SHADOW = { tex: 190 / 2048 };
 // --- the settings menu: the preset, and every setting by hand behind Advanced
-const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr']];
+const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr'], ['dres', 'gq-dres']];
 function gqUi() {
   const sel = $('set-gfx'); if (sel) sel.value = GQ.preset;
   GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa' || q[0] === 'ssr'); });
@@ -239,5 +240,19 @@ function gqUi() {
 if ($('set-gfx')) $('set-gfx').addEventListener('change', e => { const v = e.target.value; if (v === 'custom') { GQ.preset = 'custom'; applyQuality(true); } else setPreset(v, true); GFX.auto = true; });
 GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', () => { GQ[q[0]] = +el.value; GQ.preset = 'custom'; applyQuality(true); GFX.auto = true; }); });
 if ($('gq-more')) $('gq-more').addEventListener('click', () => { const a = $('gq-adv'); a.hidden = !a.hidden; $('gq-more').textContent = a.hidden ? 'Advanced' : 'Hide advanced'; });
-// a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session
+// dynamic resolution: below 48 frames a second for a second and a half, the picture is drawn a tenth smaller (down to 60%); above 57 for
+// six seconds, a tenth bigger again. A step up that is undone within ten seconds was one too many, so it is not tried again. If the
+// smallest picture has bought nothing (the browser caps the frame rate, as battery saving does, or the processor is what holds it
+// back), it goes back to full size and stays there.
+const DRS = { t: 0, lowT: 0, highT: 0, upAt: -99, ceil: 1, f0: 0, floorT: 0, off: false, wt: 0, wn: 0, fps: 60 };
+function drsFrame(raw) { const D = DRS; D.wt += raw; D.wn++; if (D.wt >= .5) { D.fps = D.wn / D.wt; D.wt = D.wn = 0; } drsTick(raw, D.fps); }   // frames counted over half a second (or one slow frame)
+function drsSet(s) { GFX.scale = Math.round(clamp(s, .6, 1) * 10) / 10; renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, GQ.res) * GFX.scale); resize(); }
+function drsTick(raw, fps) {
+  const D = DRS; if (D.off) return; D.t += raw; D.lowT = fps < 48 ? D.lowT + raw : 0; D.highT = fps > 57 ? D.highT + raw : 0;
+  if (GFX.scale < .65) { D.floorT += raw; if (D.floorT > 4 && fps < D.f0 * 1.2) { D.off = true; drsSet(1); return; } } else D.floorT = 0;
+  if (D.lowT > 1.5 && GFX.scale > .65) { if (GFX.scale > .95) D.f0 = fps; if (D.t - D.upAt < 10) D.ceil = Math.round(GFX.scale * 10 - 1) / 10; drsSet(GFX.scale - .1); D.lowT = D.highT = 0; }
+  else if (D.highT > 6 && GFX.scale < D.ceil - .05) { drsSet(GFX.scale + .1); D.upAt = D.t; D.lowT = D.highT = 0; }
+}
+// a machine that cannot keep up steps down a preset by itself (from the frame loop), at most twice a session (with dynamic resolution
+// on, only once the resolution has gone as low as it goes)
 function slowerPreset() { const order = ['ultra', 'high', 'medium', 'low'], i = order.indexOf(GQ.preset), next = i < 0 ? 'medium' : order[Math.min(order.length - 1, i + 1)]; if (next === GQ.preset) return false; setPreset(next, true); return next; }

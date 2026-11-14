@@ -36,7 +36,9 @@ function botFollow(b, speed, dt) {   // true once the last node is reached
   if (!b.path || b.pi >= b.path.length) return true;
   const n = NAV[b.path[b.pi]]; if (hyp(n.x - b.x, n.z - b.z) < 1.15 && Math.abs(n.y - b.y) < 1.3) { b.pi++; if (b.pi >= b.path.length) return true; }
   const m = NAV[b.path[b.pi]];
-  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]]; if (hyp(a.x - b.x, a.z - b.z) < 1.9 && walkWait(a, m)) { botWalk(b, b.x, b.z, 0, dt); return false; } }   // waiting for the walk signal (109.5-city.js)
+  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]], d = hyp(a.x - b.x, a.z - b.z);   // waiting for the walk signal (109.5-city.js)
+    if ((d < 1.9 || (b.waitPi === b.pi && b.path === b.waitP && d < 4)) && walkWait(a, m)) { b.waitPi = b.pi; b.waitP = b.path; if (d > 1.4) botWalk(b, a.x, a.z, 1, dt); else botWalk(b, b.x, b.z, 0, dt); return false; }   // jostled off the kerb: step back
+    b.waitPi = -1; }
   botWalk(b, m.x, m.z, speed, dt); return false;
 }
 // --- seeing and shooting
