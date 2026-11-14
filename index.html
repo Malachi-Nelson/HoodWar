@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 14:02 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 14:34 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -535,6 +535,7 @@ const T = THREE, rand = Math.random, PI = Math.PI, TAU = PI * 2, hyp = Math.hypo
 const s2l = v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);   // one sRGB channel (0..1) to linear
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t;
 const wrapPi = a => { a = (a + PI) % TAU; if (a < 0) a += TAU; return a - PI; };
+const smooth01 = x => { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); };   // 0..1 eased at both ends
 const angTo = (a, b) => wrapPi(b - a);                 // shortest signed turn from a to b
 const lerpAng = (a, b, t) => a + angTo(a, b) * t;
 const yawOf = (dx, dz) => Math.atan2(-dx, -dz);        // forward is (-sin yaw, -cos yaw): yaw 0 faces north (-z), +x is east, +z is south
@@ -3078,8 +3079,19 @@ const ACT = { none: 0, talk: 1, sit: 2, lean: 3, handsup: 4, phone: 5, dance: 6,
 function poseChar(c, s, dt) {
   const r = c.rig, q = Math.min(1, dt * 12), spd = s.spd || 0, act = s.dead >= 0 || s.knock > .5 ? 0 : (s.act | 0), seated = !!s.seat || act === ACT.sit;
   const moving = spd > .3 && !s.air && !seated;
-  if (moving) c.ph += dt * (1 + spd * 2.1);
-  c.amp = lerp(c.amp, moving ? clamp(.28 + spd * .09, .3, .95) : 0, q);
+  // which way they are actually going, from where they were a moment ago (works the same for anyone, here or on another machine)
+  if (c.px === undefined || hyp(s.x - c.px, s.z - c.pz) > 3 || dt <= 0) { c.px = s.x; c.pz = s.z; c.mvF = 1; c.mvS = 0; c.lyaw = s.yaw; c.yr = 0; }
+  { const dx = s.x - c.px, dz = s.z - c.pz, fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw), l = hyp(dx, dz); c.px = s.x; c.pz = s.z;
+    if (l > dt * .25) { const k = Math.min(1, dt * 8); c.mvF = lerp(c.mvF, (dx * fx + dz * fz) / l, k); c.mvS = lerp(c.mvS, (dx * -fz + dz * fx) / l, k); }   // forward, and to the right
+    const yr = angTo(c.lyaw, s.yaw) / Math.max(dt, 1e-3); c.lyaw = s.yaw; c.yr = lerp(c.yr, clamp(yr, -8, 8), Math.min(1, dt * 6)); }
+  // a stride that matches the ground covered: a walk is about 0.9 strides a second, a run 1.5. Each leg spends part of the stride on the
+  // ground (60% walking, about 35% running) and sweeps back under the body at exactly the speed it is going, so the foot stays put
+  const rn = smooth01((spd - 2.2) / 2.6), freq = lerp(.55 + .25 * spd, 1.25 + .05 * spd, rn), duty = lerp(.6, .36, rn), legL = .88 * (c.look.h || 1);
+  const shuffle = !moving && !seated && !s.air && Math.abs(c.yr) > 1.3;   // turning on the spot: a few small steps
+  const gs = moving ? spd : shuffle ? .7 : 0, gf = moving ? freq : 1.1;   // shuffling round on the spot: small steps
+  if (moving || shuffle) c.ph += dt * TAU * gf; c.gs = lerp(c.gs || 0, gs, Math.min(1, dt * 7)); c.gf = lerp(c.gf || 1, gf, Math.min(1, dt * 7));
+  c.amp = lerp(c.amp, moving || shuffle ? Math.min(.95, c.gs * .35) : 0, Math.min(1, dt * 7)); c.run = lerp(c.run || 0, moving ? rn : 0, Math.min(1, dt * 5));
+  if (c.wasAir && !s.air && !seated) c.land = 1; c.wasAir = !!s.air; c.land = Math.max(0, (c.land || 0) - dt * 3.5);   // landing: a dip at the knees
   const armed = s.wpn && s.wpn !== 'fist' ? 1 : 0, H = armed ? holdOf(s.wpn) : HOLD.pistol;
   const busy = act > 0 && act !== ACT.sit && (!moving || act === ACT.carry);                       // doing something with their hands: a gun stays down, a walk keeps its arms
   c.hold = lerp(c.hold, armed && (!seated || s.aim > .1) && !(busy && !(s.aim > .1)) ? 1 : 0, q); c.aim = lerp(c.aim, s.aim || 0, q); c.sit = lerp(c.sit, seated ? 1 : 0, Math.min(1, dt * 9));
@@ -3089,24 +3101,33 @@ function poseChar(c, s, dt) {
   if (busy) { c.actId = act; c.actW = lerp(c.actW || 0, 1, Math.min(1, dt * 6)); } else c.actW = lerp(c.actW || 0, 0, Math.min(1, dt * 8));
   c.t = (c.t || c.idx * 1.37) + dt;
   const A = c.actId | 0, w = c.actW < .01 ? 0 : c.actW, t = c.t, shot = s.shoot || 0;
-  const sn = Math.sin(c.ph), cs = Math.cos(c.ph), a = c.amp, f = c.fall, st = c.sit;
+  const sn = Math.sin(c.ph), cs = Math.cos(c.ph), a = c.amp, f = c.fall, st = c.sit, R = c.run, ld = c.land, ang = Math.atan2(c.mvS, Math.max(-1, c.mvF)), mcos = Math.cos(ang), msin = Math.sin(ang);
+  const idle = !moving && !shuffle && !seated && !s.air && !busy && f < .1, br = idle ? 1 : 0;   // standing about: breathing, weight on one leg then the other
   const low = w * (A === ACT.cower ? .42 : A === ACT.ball ? .08 : A === ACT.dance ? .03 + Math.abs(Math.sin(t * 5.2)) * .05 : 0);
-  r.root.position.set(s.x, s.y + f * .12, s.z); r.root.rotation.set(-f * 1.5, s.yaw + PI, 0); r.root.scale.setScalar(c.look.h);
-  r.hips.position.y = lerp(.97 - Math.abs(sn) * .035 * a - (s.air ? .04 : 0), .4, st) - low;
-  r.torso.rotation.set(lerp(a * (s.sprint ? .28 : .1), -.16, st) + w * (A === ACT.cower ? .75 : A === ACT.lean ? -.1 : A === ACT.browse ? .1 : A === ACT.ball ? .18 : 0), (s.twist || 0) + (A === ACT.dance ? w * .3 * Math.sin(t * 2.6) : 0), f * .2);
+  r.root.position.set(s.x, s.y + f * .12, s.z); r.root.rotation.set(-f * 1.5, s.yaw + PI, clamp(c.yr * spd * .011, -.17, .17) * (1 - st)); r.root.scale.setScalar(c.look.h);   // leaning into a turn at a run
+  // where each leg is in its stride: on the ground its foot sweeps straight back under the hip; in the air it swings forward, knee folded
+  const sMax = Math.min(.9, c.gs * duty / (2 * legL * Math.max(c.gf, .3))), legA = [0, 0], legK = [0, 0]; let stand = 0;
+  for (let k = 0; k < 2; k++) { const u = ((c.ph / TAU + (k ? .5 : 0)) % 1 + 1) % 1;
+    if (u < duty) { const th = Math.asin(lerp(-sMax, sMax, u / duty)); legA[k] = th; legK[k] = .05 + R * .16 * Math.sin(u / duty * PI); stand = Math.max(stand, Math.cos(th)); }
+    else { const v = (u - duty) / (1 - duty), sw = Math.sin(v * PI); legA[k] = Math.asin(sMax) * Math.cos(v * PI) - sw * (.15 + .5 * R) * Math.min(1, c.gs); legK[k] = sw * (.55 + 1.15 * R) * Math.min(1, c.gs * 1.5); } }
+  const bob = a > .01 ? (stand ? (1 - stand) * legL * .75 : -.03 * R) : 0;   // the body vaults over the leg it stands on; a run leaves the ground between steps
+  r.hips.position.y = lerp(.97 - bob - (s.air ? .04 : 0) - ld * .13, .4, st) - low; r.hips.position.x = (.028 * cs * a * (1 - R) + br * .018 * Math.sin(t * .37)) * (1 - st);
+  r.hips.rotation.set(0, .12 * sn * a * (1 - R * .4) * (1 - st), br * .025 * Math.sin(t * .37));
+  r.torso.rotation.set(lerp(.03 + a * .08 + R * .17 + (s.sprint ? .1 : 0) + br * .014 * Math.sin(t * 1.7) + ld * .15, -.16, st) + w * (A === ACT.cower ? .75 : A === ACT.lean ? -.1 : A === ACT.browse ? .1 : A === ACT.ball ? .18 : 0),
+    (s.twist || 0) - .2 * sn * a * (1 - st) + (A === ACT.dance ? w * .3 * Math.sin(t * 2.6) : 0), f * .2);
   // legs: thigh swings, knee folds while the leg comes forward
-  for (let k = 0; k < 2; k++) { const sg = k ? -1 : 1, hipA = sg * sn * a, kneeA = Math.max(0, -sg * cs) * (a * 1.15 + .08) * (a > .05 ? 1 : 0);
-    let hx = lerp(s.air ? -.35 + k * .5 : hipA, -1.42, st), kx = lerp(s.air ? .7 : kneeA, 1.3, st);
+  for (let k = 0; k < 2; k++) { const sg = k ? -1 : 1, g = Math.min(1, a * 3), hipA = legA[k] * g, kneeA = legK[k] * g + ld * .55 + br * Math.max(0, Math.sin(t * .37) * sg) * .14;
+    let hx = lerp(s.air ? -.35 + k * .5 : hipA * mcos, -1.42, st), kx = lerp(s.air ? .7 : kneeA, 1.3, st), hz = s.air ? 0 : hipA * msin * (1 - st);
     if (w) { if (A === ACT.cower) { hx = lerp(hx, -1.25, w); kx = lerp(kx, 2.1, w); } else if (A === ACT.lean && !k) { hx = lerp(hx, -.55, w); kx = lerp(kx, 1.05, w); } else if (A === ACT.ball) { hx = lerp(hx, -.32, w); kx = lerp(kx, .5, w); }
       else if (A === ACT.dance) { const b = Math.max(0, Math.sin(t * 5.2 + k * PI)); hx = lerp(hx, -.22 * b, w); kx = lerp(kx, .45 * b, w); } }
-    r.hip[k].rotation.set(hx * (1 - f * .8), 0, (k ? 1 : -1) * f * .22); r.kn[k].rotation.x = kx * (1 - f * .6); }
+    r.hip[k].rotation.set(hx * (1 - f * .8), 0, (k ? 1 : -1) * f * .22 + hz * (1 - f)); r.kn[k].rotation.x = kx * (1 - f * .6); }
   // arms: hang and swing, hold the weapon, or do what the moment calls for; the whole shoulder frame tips with the aim
   const h = c.hold, pitch = s.pitch || 0, rl = s.reload ? 1 : 0, pn = s.punch || 0;
   r.up.rotation.x = h * lerp(.72, -pitch * .92, c.aim) + h * rl * .4 - c.kick * .12;
   r.head.rotation.x = lerp(0, -pitch * .55, Math.max(c.aim, 1 - h)) * (1 - f) + w * (A === ACT.phone ? .38 : A === ACT.browse ? .16 : A === ACT.cower ? .3 : 0);
-  r.head.rotation.y = w * (A === ACT.talk ? .3 * Math.sin(t * .7) : A === ACT.browse ? .45 * Math.sin(t * .5) : A === ACT.lean ? .5 * Math.sin(t * .23) : 0);
+  r.head.rotation.y = w * (A === ACT.talk ? .3 * Math.sin(t * .7) : A === ACT.browse ? .45 * Math.sin(t * .5) : A === ACT.lean ? .5 * Math.sin(t * .23) : 0) + br * (1 - h) * .22 * Math.sin(t * .21 + c.idx) * Math.max(0, Math.sin(t * .13 + c.idx * 2));   // a look round now and then
   for (let k = 0; k < 2; k++) { const sd = k ? 1 : -1, sg = k ? 1 : -1, hs = k ? H.s1 : H.s0, he = k ? H.e1 : H.e0;
-    let ax = sg * sn * a * .8, ay = 0, az = sd * (.07 + f * 1.05), ex = -.15 - a * .4;
+    let ax = sg * sn * a * (.85 + R * .35) - R * .25, ay = 0, az = sd * (.07 + f * 1.05 + br * .02), ex = -.15 - a * .35 - R * 1.05 - br * .05;   // a run bends the elbows and pumps the arms
     if (st > .01) { const dr = s.seat === 'drive'; ax = lerp(ax, dr ? -1.05 : -.45, st); ay = lerp(ay, dr ? -sd * .22 : 0, st); ex = lerp(ex, dr ? -.45 : -.9, st); }
     if (w) { let tx = ax, ty = ay, te = ex;
       if (A === ACT.talk) { const g = k ? Math.max(0, Math.sin(t * 1.1)) : Math.max(0, Math.sin(t * .8 + 2)) * .6; tx = -.25 - g * (.75 + .2 * Math.sin(t * 5)); te = -.5 - g * .9; }
@@ -3287,7 +3308,7 @@ function evictCar() {
 const carById = id => { for (let i = 0; i < cars.length; i++) if (cars[i].id === id) return cars[i]; return null; };
 const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _we = new T.Euler(0, 0, 0, 'YXZ'), _wv = new T.Vector3(), _ws = new T.Vector3();
 function placeCar(c) {
-  const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.g.updateMatrixWorld(true);
+  const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.body.position.y = c.spec.air ? 0 : c.heave || 0; c.g.updateMatrixWorld(true);
   if (c.spec.air) return;   // skids, not wheels
   const hw = c.spec.wid / 2 - .13, near = wheelsNear(c);
   if (near !== !!c.wnear) { c.wnear = near; if (near) for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); }
@@ -3319,7 +3340,8 @@ function stepCar(c, dt, inp) {
   const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = (inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk) * (1 - .2 * WX.wet); c.slip = slide;   // gk: car-shop handling
   vl -= vl * Math.min(1, grip * dt);
   c.vx = fx * vf + rx * vl; c.vz = fz * vf + rz * vl;
-  const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1);
+  const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), bite = thr < 0 && vf > 2 ? 1.1 : thr > .5 ? .95 : 1, lim = 9.81 * 3 * (S.grip / 9) * gk * (inp.hb ? .7 : 1);   // (the wet takes its toll through the sideways grip below the line above)   // lim: the most the tyres can turn it, m/s/s
+  let want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1) * bite; if (sp > 1) { const cap = lim / sp; want /= Math.pow(1 + Math.pow(Math.abs(want) / cap, 4), .25); }   // gentle until near the limit, firm past it
   c.yawRate = lerp(c.yawRate, want, Math.min(1, dt * 7.5)); c.yaw = wrapPi(c.yaw + c.yawRate * dt);
   c.x += c.vx * dt; c.z += c.vz * dt;
   // the world: three circles down the length of the car
@@ -3375,6 +3397,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 }
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
+  if (!c.spec.air) carSuspension(c, dt);
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   carLamps(c, dt);
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
@@ -3448,6 +3471,20 @@ function carLamps(c, dt) {
   // a puff from the tailpipe when it pulls away hard (or, on a car driven elsewhere, when it is seen to)
   if (run && vf < 9 && ((c.inp.thr > .7 && !c.kin) || c.dec > 2.6) && rand() < dt * 9) { const hw = c.spec.wid / 2, r = _lpt.set(-(hw - .42), c.spec.body.ride + .07, -c.spec.len / 2 - .05).applyMatrix4(W); FX.smoke(r.x, r.y, r.z, .28, false); }
   LAMP.mesh.instanceMatrix.needsUpdate = true; LAMP.mesh.instanceColor.needsUpdate = true; LAMP.glare.geometry.attributes.position.needsUpdate = true; LAMP.glare.geometry.attributes.color.needsUpdate = true;
+}
+// --- suspension: the body rides on springs. It dips under braking, squats pulling away, rolls out of a turn and bounces over a kerb.
+//     Worked out from how the car is actually moving, so it looks the same for a car driven on this machine or another.
+function carSuspension(c, dt) {
+  if (dt <= 0) return; const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, big = c.spec.len > 9;
+  if (c.sv === undefined) { c.sv = vf; c.sy = c.y; c.syaw = c.yaw; c.svy = 0; c.spP = c.spR = c.spH = c.svP = c.svR = c.svH = 0; }
+  const k = Math.min(1, dt * 10), aL = (vf - c.sv) / dt, yr = angTo(c.syaw, c.yaw) / dt, vy = (c.y - c.sy) / dt, ay = (vy - c.svy) / dt; c.sv = vf; c.syaw = c.yaw; c.sy = c.y; c.svy = vy;
+  c.aL = lerp(c.aL || 0, clamp(aL, -30, 30), k); c.aT = lerp(c.aT || 0, clamp(vf * yr, -30, 30), k);
+  const w = big ? 6.3 : 8.8, K = w * w, D = 2 * (big ? .3 : .38) * w, n = Math.min(4, Math.ceil(dt / .008)), h = dt / n, rough = Math.min(1, Math.abs(vf) / 25) * (c.wreck ? 0 : 1);
+  for (let i = 0; i < n; i++) {
+    c.svP += (-K * c.spP - D * c.svP - c.aL * .0042 * K / 9) * h; c.spP += c.svP * h;                    // braking puts the nose down
+    c.svR += (-K * c.spR - D * c.svR + c.aT * .0055 * K / 9) * h; c.spR += c.svR * h;                    // the outside of a turn sinks
+    c.svH += (-K * c.spH - D * c.svH - clamp(ay, -60, 60) * .02 * K / 9) * h; c.spH += c.svH * h; }      // a kerb kicks it up
+  c.dive = clamp(c.spP, -.07, .08); c.roll = clamp(c.spR, -.09, .09); c.heave = clamp(c.spH, -.08, .08) + Math.sin(G.time * 31 + c.id) * .004 * rough;
 }
 // --- the light from your own headlights (one spotlight, kept in the scene so turning it on and off never rebuilds a shader)
 const HEADLIGHT = new T.SpotLight(0xfff0dc, 0, 60, .5, .55, 1.4); HEADLIGHT.castShadow = false; scene.add(HEADLIGHT, HEADLIGHT.target);
@@ -8291,7 +8328,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { meChar, poseChar, flushChars, rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

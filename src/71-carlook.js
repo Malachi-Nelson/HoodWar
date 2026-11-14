@@ -60,6 +60,20 @@ function carLamps(c, dt) {
   if (run && vf < 9 && ((c.inp.thr > .7 && !c.kin) || c.dec > 2.6) && rand() < dt * 9) { const hw = c.spec.wid / 2, r = _lpt.set(-(hw - .42), c.spec.body.ride + .07, -c.spec.len / 2 - .05).applyMatrix4(W); FX.smoke(r.x, r.y, r.z, .28, false); }
   LAMP.mesh.instanceMatrix.needsUpdate = true; LAMP.mesh.instanceColor.needsUpdate = true; LAMP.glare.geometry.attributes.position.needsUpdate = true; LAMP.glare.geometry.attributes.color.needsUpdate = true;
 }
+// --- suspension: the body rides on springs. It dips under braking, squats pulling away, rolls out of a turn and bounces over a kerb.
+//     Worked out from how the car is actually moving, so it looks the same for a car driven on this machine or another.
+function carSuspension(c, dt) {
+  if (dt <= 0) return; const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz, big = c.spec.len > 9;
+  if (c.sv === undefined) { c.sv = vf; c.sy = c.y; c.syaw = c.yaw; c.svy = 0; c.spP = c.spR = c.spH = c.svP = c.svR = c.svH = 0; }
+  const k = Math.min(1, dt * 10), aL = (vf - c.sv) / dt, yr = angTo(c.syaw, c.yaw) / dt, vy = (c.y - c.sy) / dt, ay = (vy - c.svy) / dt; c.sv = vf; c.syaw = c.yaw; c.sy = c.y; c.svy = vy;
+  c.aL = lerp(c.aL || 0, clamp(aL, -30, 30), k); c.aT = lerp(c.aT || 0, clamp(vf * yr, -30, 30), k);
+  const w = big ? 6.3 : 8.8, K = w * w, D = 2 * (big ? .3 : .38) * w, n = Math.min(4, Math.ceil(dt / .008)), h = dt / n, rough = Math.min(1, Math.abs(vf) / 25) * (c.wreck ? 0 : 1);
+  for (let i = 0; i < n; i++) {
+    c.svP += (-K * c.spP - D * c.svP - c.aL * .0042 * K / 9) * h; c.spP += c.svP * h;                    // braking puts the nose down
+    c.svR += (-K * c.spR - D * c.svR + c.aT * .0055 * K / 9) * h; c.spR += c.svR * h;                    // the outside of a turn sinks
+    c.svH += (-K * c.spH - D * c.svH - clamp(ay, -60, 60) * .02 * K / 9) * h; c.spH += c.svH * h; }      // a kerb kicks it up
+  c.dive = clamp(c.spP, -.07, .08); c.roll = clamp(c.spR, -.09, .09); c.heave = clamp(c.spH, -.08, .08) + Math.sin(G.time * 31 + c.id) * .004 * rough;
+}
 // --- the light from your own headlights (one spotlight, kept in the scene so turning it on and off never rebuilds a shader)
 const HEADLIGHT = new T.SpotLight(0xfff0dc, 0, 60, .5, .55, 1.4); HEADLIGHT.castShadow = false; scene.add(HEADLIGHT, HEADLIGHT.target);
 function headlightTick() {

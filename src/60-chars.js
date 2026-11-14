@@ -126,8 +126,19 @@ const ACT = { none: 0, talk: 1, sit: 2, lean: 3, handsup: 4, phone: 5, dance: 6,
 function poseChar(c, s, dt) {
   const r = c.rig, q = Math.min(1, dt * 12), spd = s.spd || 0, act = s.dead >= 0 || s.knock > .5 ? 0 : (s.act | 0), seated = !!s.seat || act === ACT.sit;
   const moving = spd > .3 && !s.air && !seated;
-  if (moving) c.ph += dt * (1 + spd * 2.1);
-  c.amp = lerp(c.amp, moving ? clamp(.28 + spd * .09, .3, .95) : 0, q);
+  // which way they are actually going, from where they were a moment ago (works the same for anyone, here or on another machine)
+  if (c.px === undefined || hyp(s.x - c.px, s.z - c.pz) > 3 || dt <= 0) { c.px = s.x; c.pz = s.z; c.mvF = 1; c.mvS = 0; c.lyaw = s.yaw; c.yr = 0; }
+  { const dx = s.x - c.px, dz = s.z - c.pz, fx = -Math.sin(s.yaw), fz = -Math.cos(s.yaw), l = hyp(dx, dz); c.px = s.x; c.pz = s.z;
+    if (l > dt * .25) { const k = Math.min(1, dt * 8); c.mvF = lerp(c.mvF, (dx * fx + dz * fz) / l, k); c.mvS = lerp(c.mvS, (dx * -fz + dz * fx) / l, k); }   // forward, and to the right
+    const yr = angTo(c.lyaw, s.yaw) / Math.max(dt, 1e-3); c.lyaw = s.yaw; c.yr = lerp(c.yr, clamp(yr, -8, 8), Math.min(1, dt * 6)); }
+  // a stride that matches the ground covered: a walk is about 0.9 strides a second, a run 1.5. Each leg spends part of the stride on the
+  // ground (60% walking, about 35% running) and sweeps back under the body at exactly the speed it is going, so the foot stays put
+  const rn = smooth01((spd - 2.2) / 2.6), freq = lerp(.55 + .25 * spd, 1.25 + .05 * spd, rn), duty = lerp(.6, .36, rn), legL = .88 * (c.look.h || 1);
+  const shuffle = !moving && !seated && !s.air && Math.abs(c.yr) > 1.3;   // turning on the spot: a few small steps
+  const gs = moving ? spd : shuffle ? .7 : 0, gf = moving ? freq : 1.1;   // shuffling round on the spot: small steps
+  if (moving || shuffle) c.ph += dt * TAU * gf; c.gs = lerp(c.gs || 0, gs, Math.min(1, dt * 7)); c.gf = lerp(c.gf || 1, gf, Math.min(1, dt * 7));
+  c.amp = lerp(c.amp, moving || shuffle ? Math.min(.95, c.gs * .35) : 0, Math.min(1, dt * 7)); c.run = lerp(c.run || 0, moving ? rn : 0, Math.min(1, dt * 5));
+  if (c.wasAir && !s.air && !seated) c.land = 1; c.wasAir = !!s.air; c.land = Math.max(0, (c.land || 0) - dt * 3.5);   // landing: a dip at the knees
   const armed = s.wpn && s.wpn !== 'fist' ? 1 : 0, H = armed ? holdOf(s.wpn) : HOLD.pistol;
   const busy = act > 0 && act !== ACT.sit && (!moving || act === ACT.carry);                       // doing something with their hands: a gun stays down, a walk keeps its arms
   c.hold = lerp(c.hold, armed && (!seated || s.aim > .1) && !(busy && !(s.aim > .1)) ? 1 : 0, q); c.aim = lerp(c.aim, s.aim || 0, q); c.sit = lerp(c.sit, seated ? 1 : 0, Math.min(1, dt * 9));
@@ -137,24 +148,33 @@ function poseChar(c, s, dt) {
   if (busy) { c.actId = act; c.actW = lerp(c.actW || 0, 1, Math.min(1, dt * 6)); } else c.actW = lerp(c.actW || 0, 0, Math.min(1, dt * 8));
   c.t = (c.t || c.idx * 1.37) + dt;
   const A = c.actId | 0, w = c.actW < .01 ? 0 : c.actW, t = c.t, shot = s.shoot || 0;
-  const sn = Math.sin(c.ph), cs = Math.cos(c.ph), a = c.amp, f = c.fall, st = c.sit;
+  const sn = Math.sin(c.ph), cs = Math.cos(c.ph), a = c.amp, f = c.fall, st = c.sit, R = c.run, ld = c.land, ang = Math.atan2(c.mvS, Math.max(-1, c.mvF)), mcos = Math.cos(ang), msin = Math.sin(ang);
+  const idle = !moving && !shuffle && !seated && !s.air && !busy && f < .1, br = idle ? 1 : 0;   // standing about: breathing, weight on one leg then the other
   const low = w * (A === ACT.cower ? .42 : A === ACT.ball ? .08 : A === ACT.dance ? .03 + Math.abs(Math.sin(t * 5.2)) * .05 : 0);
-  r.root.position.set(s.x, s.y + f * .12, s.z); r.root.rotation.set(-f * 1.5, s.yaw + PI, 0); r.root.scale.setScalar(c.look.h);
-  r.hips.position.y = lerp(.97 - Math.abs(sn) * .035 * a - (s.air ? .04 : 0), .4, st) - low;
-  r.torso.rotation.set(lerp(a * (s.sprint ? .28 : .1), -.16, st) + w * (A === ACT.cower ? .75 : A === ACT.lean ? -.1 : A === ACT.browse ? .1 : A === ACT.ball ? .18 : 0), (s.twist || 0) + (A === ACT.dance ? w * .3 * Math.sin(t * 2.6) : 0), f * .2);
+  r.root.position.set(s.x, s.y + f * .12, s.z); r.root.rotation.set(-f * 1.5, s.yaw + PI, clamp(c.yr * spd * .011, -.17, .17) * (1 - st)); r.root.scale.setScalar(c.look.h);   // leaning into a turn at a run
+  // where each leg is in its stride: on the ground its foot sweeps straight back under the hip; in the air it swings forward, knee folded
+  const sMax = Math.min(.9, c.gs * duty / (2 * legL * Math.max(c.gf, .3))), legA = [0, 0], legK = [0, 0]; let stand = 0;
+  for (let k = 0; k < 2; k++) { const u = ((c.ph / TAU + (k ? .5 : 0)) % 1 + 1) % 1;
+    if (u < duty) { const th = Math.asin(lerp(-sMax, sMax, u / duty)); legA[k] = th; legK[k] = .05 + R * .16 * Math.sin(u / duty * PI); stand = Math.max(stand, Math.cos(th)); }
+    else { const v = (u - duty) / (1 - duty), sw = Math.sin(v * PI); legA[k] = Math.asin(sMax) * Math.cos(v * PI) - sw * (.15 + .5 * R) * Math.min(1, c.gs); legK[k] = sw * (.55 + 1.15 * R) * Math.min(1, c.gs * 1.5); } }
+  const bob = a > .01 ? (stand ? (1 - stand) * legL * .75 : -.03 * R) : 0;   // the body vaults over the leg it stands on; a run leaves the ground between steps
+  r.hips.position.y = lerp(.97 - bob - (s.air ? .04 : 0) - ld * .13, .4, st) - low; r.hips.position.x = (.028 * cs * a * (1 - R) + br * .018 * Math.sin(t * .37)) * (1 - st);
+  r.hips.rotation.set(0, .12 * sn * a * (1 - R * .4) * (1 - st), br * .025 * Math.sin(t * .37));
+  r.torso.rotation.set(lerp(.03 + a * .08 + R * .17 + (s.sprint ? .1 : 0) + br * .014 * Math.sin(t * 1.7) + ld * .15, -.16, st) + w * (A === ACT.cower ? .75 : A === ACT.lean ? -.1 : A === ACT.browse ? .1 : A === ACT.ball ? .18 : 0),
+    (s.twist || 0) - .2 * sn * a * (1 - st) + (A === ACT.dance ? w * .3 * Math.sin(t * 2.6) : 0), f * .2);
   // legs: thigh swings, knee folds while the leg comes forward
-  for (let k = 0; k < 2; k++) { const sg = k ? -1 : 1, hipA = sg * sn * a, kneeA = Math.max(0, -sg * cs) * (a * 1.15 + .08) * (a > .05 ? 1 : 0);
-    let hx = lerp(s.air ? -.35 + k * .5 : hipA, -1.42, st), kx = lerp(s.air ? .7 : kneeA, 1.3, st);
+  for (let k = 0; k < 2; k++) { const sg = k ? -1 : 1, g = Math.min(1, a * 3), hipA = legA[k] * g, kneeA = legK[k] * g + ld * .55 + br * Math.max(0, Math.sin(t * .37) * sg) * .14;
+    let hx = lerp(s.air ? -.35 + k * .5 : hipA * mcos, -1.42, st), kx = lerp(s.air ? .7 : kneeA, 1.3, st), hz = s.air ? 0 : hipA * msin * (1 - st);
     if (w) { if (A === ACT.cower) { hx = lerp(hx, -1.25, w); kx = lerp(kx, 2.1, w); } else if (A === ACT.lean && !k) { hx = lerp(hx, -.55, w); kx = lerp(kx, 1.05, w); } else if (A === ACT.ball) { hx = lerp(hx, -.32, w); kx = lerp(kx, .5, w); }
       else if (A === ACT.dance) { const b = Math.max(0, Math.sin(t * 5.2 + k * PI)); hx = lerp(hx, -.22 * b, w); kx = lerp(kx, .45 * b, w); } }
-    r.hip[k].rotation.set(hx * (1 - f * .8), 0, (k ? 1 : -1) * f * .22); r.kn[k].rotation.x = kx * (1 - f * .6); }
+    r.hip[k].rotation.set(hx * (1 - f * .8), 0, (k ? 1 : -1) * f * .22 + hz * (1 - f)); r.kn[k].rotation.x = kx * (1 - f * .6); }
   // arms: hang and swing, hold the weapon, or do what the moment calls for; the whole shoulder frame tips with the aim
   const h = c.hold, pitch = s.pitch || 0, rl = s.reload ? 1 : 0, pn = s.punch || 0;
   r.up.rotation.x = h * lerp(.72, -pitch * .92, c.aim) + h * rl * .4 - c.kick * .12;
   r.head.rotation.x = lerp(0, -pitch * .55, Math.max(c.aim, 1 - h)) * (1 - f) + w * (A === ACT.phone ? .38 : A === ACT.browse ? .16 : A === ACT.cower ? .3 : 0);
-  r.head.rotation.y = w * (A === ACT.talk ? .3 * Math.sin(t * .7) : A === ACT.browse ? .45 * Math.sin(t * .5) : A === ACT.lean ? .5 * Math.sin(t * .23) : 0);
+  r.head.rotation.y = w * (A === ACT.talk ? .3 * Math.sin(t * .7) : A === ACT.browse ? .45 * Math.sin(t * .5) : A === ACT.lean ? .5 * Math.sin(t * .23) : 0) + br * (1 - h) * .22 * Math.sin(t * .21 + c.idx) * Math.max(0, Math.sin(t * .13 + c.idx * 2));   // a look round now and then
   for (let k = 0; k < 2; k++) { const sd = k ? 1 : -1, sg = k ? 1 : -1, hs = k ? H.s1 : H.s0, he = k ? H.e1 : H.e0;
-    let ax = sg * sn * a * .8, ay = 0, az = sd * (.07 + f * 1.05), ex = -.15 - a * .4;
+    let ax = sg * sn * a * (.85 + R * .35) - R * .25, ay = 0, az = sd * (.07 + f * 1.05 + br * .02), ex = -.15 - a * .35 - R * 1.05 - br * .05;   // a run bends the elbows and pumps the arms
     if (st > .01) { const dr = s.seat === 'drive'; ax = lerp(ax, dr ? -1.05 : -.45, st); ay = lerp(ay, dr ? -sd * .22 : 0, st); ex = lerp(ex, dr ? -.45 : -.9, st); }
     if (w) { let tx = ax, ty = ay, te = ex;
       if (A === ACT.talk) { const g = k ? Math.max(0, Math.sin(t * 1.1)) : Math.max(0, Math.sin(t * .8 + 2)) * .6; tx = -.25 - g * (.75 + .2 * Math.sin(t * 5)); te = -.5 - g * .9; }

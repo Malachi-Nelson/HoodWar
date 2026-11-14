@@ -86,7 +86,7 @@ function evictCar() {
 const carById = id => { for (let i = 0; i < cars.length; i++) if (cars[i].id === id) return cars[i]; return null; };
 const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _we = new T.Euler(0, 0, 0, 'YXZ'), _wv = new T.Vector3(), _ws = new T.Vector3();
 function placeCar(c) {
-  const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.g.updateMatrixWorld(true);
+  const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.body.position.y = c.spec.air ? 0 : c.heave || 0; c.g.updateMatrixWorld(true);
   if (c.spec.air) return;   // skids, not wheels
   const hw = c.spec.wid / 2 - .13, near = wheelsNear(c);
   if (near !== !!c.wnear) { c.wnear = near; if (near) for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); }
@@ -118,7 +118,8 @@ function stepCar(c, dt, inp) {
   const slide = Math.abs(vl), gk = 1 + (c.grip | 0) * .2, grip = (inp.hb ? 2.1 : slide > 6.5 ? S.grip * .42 * gk : S.grip * gk) * (1 - .2 * WX.wet); c.slip = slide;   // gk: car-shop handling
   vl -= vl * Math.min(1, grip * dt);
   c.vx = fx * vf + rx * vl; c.vz = fz * vf + rz * vl;
-  const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1);
+  const maxSteer = lerp(.6, .085, clamp(sp / 44, 0, 1)), bite = thr < 0 && vf > 2 ? 1.1 : thr > .5 ? .95 : 1, lim = 9.81 * 3 * (S.grip / 9) * gk * (inp.hb ? .7 : 1);   // (the wet takes its toll through the sideways grip below the line above)   // lim: the most the tyres can turn it, m/s/s
+  let want = -(vf / (S.len * .58)) * Math.tan(c.steer * maxSteer) * (inp.hb ? 1.55 : 1) * bite; if (sp > 1) { const cap = lim / sp; want /= Math.pow(1 + Math.pow(Math.abs(want) / cap, 4), .25); }   // gentle until near the limit, firm past it
   c.yawRate = lerp(c.yawRate, want, Math.min(1, dt * 7.5)); c.yaw = wrapPi(c.yaw + c.yawRate * dt);
   c.x += c.vx * dt; c.z += c.vz * dt;
   // the world: three circles down the length of the car
@@ -174,6 +175,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 }
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
+  if (!c.spec.air) carSuspension(c, dt);
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   carLamps(c, dt);
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;

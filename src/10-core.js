@@ -11,6 +11,7 @@ const T = THREE, rand = Math.random, PI = Math.PI, TAU = PI * 2, hyp = Math.hypo
 const s2l = v => v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4);   // one sRGB channel (0..1) to linear
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v, lerp = (a, b, t) => a + (b - a) * t;
 const wrapPi = a => { a = (a + PI) % TAU; if (a < 0) a += TAU; return a - PI; };
+const smooth01 = x => { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * (3 - 2 * x); };   // 0..1 eased at both ends
 const angTo = (a, b) => wrapPi(b - a);                 // shortest signed turn from a to b
 const lerpAng = (a, b, t) => a + angTo(a, b) * t;
 const yawOf = (dx, dz) => Math.atan2(-dx, -dz);        // forward is (-sin yaw, -cos yaw): yaw 0 faces north (-z), +x is east, +z is south
