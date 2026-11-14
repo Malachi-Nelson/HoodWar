@@ -225,10 +225,51 @@ function buildWires() {
   POLE_WIRES.forEach(w => { const n = 12, sag = t => Math.sin(t * PI) * .6; for (let s = 0; s < n; s++) { const t0 = s / n, t1 = (s + 1) / n; pos.push(lerp(w[0], w[2], t0), y - sag(t0), w[1], lerp(w[0], w[2], t1), y - sag(t1), w[3]); } });
   const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); WIRES.m = new T.LineSegments(g, new T.LineBasicMaterial({ color: 0x151515 })); WIRES.m.matrixAutoUpdate = false; scene.add(WIRES.m);
 }
+// --- building work: scaffolding up the front of a few walk-ups, and a tower crane on the roof of a high-rise going up
+const SCAFF = [], CRANE = { g: null, jib: null, lamp: null, t: 0, turn: 0 };
+defMat('netting', new T.MeshLambertMaterial({ map: (() => { const c = texCanvas(64), g = c.getContext('2d'); g.fillStyle = 'rgba(30,74,50,.42)'; g.fillRect(0, 0, 64, 64);   // fine debris mesh: dark, see-through
+  for (let k = 0; k < 64; k += 4) { g.fillStyle = `rgba(14,40,26,${.16 + .14 * Math.sin(k * 1.7) ** 2})`; g.fillRect(k, 0, 1, 64); g.fillStyle = 'rgba(14,40,26,.14)'; g.fillRect(0, k, 64, 1); }   // weave, a little uneven
+  g.fillStyle = 'rgba(10,30,20,.55)'; g.fillRect(0, 0, 2, 64); g.fillRect(0, 31, 64, 2); return asTex(c); })(), transparent: true, side: T.DoubleSide, depthWrite: false, vertexColors: true }), 2, 2, { cast: false });
+PBR_OF.netting = [.9, 0];
+function scaffold(B, f) {
+  const F = faceFrame(f, B), steel = 0x8d9296, wood = 0x9a7b52, top = B.top + 1.1, levels = []; for (let y = B.y0 + 2.2; y < top - .5; y += 2.1) levels.push(y);
+  const us = []; for (let u = .3; u < F.len - .2; u += 2.4) us.push(u); if (F.len - .3 - us[us.length - 1] > .6) us.push(F.len - .3);
+  us.forEach(u => [.25, 1.3].forEach(d => faceBox(F, u - .03, u + .03, B.y0, top, d - .03, d + .03, steel, 'flat', 63)));                    // standards, two rows
+  levels.forEach((y, li) => { [.25, 1.3].forEach(d => faceBox(F, .2, F.len - .2, y - .03, y + .03, d - .03, d + .03, steel, 'flat', 63));     // ledgers
+    us.forEach(u => faceBox(F, u - .025, u + .025, y - .07, y - .03, .2, 1.35, steel, 'flat', 63)); faceBox(F, .3, F.len - .3, y + .03, y + .07, .3, 1.25, wood, 'flat', 63);   // transoms, boards
+    faceBox(F, .3, F.len - .3, y + .95, y + 1, 1.28, 1.33, steel, 'flat', 63); });                                                                  // guard rail
+  for (let k = 0; k + 1 < us.length; k += 2) levels.forEach((y, li) => { if (li + 1 >= levels.length) return; const a = faceAt(F, us[k]), b2 = faceAt(F, us[k + 1]), y1 = levels[li + 1], len = hyp(b2[0] - a[0], b2[1] - a[1], y1 - y), g = new T.BoxGeometry(.05, .05, len);
+    g.lookAt(new T.Vector3(b2[0] - a[0], y1 - y, b2[1] - a[1])); g.translate((a[0] + b2[0]) / 2 + F.nx * 1.36, (y + y1) / 2, (a[1] + b2[1]) / 2 + F.nz * 1.36); dchunk(a[0], a[1], 'm').geo(g, null, hexCol(steel)); g.dispose(); });   // braces on the face
+  const c0 = faceAt(F, 0), c1 = faceAt(F, F.len), o = 1.38, y0 = B.y0 + 2.6, nb = SB('netting'), w = hexCol(0xffffff);                         // debris netting over it all
+  nb.quad([c0[0] + F.nx * o, y0, c0[1] + F.nz * o], [c1[0] + F.nx * o, y0, c1[1] + F.nz * o], [c1[0] + F.nx * o, top, c1[1] + F.nz * o], [c0[0] + F.nx * o, top, c0[1] + F.nz * o], F.nx, 0, F.nz, 0, 0, F.len / 2, (top - y0) / 2, w);
+  SCAFF.push({ x: (c0[0] + c1[0]) / 2, z: (c0[1] + c1[1]) / 2, f });
+}
+function buildingWork() {
+  const walk = BLDS.filter(B => (B.mat === 'brick' || B.mat === 'brick2') && !B.shop && B.top - B.y0 > 8 && B.x1 - B.x0 > 9);
+  for (let k = 0, tries = 0; k < 3 && tries < 30 && walk.length; tries++) { const B = walk[(WD() * walk.length) | 0], f = ['n', 's', 'e', 'w'].find(q => faceRoadGap(q, B) < EDGE + 4 && faceFrame(q, B).len > 9); if (!f || SCAFF.some(S => hyp(S.x - B.x0, S.z - B.z0) < 60)) continue; scaffold(B, f); k++; }
+  // the crane: on the tallest office roof, a lattice mast; the jib and its counterweight turn (craneTick)
+  const tall = BLDS.filter(B => B.mat === 'office' && B.roof !== false).sort((a, b) => b.top - a.top)[0]; if (!tall) return;
+  const cx = (tall.x0 + tall.x1) / 2 + 3, cz = (tall.z0 + tall.z1) / 2, y0 = tall.top, H = 26, yel = hexCol(0xd9a521), dk = hexCol(0x3a3c3e), M = new GeoBuf(), J = new GeoBuf(), m = 1.7;
+  const bar = (b, ax, ay, az, bx, by, bz, t, col) => { const len = hyp(bx - ax, by - ay, bz - az), g = new T.BoxGeometry(t, t, len); g.lookAt(new T.Vector3(bx - ax, by - ay, bz - az)); g.translate((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2); b.geo(g, null, col); g.dispose(); };
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(q => bar(M, cx + q[0] * m / 2, y0, cz + q[1] * m / 2, cx + q[0] * m / 2, y0 + H, cz + q[1] * m / 2, .12, yel));
+  for (let y = y0; y < y0 + H - 1; y += 2) [[-1, -1, 1, -1], [1, -1, 1, 1], [1, 1, -1, 1], [-1, 1, -1, -1]].forEach(q => bar(M, cx + q[0] * m / 2, y, cz + q[1] * m / 2, cx + q[2] * m / 2, y + 2, cz + q[3] * m / 2, .07, yel));
+  M.box(cx - 2.2, cx + 2.2, y0, y0 + .6, cz - 2.2, cz + 2.2, hexCol(0x8a8a86));   // its base, ballast on the roof
+  const L = 34, C = 11, h = 1.4;   // the jib, out along +x from the slewing ring, and the counter-jib back along -x; in the turning group's frame
+  [[0, -.6], [0, .6]].forEach(q => bar(J, -C, 0, q[1], L, 0, q[1], .1, yel)); bar(J, -C, h, 0, L, h * .2, 0, .1, yel);
+  for (let x = -C; x < L - 1; x += 1.6) { bar(J, x, 0, -.6, x + .8, h * (1 - (x + .8 + C) / (L + C) * .8), 0, .06, yel); bar(J, x + .8, h * (1 - (x + .8 + C) / (L + C) * .8), 0, x + 1.6, 0, .6, .06, yel); }
+  J.box(-C, -C + 3.4, -1.6, 0, -.9, .9, hexCol(0x9a9a96)); J.box(-1.2, 1.2, -.3, 2.2, -1.1, 1.1, yel); J.box(-.4, 1.1, -.2, 2.1, .7, 1.4, hexCol(0x2b3640));   // counterweights, the machinery deck, the cab
+  bar(J, 0, 2.2, 0, 0, 6.5, 0, .12, yel); bar(J, 0, 6.5, 0, L * .7, h * .5, 0, .04, dk); bar(J, 0, 6.5, 0, -C + 1, .2, 0, .04, dk);   // the A-frame and its ties
+  bar(J, 22, 0, 0, 22, -18, 0, .025, dk); J.box(21.6, 22.4, -19, -18, -.4, .4, hexCol(0xd9a521));   // the hook block on its cable
+  const mm = new T.Mesh(M.build(), MATS.flat.mat), g = new T.Group(), jm = new T.Mesh(J.build(), MATS.flat.mat); mm.userData.key = jm.userData.key = 'flat'; mm.castShadow = jm.castShadow = true; mm.matrixAutoUpdate = false; scene.add(mm); staticMeshes.push(mm, jm);
+  g.position.set(cx, y0 + H, cz); g.add(jm); scene.add(g); CRANE.g = g; CRANE.jib = jm;
+  CRANE.lamp = new T.Mesh(new T.SphereGeometry(.25, 8, 6), new T.MeshBasicMaterial({ color: 0x000000 })); CRANE.lamp.position.set(0, 6.8, 0); g.add(CRANE.lamp);   // red aircraft light
+}
+function craneTick(dt) { if (!CRANE.g) return; CRANE.t -= dt; if (CRANE.t <= 0) { CRANE.t = 8 + rand() * 18; CRANE.turn = rand() < .35 ? 0 : (rand() < .5 ? -1 : 1) * (.04 + rand() * .05); }
+  CRANE.g.rotation.y += CRANE.turn * dt; const on = ENV.night > .3 && (G.time % 2) < .3; CRANE.lamp.material.color.setRGB(on ? (POST.on ? 4 : 1.6) : .15, on ? .1 : .02, on ? .06 : .02); }
 // --- the whole pass (from 43-assemble.js, before the static meshes are made)
 // houses (41-districts.js) are not building()s: they get the dirt along the foot of their walls and nothing else
 function dressHouses() { FOOT.forEach(f => { if (f[4] !== 'h' || f[2] - f[0] < 2) return; const B = { x0: f[0], z0: f[1], x1: f[2], z1: f[3] }; ['n', 's', 'e', 'w'].forEach(k => grimeRun(faceFrame(k, B), CURB, CURB + 1.1, 1, .7)); }); }
-function dressCity() { BLDS.forEach(dressBuilding); dressHouses(); dressStreets(); PROPS.forEach((p, i) => { p.i = i; }); buildSignalLamps(); finishDetail(); }
+function dressCity() { BLDS.forEach(dressBuilding); dressHouses(); dressStreets(); buildingWork(); PROPS.forEach((p, i) => { p.i = i; }); buildSignalLamps(); finishDetail(); }
 // --- the signals: every lamp is one instance; signalsTick colours them from the cycle. The clock is the time of day, which every
 //     player shares, so all see the same lights and the traffic (run by the host) stops for the same reds.
 //     32 s a cycle: north-south green 12, amber 3, all red 1; east-west the same. 2400 s a day, 75 cycles: it wraps cleanly.

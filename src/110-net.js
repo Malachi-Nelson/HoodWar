@@ -10,7 +10,7 @@
        has more players with them. A player who loses their own connection keeps playing and rejoins when it comes back.
    ===================================================================== */
 Object.assign(NET, { hostPeer: null, hostEp: 0, ep: 1, jit: {}, seq: 0, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, slots: {}, dmgOut: {}, lob: null, bytes: 0, myBoom: -9, knSeen: 0, joinT: 0 });
-const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT]);
+const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT, AMB_PAINT]);
 const B36 = (n, w) => { n = Math.max(0, Math.round(n)); let s = n.toString(36); while (s.length < w) s = '0' + s; return s.length > w ? 'z'.repeat(w) : s; };
 const U36 = (s, o, w) => parseInt(s.substr(o, w), 36);
 const r2 = v => Math.round(v * 100) / 100;
@@ -142,6 +142,7 @@ function decCars(s, pk) {
     if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
     if (!c.mine && !c.vbufOf) snapPush(c.buf, air ? { x, y, z, yaw, vf, pitch: dive, roll } : { x, y, z, yaw, vf });
     { const drop = c.hp / c.spec.hp - hp; if (drop > .08 && !c.mine) dentCar(c, drop * 1.6, null); else if (hp > .98 && c.dent) undentCar(c); }
+    if (!c.ems && ALLPAINT[ci] === AMB_PAINT && c.type === 'van') emsDress(c);
     c.hp = hp * c.spec.hp; if ((fl & 1) && !c.wreck) { c.wreck = true; c.wreckT = 0; } c.burn = fl & 2 ? 1 : 0; if (!c.mine) { c.horn = fl & 4 ? 1 : 0; c.rslip = fl & 16 ? 7 : 0; } c.eng = !!(fl & 8);
     for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } }
     return len; };

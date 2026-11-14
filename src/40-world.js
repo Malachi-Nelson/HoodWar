@@ -186,7 +186,20 @@ for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const L = lotOf(i, j
 // the outer pavement and what closes the city in: an expressway wall to the west and north, water to the east and south
 addBox(0, WALK, -.6, CURB, 0, CITY.d, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, 0, BRIDGE.z - 6.5, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, BRIDGE.z + 6.5, CITY.d, 'walk', { faces: 15 | 16 });   // the east pavement opens where the Harbor Bridge road leaves town
 addBox(WALK, CITY.w - WALK, -.6, CURB, 0, WALK, 'walk', { faces: 15 | 16 }); addBox(WALK, CITY.w - WALK, -.6, CURB, CITY.d - WALK, CITY.d, 'walk', { faces: 15 | 16 });
-addBox(-6, 0, 0, 8, -6, CITY.d, 'concrete', { tcol: 0x555a5e }); addBox(0, CITY.w, 0, 8, -6, 0, 'concrete', { tcol: 0x555a5e });
+// the expressway wall: cast concrete in 6 m panels, rain streaks down from the coping, road dirt along its foot (one texture, three panels wide)
+defMat('xwall', lam({ map: (() => { const c = texCanvas(1024, 512), g = c.getContext('2d'), R = rng32(0x3a11), pw = 1024 / 3;
+  g.fillStyle = '#a19d95'; g.fillRect(0, 0, 1024, 512);
+  for (let k = 0; k < 26; k++) { const x = R() * 1024, y = R() * 512, rr = 60 + R() * 200, gr = g.createRadialGradient(x, y, 0, x, y, rr), d = R() < .5; gr.addColorStop(0, d ? 'rgba(60,56,50,.10)' : 'rgba(255,252,244,.08)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+  for (let k = 0; k < 9000; k++) { const v = R(); g.fillStyle = v < .5 ? `rgba(40,38,34,${.08 + R() * .14})` : `rgba(255,252,246,${.05 + R() * .1})`; g.fillRect(R() * 1024, R() * 512, 1 + (R() < .2), 1); }
+  for (let k = 0; k < 90; k++) { const near = R() < .35, x = near ? Math.round(R() * 3) * pw + (R() - .5) * 14 : R() * 1024, w = 2 + R() * 9, L = 30 + R() * R() * 420, y0 = 18 + R() * 8, gr = g.createLinearGradient(0, y0, 0, y0 + L);
+    gr.addColorStop(0, `rgba(48,44,38,${.1 + R() * .16})`); gr.addColorStop(1, 'rgba(48,44,38,0)'); g.fillStyle = gr; g.fillRect(x - w / 2, y0, w, L); }   // rain streaks, more of them down the joints
+  { const gr = g.createLinearGradient(0, 512, 0, 400); gr.addColorStop(0, 'rgba(38,35,30,.42)'); gr.addColorStop(.35, 'rgba(38,35,30,.16)'); gr.addColorStop(1, 'rgba(38,35,30,0)'); g.fillStyle = gr; g.fillRect(0, 400, 1024, 112); }   // road dirt
+  g.fillStyle = 'rgba(0,0,0,.08)'; [171, 341].forEach(y => g.fillRect(0, y, 1024, 2));                                     // lift lines
+  g.fillStyle = 'rgba(255,253,248,.16)'; g.fillRect(0, 0, 1024, 16); g.fillStyle = 'rgba(20,18,16,.38)'; g.fillRect(0, 16, 1024, 3);   // the coping and its drip line
+  for (let k = 0; k < 3; k++) { const x = Math.round(k * pw); g.fillStyle = 'rgba(22,20,18,.55)'; g.fillRect(x, 0, 3, 512); g.fillStyle = 'rgba(255,252,246,.12)'; g.fillRect(x + 3, 0, 1, 512); }   // panel joints
+  return asTex(c); })() }), 18, 8);
+PBR_OF.xwall = [.9, 0];
+addBox(-6, 0, 0, 8, -6, CITY.d, 'xwall', { top: 'concrete', tcol: 0x555a5e }); addBox(0, CITY.w, 0, 8, -6, 0, 'xwall', { top: 'concrete', tcol: 0x555a5e });
 // unseen walls that keep anyone on foot or on wheels out of the water. They stop neither bullets nor eyes nor anything flying (see 82-air.js).
 { const wf = { a: false, s: false };
   solid(-48, 0, 0, 90, -48, WORLD.z1, wf); solid(-48, CITY.w, 0, 90, -48, 0, wf); solid(-48, CITY.w, -3, 90, CITY.d, WORLD.z1, wf);
@@ -198,12 +211,63 @@ for (let z = 6; z < CITY.d; z += 3) if (Math.abs(z - BRIDGE.z) > BRIDGE.w + .4) 
 for (let x = 6; x < CITY.w; x += 3) deco(x - .06, x + .06, CURB, CURB + 1.05, CITY.d - .25, CITY.d - .1, 0x30363a);
 deco(0, CITY.w, CURB + 1, CURB + 1.1, CITY.d - .25, CITY.d - .1, 0x30363a); deco(0, CITY.w, CURB + .5, CURB + .56, CITY.d - .25, CITY.d - .1, 0x30363a);
 addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, BRIDGE.z - BRIDGE.w, 'concrete', { nocol: true }); addBox(CITY.w, CITY.w + 1.2, -3, CURB, BRIDGE.z + BRIDGE.w, CITY.d + 1.2, 'concrete', { nocol: true }); addBox(-6, CITY.w, -3, CURB, CITY.d, CITY.d + 1.2, 'concrete', { nocol: true });
-// the skyline beyond: nothing out there can be reached
-{ const far = (x0, z0, w, d, h, mat) => addBox(x0, x0 + w, 0, h, z0, z0 + d, mat, { nocol: true, faces: 15 | 16, top: 'roof', col: pick(W, mat === 'brick' ? BRICKS : [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3]) });
+// --- beyond the expressway, west and north, the city goes on: our streets carry on out there between blocks of walk-ups and offices,
+//     and the skyline towers stand in those blocks, out to the shore 400 m off. Nobody gets there on foot or on wheels (the unseen
+//     walls); it is there to be seen, from the air above all. Its own random numbers, so nothing in town moves.
+const FAR_X = [-390, -290, -190, -90], FAR_Z = [-326, -242, -158, -74], FAR_LAND = { x0: -400, z0: -336 }, FAR_B = [], FAR_BL = [];
+for (let i = 0; i <= NX; i++) FAR_X.push(RX(i)); for (let j = 0; j <= NZ; j++) FAR_Z.push(RZ(j));
+for (let a = 0; a + 1 < FAR_X.length; a++) for (let b = 0; b + 1 < FAR_Z.length; b++) { const x0 = FAR_X[a] + EDGE, z0 = FAR_Z[b] + EDGE; let x1 = FAR_X[a + 1] - EDGE, z1 = FAR_Z[b + 1] - EDGE;
+  if (x0 > 0 && z0 > 0) continue;                                                                       // a block of the town itself
+  if (x1 > -6 && z1 > -6) { if (x0 < -14) x1 = -14; else z1 = -14; }                                   // keep clear of the expressway
+  FAR_BL.push({ x0, z0, x1, z1 }); }
+const farReach = (x0, z0, x1, z1) => x1 > AIRSPACE.x0 - 34 && z1 > AIRSPACE.z0 - 34 && x0 < AIRSPACE.x1 + 34 && z0 < AIRSPACE.z1 + 34;   // where a pilot can get to: solid
+// a skyline tower goes into the block nearest where it was thrown, clear of the street, and of another tower if the block has room
+function farSnap(x0, z0, w, d) {
+  if (z0 > CITY.d) return [x0, z0];                                                                     // over the river: the far bank
+  const cx = x0 + w / 2, cz = z0 + d / 2, m = 2; let B = FAR_BL[0], bd = 1e9;
+  FAR_BL.forEach(L => { const dx = Math.max(L.x0 - cx, 0, cx - L.x1), dz = Math.max(L.z0 - cz, 0, cz - L.z1), q = dx * dx + dz * dz; if (q < bd) { bd = q; B = L; } });
+  const fit = (lo, hi, v, sz) => hi - lo - 2 * m < sz ? (lo + hi - sz) / 2 : clamp(v, lo + m, hi - m - sz);
+  const over = (px, pz) => FAR_B.reduce((t, q) => t + Math.max(0, Math.min(px + w, q[2]) - Math.max(px, q[0])) * Math.max(0, Math.min(pz + d, q[3]) - Math.max(pz, q[1])), 0);
+  let p = [fit(B.x0, B.x1, x0, w), fit(B.z0, B.z1, z0, d)], bo = over(p[0], p[1]);
+  if (bo > 0) [[B.x0, B.z0], [B.x1 - w, B.z0], [B.x0, B.z1 - d], [B.x1 - w, B.z1 - d]].forEach(q => { const c = [fit(B.x0, B.x1, q[0], w), fit(B.z0, B.z1, q[1], d)], o = over(c[0], c[1]); if (o < bo) { bo = o; p = c; } });
+  return p;
+}
+// the ground out there, its shore, the yellow lines down its streets, and its blocks
+function farDistricts() {
+  const L0 = FAR_LAND, WF = rng32(0xfa7d15), r = (a, b) => a + WF() * (b - a), pk = A => A[(WF() * A.length) | 0], OFF = [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3];
+  SB('asphalt').quad([L0.x0, 0, CITY.d], [-4, 0, CITY.d], [-4, 0, L0.z0], [L0.x0, 0, L0.z0], 0, 1, 0, 0, 0, (-4 - L0.x0) / 12, (CITY.d - L0.z0) / 12);
+  SB('asphalt').quad([-4, 0, -4], [CITY.w, 0, -4], [CITY.w, 0, L0.z0], [-4, 0, L0.z0], 0, 1, 0, 0, 0, (CITY.w + 4) / 12, (-4 - L0.z0) / 12);
+  addBox(L0.x0 - .6, L0.x0, -3, .05, L0.z0, CITY.d, 'concrete', { nocol: true, faces: 2 | 16 }); addBox(L0.x0 - .6, CITY.w, -3, .05, L0.z0 - .6, L0.z0, 'concrete', { nocol: true, faces: 8 | 16 });
+  addBox(L0.x0, -6, -3, .05, CITY.d, CITY.d + .6, 'concrete', { nocol: true, faces: 4 | 16 }); addBox(CITY.w, CITY.w + .6, -3, .05, L0.z0, -6, 'concrete', { nocol: true, faces: 1 | 16 });
+  const lines = (along, at, lo, hi, cross) => { const cs = cross.filter(c => c > lo && c < hi), pts = [lo, ...cs, hi];
+    for (let k = 0; k + 1 < pts.length; k++) { const a = pts[k] + EDGE + 1.5, b = pts[k + 1] - (k + 2 < pts.length ? EDGE + 1.5 : 1);   // the first point is the shore road if (b - a < 4) continue;
+      if (along === 'z') { paint(at - .28, a, at - .12, b, YEL); paint(at + .12, a, at + .28, b, YEL); } else { paint(a, at - .28, b, at - .12, YEL); paint(a, at + .12, b, at + .28, YEL); } } };
+  FAR_X.forEach(x => lines('z', x, L0.z0 + 10, x < 0 ? CITY.d - 1 : -7, x < 0 ? FAR_Z : FAR_Z.filter(z => z < 0)));
+  FAR_Z.forEach(z => lines('x', z, L0.x0 + 10, z < 0 ? CITY.w - 1 : -7, z < 0 ? FAR_X : FAR_X.filter(x => x < 0)));
+  const taken = (x0, z0, x1, z1) => FAR_B.some(q => x0 < q[2] + 1.5 && x1 > q[0] - 1.5 && z0 < q[3] + 1.5 && z1 > q[1] - 1.5);
+  const bld = (x0, z0, x1, z1) => { if (x1 - x0 < 7 || z1 - z0 < 7 || taken(x0, z0, x1, z1)) return; const mat = pk(['brick', 'brick', 'brick2', 'brick2', 'office']), tall = WF() < .09, fl = tall ? 8 + (WF() * 9 | 0) : 2 + (WF() * 5 | 0) + (WF() < .25 ? 2 : 0);
+    addBox(x0, x1, 0, fl * 3.2, z0, z1, mat, { nocol: !farReach(x0, z0, x1, z1), faces: 15 | 16, top: 'roof', col: pk(mat === 'office' ? OFF : BRICKS) }); };
+  const row = (a0, a1, f) => { for (let a = a0; a < a1 - 6;) { let w = r(10, 24); if (a1 - a - w < 9) w = a1 - a; if (WF() > .07) f(a, a + w); a += w; } };
+  FAR_BL.forEach(L => { const k = WF(), park = k < .07 && !taken(L.x0, L.z0, L.x1, L.z1), lot = !park && k < .18;
+    addBox(L.x0 - WALK, L.x1 + WALK, -.6, CURB, L.z0 - WALK, L.z1 + WALK, 'walk', { nocol: true, faces: 15 | 16, top: park ? 'grass' : lot ? 'lot' : 'walk' });
+    if (park) { const ico = new T.IcosahedronGeometry(1, 0), m = new T.Matrix4(), q = new T.Quaternion();   // trees: a ring round the edge, a few clumps inside
+      const tr = (x, z) => { const s = .8 + WF() * .6, h = 2.4 * s + WF(), c = hexCol(pk([0x3f6b34, 0x4d7a3a, 0x58813c, 0x3a5f30])); addBox(x - .18, x + .18, CURB, CURB + h + .4, z - .18, z + .18, 'flat', { nocol: true, faces: 15, col: 0x4a3a2a });
+        q.setFromEuler(new T.Euler(WF() * 3, WF() * 3, 0)); m.compose(new T.Vector3(x, CURB + h + 1.2 * s, z), q, new T.Vector3(2 * s, 1.6 * s, 2 * s)); SB('foliage').geo(ico, m, c); };
+      for (let x = L.x0 + 4; x < L.x1 - 3; x += 7 + WF() * 3) { tr(x, L.z0 + 3 + WF()); tr(x, L.z1 - 3 - WF()); } for (let z = L.z0 + 11; z < L.z1 - 9; z += 7 + WF() * 3) { tr(L.x0 + 3 + WF(), z); tr(L.x1 - 3 - WF(), z); }
+      for (let k = 0; k < 3; k++) { const cx = r(L.x0 + 14, L.x1 - 14), cz = r(L.z0 + 14, L.z1 - 14); for (let n = 0; n < 4; n++) tr(cx + r(-6, 6), cz + r(-6, 6)); }
+      ico.dispose(); return; }
+    const dN = r(11, 17), dS = r(11, 17), dW = r(11, 16), dE = r(11, 16);
+    row(L.x0, L.x1, (a, b) => bld(a, L.z0, b, L.z0 + dN)); row(L.z0 + dN, L.z1 - (lot ? 0 : dS), (a, b) => bld(L.x0, a, L.x0 + dW, b));     // a car park keeps two sides open
+    if (lot) return; row(L.x0, L.x1, (a, b) => bld(a, L.z1 - dS, b, L.z1)); row(L.z0 + dN, L.z1 - dS, (a, b) => bld(L.x1 - dE, a, L.x1, b)); });
+}
+// the skyline beyond
+{ const far = (x0, z0, w, d, h, mat) => { const p = farSnap(x0, z0, w, d); FAR_B.push([p[0], p[1], p[0] + w, p[1] + d]);
+    return addBox(p[0], p[0] + w, 0, h, p[1], p[1] + d, mat, { nocol: !farReach(p[0], p[1], p[0] + w, p[1] + d), faces: 15 | 16, top: 'roof', col: pick(W, mat === 'brick' ? BRICKS : [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3]) }); };
   for (let z = -40; z < CITY.d; z += wr(34, 60)) far(wr(-150, -50), z, wr(22, 40), wr(22, 36), wr(18, 95), pick(W, ['office', 'tower', 'brick', 'office']));
   for (let x = -40; x < CITY.w + 30; x += wr(34, 60)) far(x, wr(-160, -55), wr(22, 40), wr(22, 36), wr(18, 110), pick(W, ['office', 'tower', 'brick', 'tower']));
   for (let x = -60; x < CITY.w + 60; x += wr(40, 80)) far(x, CITY.d + wr(120, 190), wr(26, 50), wr(22, 30), wr(10, 46), pick(W, ['brick', 'office', 'brick2']));
   addBox(-60, CITY.w + 80, -3, 1.2, CITY.d + 104, CITY.d + 240, 'concrete', { nocol: true });                                    // far bank of the river
+  farDistricts();
   const sx = 440;   // the freighters ride at anchor out past the airport
   addBox(CITY.w + sx + 150, CITY.w + sx + 330, -1, 6, 160, 190, 'flat', { nocol: true, col: 0x7a2a22 }); addBox(CITY.w + sx + 290, CITY.w + sx + 318, 6, 22, 166, 184, 'flat', { nocol: true, col: 0xd8d6cc });   // a freighter at anchor
   addBox(CITY.w + sx + 120, CITY.w + sx + 240, -1, 5, 380, 404, 'flat', { nocol: true, col: 0x1f3d5c }); addBox(CITY.w + sx + 212, CITY.w + sx + 234, 5, 17, 384, 400, 'flat', { nocol: true, col: 0xd8d6cc });

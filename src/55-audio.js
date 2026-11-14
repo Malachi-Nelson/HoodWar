@@ -12,7 +12,7 @@ function initAudio() {
   musicBus = AC.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
   noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rand() * 2 - 1;
   // the city: a low hum of far traffic
-  const wn = AC.createBufferSource(); wn.buffer = noiseBuf; wn.loop = true; const wf = AC.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 220; const wg = AC.createGain(); wg.gain.value = .05; wn.connect(wf); wf.connect(wg); wg.connect(master); wn.start();
+  const wn = AC.createBufferSource(); wn.buffer = noiseBuf; wn.loop = true; const wf = AC.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 220; const wg = AC.createGain(); wg.gain.value = .022; wn.connect(wf); wf.connect(wg); wg.connect(master); wn.start();
   // tyres: one looping hiss whose level follows how hard the nearest car is sliding
   const sk = AC.createBufferSource(); sk.buffer = noiseBuf; sk.loop = true; const sf = AC.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 1500; sf.Q.value = 2.2; SKID.g = AC.createGain(); SKID.g.gain.value = 0; sk.connect(sf); sf.connect(SKID.g); SKID.g.connect(sfxBus); sk.start();
   for (let i = 0; i < 4; i++) { const o1 = AC.createOscillator(), o2 = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o1.type = 'sawtooth'; o2.type = 'square'; o1.frequency.value = 60; o2.frequency.value = 30; f.type = 'lowpass'; f.frequency.value = 420; g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); g.connect(sfxBus); o1.start(); o2.start(); ENGV.push({ o1, o2, f, g, car: null }); }
@@ -76,7 +76,7 @@ function updateEngines(dt, mine) {
     if (e.d < 45) slip = Math.max(slip, (c.slip > 4.5 ? Math.min(1, (c.slip - 4.5) / 6) : 0) * (c === mine ? 1 : .5), c.inp.hb && sp > 6 ? .7 : 0); });
   SKID.g.gain.setTargetAtTime(slip * .16, AC.currentTime, .05);
   // one siren: the nearest police car that has its lights on
-  let sv = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || !c.horn || c.wreck || !c.occ[0]) continue; if (c === mine) { sv = Math.max(sv, .03); continue; } const d = hyp(c.x - EAR.x, c.z - EAR.z); if (d < 190) sv = Math.max(sv, .075 * Math.pow(1 - d / 190, 1.6)); }
+  let sv = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!(c.cop || c.ems) || !c.horn || c.wreck || !c.occ[0]) continue; if (c === mine) { sv = Math.max(sv, .03); continue; } const d = hyp(c.x - EAR.x, c.z - EAR.z); if (d < 190) sv = Math.max(sv, .075 * Math.pow(1 - d / 190, 1.6)); }
   if (ROTOR.g) { let hb = null, hd = 1e9; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.spec.air || c.spec.air === 'plane' || c.wreck || !(c.rotor > .04)) continue; const d = c === mine ? -1 : hyp(c.x - EAR.x, c.y - EAR.y, c.z - EAR.z); if (d < hd) { hd = d; hb = c; } }
     const rv = !hb || hd > 320 ? 0 : (hb === mine ? .2 : .45 * Math.pow(1 - hd / 320, 1.5)) * hb.rotor, t = AC.currentTime; ROTOR.g.gain.setTargetAtTime(rv, t, .1); if (hb) { ROTOR.lfo.frequency.setTargetAtTime(5 + hb.rotor * 9, t, .2); ROTOR.wh.frequency.setTargetAtTime(650 + hb.rotor * 550, t, .2); } }
   SIREN.g.gain.setTargetAtTime(sv, AC.currentTime, .12); if (sv > 0) { const ph = (AC.currentTime * .6) % 1, tri = ph < .5 ? ph * 2 : 2 - ph * 2; SIREN.o.frequency.setTargetAtTime(620 + tri * 540, AC.currentTime, .03); }

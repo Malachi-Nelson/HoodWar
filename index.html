@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 14:34 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 15:43 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -1577,7 +1577,20 @@ for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) { const L = lotOf(i, j
 // the outer pavement and what closes the city in: an expressway wall to the west and north, water to the east and south
 addBox(0, WALK, -.6, CURB, 0, CITY.d, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, 0, BRIDGE.z - 6.5, 'walk', { faces: 15 | 16 }); addBox(CITY.w - WALK, CITY.w, -.6, CURB, BRIDGE.z + 6.5, CITY.d, 'walk', { faces: 15 | 16 });   // the east pavement opens where the Harbor Bridge road leaves town
 addBox(WALK, CITY.w - WALK, -.6, CURB, 0, WALK, 'walk', { faces: 15 | 16 }); addBox(WALK, CITY.w - WALK, -.6, CURB, CITY.d - WALK, CITY.d, 'walk', { faces: 15 | 16 });
-addBox(-6, 0, 0, 8, -6, CITY.d, 'concrete', { tcol: 0x555a5e }); addBox(0, CITY.w, 0, 8, -6, 0, 'concrete', { tcol: 0x555a5e });
+// the expressway wall: cast concrete in 6 m panels, rain streaks down from the coping, road dirt along its foot (one texture, three panels wide)
+defMat('xwall', lam({ map: (() => { const c = texCanvas(1024, 512), g = c.getContext('2d'), R = rng32(0x3a11), pw = 1024 / 3;
+  g.fillStyle = '#a19d95'; g.fillRect(0, 0, 1024, 512);
+  for (let k = 0; k < 26; k++) { const x = R() * 1024, y = R() * 512, rr = 60 + R() * 200, gr = g.createRadialGradient(x, y, 0, x, y, rr), d = R() < .5; gr.addColorStop(0, d ? 'rgba(60,56,50,.10)' : 'rgba(255,252,244,.08)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - rr, y - rr, rr * 2, rr * 2); }
+  for (let k = 0; k < 9000; k++) { const v = R(); g.fillStyle = v < .5 ? `rgba(40,38,34,${.08 + R() * .14})` : `rgba(255,252,246,${.05 + R() * .1})`; g.fillRect(R() * 1024, R() * 512, 1 + (R() < .2), 1); }
+  for (let k = 0; k < 90; k++) { const near = R() < .35, x = near ? Math.round(R() * 3) * pw + (R() - .5) * 14 : R() * 1024, w = 2 + R() * 9, L = 30 + R() * R() * 420, y0 = 18 + R() * 8, gr = g.createLinearGradient(0, y0, 0, y0 + L);
+    gr.addColorStop(0, `rgba(48,44,38,${.1 + R() * .16})`); gr.addColorStop(1, 'rgba(48,44,38,0)'); g.fillStyle = gr; g.fillRect(x - w / 2, y0, w, L); }   // rain streaks, more of them down the joints
+  { const gr = g.createLinearGradient(0, 512, 0, 400); gr.addColorStop(0, 'rgba(38,35,30,.42)'); gr.addColorStop(.35, 'rgba(38,35,30,.16)'); gr.addColorStop(1, 'rgba(38,35,30,0)'); g.fillStyle = gr; g.fillRect(0, 400, 1024, 112); }   // road dirt
+  g.fillStyle = 'rgba(0,0,0,.08)'; [171, 341].forEach(y => g.fillRect(0, y, 1024, 2));                                     // lift lines
+  g.fillStyle = 'rgba(255,253,248,.16)'; g.fillRect(0, 0, 1024, 16); g.fillStyle = 'rgba(20,18,16,.38)'; g.fillRect(0, 16, 1024, 3);   // the coping and its drip line
+  for (let k = 0; k < 3; k++) { const x = Math.round(k * pw); g.fillStyle = 'rgba(22,20,18,.55)'; g.fillRect(x, 0, 3, 512); g.fillStyle = 'rgba(255,252,246,.12)'; g.fillRect(x + 3, 0, 1, 512); }   // panel joints
+  return asTex(c); })() }), 18, 8);
+PBR_OF.xwall = [.9, 0];
+addBox(-6, 0, 0, 8, -6, CITY.d, 'xwall', { top: 'concrete', tcol: 0x555a5e }); addBox(0, CITY.w, 0, 8, -6, 0, 'xwall', { top: 'concrete', tcol: 0x555a5e });
 // unseen walls that keep anyone on foot or on wheels out of the water. They stop neither bullets nor eyes nor anything flying (see 82-air.js).
 { const wf = { a: false, s: false };
   solid(-48, 0, 0, 90, -48, WORLD.z1, wf); solid(-48, CITY.w, 0, 90, -48, 0, wf); solid(-48, CITY.w, -3, 90, CITY.d, WORLD.z1, wf);
@@ -1589,12 +1602,63 @@ for (let z = 6; z < CITY.d; z += 3) if (Math.abs(z - BRIDGE.z) > BRIDGE.w + .4) 
 for (let x = 6; x < CITY.w; x += 3) deco(x - .06, x + .06, CURB, CURB + 1.05, CITY.d - .25, CITY.d - .1, 0x30363a);
 deco(0, CITY.w, CURB + 1, CURB + 1.1, CITY.d - .25, CITY.d - .1, 0x30363a); deco(0, CITY.w, CURB + .5, CURB + .56, CITY.d - .25, CITY.d - .1, 0x30363a);
 addBox(CITY.w, CITY.w + 1.2, -3, CURB, -6, BRIDGE.z - BRIDGE.w, 'concrete', { nocol: true }); addBox(CITY.w, CITY.w + 1.2, -3, CURB, BRIDGE.z + BRIDGE.w, CITY.d + 1.2, 'concrete', { nocol: true }); addBox(-6, CITY.w, -3, CURB, CITY.d, CITY.d + 1.2, 'concrete', { nocol: true });
-// the skyline beyond: nothing out there can be reached
-{ const far = (x0, z0, w, d, h, mat) => addBox(x0, x0 + w, 0, h, z0, z0 + d, mat, { nocol: true, faces: 15 | 16, top: 'roof', col: pick(W, mat === 'brick' ? BRICKS : [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3]) });
+// --- beyond the expressway, west and north, the city goes on: our streets carry on out there between blocks of walk-ups and offices,
+//     and the skyline towers stand in those blocks, out to the shore 400 m off. Nobody gets there on foot or on wheels (the unseen
+//     walls); it is there to be seen, from the air above all. Its own random numbers, so nothing in town moves.
+const FAR_X = [-390, -290, -190, -90], FAR_Z = [-326, -242, -158, -74], FAR_LAND = { x0: -400, z0: -336 }, FAR_B = [], FAR_BL = [];
+for (let i = 0; i <= NX; i++) FAR_X.push(RX(i)); for (let j = 0; j <= NZ; j++) FAR_Z.push(RZ(j));
+for (let a = 0; a + 1 < FAR_X.length; a++) for (let b = 0; b + 1 < FAR_Z.length; b++) { const x0 = FAR_X[a] + EDGE, z0 = FAR_Z[b] + EDGE; let x1 = FAR_X[a + 1] - EDGE, z1 = FAR_Z[b + 1] - EDGE;
+  if (x0 > 0 && z0 > 0) continue;                                                                       // a block of the town itself
+  if (x1 > -6 && z1 > -6) { if (x0 < -14) x1 = -14; else z1 = -14; }                                   // keep clear of the expressway
+  FAR_BL.push({ x0, z0, x1, z1 }); }
+const farReach = (x0, z0, x1, z1) => x1 > AIRSPACE.x0 - 34 && z1 > AIRSPACE.z0 - 34 && x0 < AIRSPACE.x1 + 34 && z0 < AIRSPACE.z1 + 34;   // where a pilot can get to: solid
+// a skyline tower goes into the block nearest where it was thrown, clear of the street, and of another tower if the block has room
+function farSnap(x0, z0, w, d) {
+  if (z0 > CITY.d) return [x0, z0];                                                                     // over the river: the far bank
+  const cx = x0 + w / 2, cz = z0 + d / 2, m = 2; let B = FAR_BL[0], bd = 1e9;
+  FAR_BL.forEach(L => { const dx = Math.max(L.x0 - cx, 0, cx - L.x1), dz = Math.max(L.z0 - cz, 0, cz - L.z1), q = dx * dx + dz * dz; if (q < bd) { bd = q; B = L; } });
+  const fit = (lo, hi, v, sz) => hi - lo - 2 * m < sz ? (lo + hi - sz) / 2 : clamp(v, lo + m, hi - m - sz);
+  const over = (px, pz) => FAR_B.reduce((t, q) => t + Math.max(0, Math.min(px + w, q[2]) - Math.max(px, q[0])) * Math.max(0, Math.min(pz + d, q[3]) - Math.max(pz, q[1])), 0);
+  let p = [fit(B.x0, B.x1, x0, w), fit(B.z0, B.z1, z0, d)], bo = over(p[0], p[1]);
+  if (bo > 0) [[B.x0, B.z0], [B.x1 - w, B.z0], [B.x0, B.z1 - d], [B.x1 - w, B.z1 - d]].forEach(q => { const c = [fit(B.x0, B.x1, q[0], w), fit(B.z0, B.z1, q[1], d)], o = over(c[0], c[1]); if (o < bo) { bo = o; p = c; } });
+  return p;
+}
+// the ground out there, its shore, the yellow lines down its streets, and its blocks
+function farDistricts() {
+  const L0 = FAR_LAND, WF = rng32(0xfa7d15), r = (a, b) => a + WF() * (b - a), pk = A => A[(WF() * A.length) | 0], OFF = [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3];
+  SB('asphalt').quad([L0.x0, 0, CITY.d], [-4, 0, CITY.d], [-4, 0, L0.z0], [L0.x0, 0, L0.z0], 0, 1, 0, 0, 0, (-4 - L0.x0) / 12, (CITY.d - L0.z0) / 12);
+  SB('asphalt').quad([-4, 0, -4], [CITY.w, 0, -4], [CITY.w, 0, L0.z0], [-4, 0, L0.z0], 0, 1, 0, 0, 0, (CITY.w + 4) / 12, (-4 - L0.z0) / 12);
+  addBox(L0.x0 - .6, L0.x0, -3, .05, L0.z0, CITY.d, 'concrete', { nocol: true, faces: 2 | 16 }); addBox(L0.x0 - .6, CITY.w, -3, .05, L0.z0 - .6, L0.z0, 'concrete', { nocol: true, faces: 8 | 16 });
+  addBox(L0.x0, -6, -3, .05, CITY.d, CITY.d + .6, 'concrete', { nocol: true, faces: 4 | 16 }); addBox(CITY.w, CITY.w + .6, -3, .05, L0.z0, -6, 'concrete', { nocol: true, faces: 1 | 16 });
+  const lines = (along, at, lo, hi, cross) => { const cs = cross.filter(c => c > lo && c < hi), pts = [lo, ...cs, hi];
+    for (let k = 0; k + 1 < pts.length; k++) { const a = pts[k] + EDGE + 1.5, b = pts[k + 1] - (k + 2 < pts.length ? EDGE + 1.5 : 1);   // the first point is the shore road if (b - a < 4) continue;
+      if (along === 'z') { paint(at - .28, a, at - .12, b, YEL); paint(at + .12, a, at + .28, b, YEL); } else { paint(a, at - .28, b, at - .12, YEL); paint(a, at + .12, b, at + .28, YEL); } } };
+  FAR_X.forEach(x => lines('z', x, L0.z0 + 10, x < 0 ? CITY.d - 1 : -7, x < 0 ? FAR_Z : FAR_Z.filter(z => z < 0)));
+  FAR_Z.forEach(z => lines('x', z, L0.x0 + 10, z < 0 ? CITY.w - 1 : -7, z < 0 ? FAR_X : FAR_X.filter(x => x < 0)));
+  const taken = (x0, z0, x1, z1) => FAR_B.some(q => x0 < q[2] + 1.5 && x1 > q[0] - 1.5 && z0 < q[3] + 1.5 && z1 > q[1] - 1.5);
+  const bld = (x0, z0, x1, z1) => { if (x1 - x0 < 7 || z1 - z0 < 7 || taken(x0, z0, x1, z1)) return; const mat = pk(['brick', 'brick', 'brick2', 'brick2', 'office']), tall = WF() < .09, fl = tall ? 8 + (WF() * 9 | 0) : 2 + (WF() * 5 | 0) + (WF() < .25 ? 2 : 0);
+    addBox(x0, x1, 0, fl * 3.2, z0, z1, mat, { nocol: !farReach(x0, z0, x1, z1), faces: 15 | 16, top: 'roof', col: pk(mat === 'office' ? OFF : BRICKS) }); };
+  const row = (a0, a1, f) => { for (let a = a0; a < a1 - 6;) { let w = r(10, 24); if (a1 - a - w < 9) w = a1 - a; if (WF() > .07) f(a, a + w); a += w; } };
+  FAR_BL.forEach(L => { const k = WF(), park = k < .07 && !taken(L.x0, L.z0, L.x1, L.z1), lot = !park && k < .18;
+    addBox(L.x0 - WALK, L.x1 + WALK, -.6, CURB, L.z0 - WALK, L.z1 + WALK, 'walk', { nocol: true, faces: 15 | 16, top: park ? 'grass' : lot ? 'lot' : 'walk' });
+    if (park) { const ico = new T.IcosahedronGeometry(1, 0), m = new T.Matrix4(), q = new T.Quaternion();   // trees: a ring round the edge, a few clumps inside
+      const tr = (x, z) => { const s = .8 + WF() * .6, h = 2.4 * s + WF(), c = hexCol(pk([0x3f6b34, 0x4d7a3a, 0x58813c, 0x3a5f30])); addBox(x - .18, x + .18, CURB, CURB + h + .4, z - .18, z + .18, 'flat', { nocol: true, faces: 15, col: 0x4a3a2a });
+        q.setFromEuler(new T.Euler(WF() * 3, WF() * 3, 0)); m.compose(new T.Vector3(x, CURB + h + 1.2 * s, z), q, new T.Vector3(2 * s, 1.6 * s, 2 * s)); SB('foliage').geo(ico, m, c); };
+      for (let x = L.x0 + 4; x < L.x1 - 3; x += 7 + WF() * 3) { tr(x, L.z0 + 3 + WF()); tr(x, L.z1 - 3 - WF()); } for (let z = L.z0 + 11; z < L.z1 - 9; z += 7 + WF() * 3) { tr(L.x0 + 3 + WF(), z); tr(L.x1 - 3 - WF(), z); }
+      for (let k = 0; k < 3; k++) { const cx = r(L.x0 + 14, L.x1 - 14), cz = r(L.z0 + 14, L.z1 - 14); for (let n = 0; n < 4; n++) tr(cx + r(-6, 6), cz + r(-6, 6)); }
+      ico.dispose(); return; }
+    const dN = r(11, 17), dS = r(11, 17), dW = r(11, 16), dE = r(11, 16);
+    row(L.x0, L.x1, (a, b) => bld(a, L.z0, b, L.z0 + dN)); row(L.z0 + dN, L.z1 - (lot ? 0 : dS), (a, b) => bld(L.x0, a, L.x0 + dW, b));     // a car park keeps two sides open
+    if (lot) return; row(L.x0, L.x1, (a, b) => bld(a, L.z1 - dS, b, L.z1)); row(L.z0 + dN, L.z1 - dS, (a, b) => bld(L.x1 - dE, a, L.x1, b)); });
+}
+// the skyline beyond
+{ const far = (x0, z0, w, d, h, mat) => { const p = farSnap(x0, z0, w, d); FAR_B.push([p[0], p[1], p[0] + w, p[1] + d]);
+    return addBox(p[0], p[0] + w, 0, h, p[1], p[1] + d, mat, { nocol: !farReach(p[0], p[1], p[0] + w, p[1] + d), faces: 15 | 16, top: 'roof', col: pick(W, mat === 'brick' ? BRICKS : [0xb8c2cc, 0x9aa8b5, 0xcfd3d6, 0x8796a3]) }); };
   for (let z = -40; z < CITY.d; z += wr(34, 60)) far(wr(-150, -50), z, wr(22, 40), wr(22, 36), wr(18, 95), pick(W, ['office', 'tower', 'brick', 'office']));
   for (let x = -40; x < CITY.w + 30; x += wr(34, 60)) far(x, wr(-160, -55), wr(22, 40), wr(22, 36), wr(18, 110), pick(W, ['office', 'tower', 'brick', 'tower']));
   for (let x = -60; x < CITY.w + 60; x += wr(40, 80)) far(x, CITY.d + wr(120, 190), wr(26, 50), wr(22, 30), wr(10, 46), pick(W, ['brick', 'office', 'brick2']));
   addBox(-60, CITY.w + 80, -3, 1.2, CITY.d + 104, CITY.d + 240, 'concrete', { nocol: true });                                    // far bank of the river
+  farDistricts();
   const sx = 440;   // the freighters ride at anchor out past the airport
   addBox(CITY.w + sx + 150, CITY.w + sx + 330, -1, 6, 160, 190, 'flat', { nocol: true, col: 0x7a2a22 }); addBox(CITY.w + sx + 290, CITY.w + sx + 318, 6, 22, 166, 184, 'flat', { nocol: true, col: 0xd8d6cc });   // a freighter at anchor
   addBox(CITY.w + sx + 120, CITY.w + sx + 240, -1, 5, 380, 404, 'flat', { nocol: true, col: 0x1f3d5c }); addBox(CITY.w + sx + 212, CITY.w + sx + 234, 5, 17, 384, 400, 'flat', { nocol: true, col: 0xd8d6cc });
@@ -2560,10 +2624,51 @@ function buildWires() {
   POLE_WIRES.forEach(w => { const n = 12, sag = t => Math.sin(t * PI) * .6; for (let s = 0; s < n; s++) { const t0 = s / n, t1 = (s + 1) / n; pos.push(lerp(w[0], w[2], t0), y - sag(t0), w[1], lerp(w[0], w[2], t1), y - sag(t1), w[3]); } });
   const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); WIRES.m = new T.LineSegments(g, new T.LineBasicMaterial({ color: 0x151515 })); WIRES.m.matrixAutoUpdate = false; scene.add(WIRES.m);
 }
+// --- building work: scaffolding up the front of a few walk-ups, and a tower crane on the roof of a high-rise going up
+const SCAFF = [], CRANE = { g: null, jib: null, lamp: null, t: 0, turn: 0 };
+defMat('netting', new T.MeshLambertMaterial({ map: (() => { const c = texCanvas(64), g = c.getContext('2d'); g.fillStyle = 'rgba(30,74,50,.42)'; g.fillRect(0, 0, 64, 64);   // fine debris mesh: dark, see-through
+  for (let k = 0; k < 64; k += 4) { g.fillStyle = `rgba(14,40,26,${.16 + .14 * Math.sin(k * 1.7) ** 2})`; g.fillRect(k, 0, 1, 64); g.fillStyle = 'rgba(14,40,26,.14)'; g.fillRect(0, k, 64, 1); }   // weave, a little uneven
+  g.fillStyle = 'rgba(10,30,20,.55)'; g.fillRect(0, 0, 2, 64); g.fillRect(0, 31, 64, 2); return asTex(c); })(), transparent: true, side: T.DoubleSide, depthWrite: false, vertexColors: true }), 2, 2, { cast: false });
+PBR_OF.netting = [.9, 0];
+function scaffold(B, f) {
+  const F = faceFrame(f, B), steel = 0x8d9296, wood = 0x9a7b52, top = B.top + 1.1, levels = []; for (let y = B.y0 + 2.2; y < top - .5; y += 2.1) levels.push(y);
+  const us = []; for (let u = .3; u < F.len - .2; u += 2.4) us.push(u); if (F.len - .3 - us[us.length - 1] > .6) us.push(F.len - .3);
+  us.forEach(u => [.25, 1.3].forEach(d => faceBox(F, u - .03, u + .03, B.y0, top, d - .03, d + .03, steel, 'flat', 63)));                    // standards, two rows
+  levels.forEach((y, li) => { [.25, 1.3].forEach(d => faceBox(F, .2, F.len - .2, y - .03, y + .03, d - .03, d + .03, steel, 'flat', 63));     // ledgers
+    us.forEach(u => faceBox(F, u - .025, u + .025, y - .07, y - .03, .2, 1.35, steel, 'flat', 63)); faceBox(F, .3, F.len - .3, y + .03, y + .07, .3, 1.25, wood, 'flat', 63);   // transoms, boards
+    faceBox(F, .3, F.len - .3, y + .95, y + 1, 1.28, 1.33, steel, 'flat', 63); });                                                                  // guard rail
+  for (let k = 0; k + 1 < us.length; k += 2) levels.forEach((y, li) => { if (li + 1 >= levels.length) return; const a = faceAt(F, us[k]), b2 = faceAt(F, us[k + 1]), y1 = levels[li + 1], len = hyp(b2[0] - a[0], b2[1] - a[1], y1 - y), g = new T.BoxGeometry(.05, .05, len);
+    g.lookAt(new T.Vector3(b2[0] - a[0], y1 - y, b2[1] - a[1])); g.translate((a[0] + b2[0]) / 2 + F.nx * 1.36, (y + y1) / 2, (a[1] + b2[1]) / 2 + F.nz * 1.36); dchunk(a[0], a[1], 'm').geo(g, null, hexCol(steel)); g.dispose(); });   // braces on the face
+  const c0 = faceAt(F, 0), c1 = faceAt(F, F.len), o = 1.38, y0 = B.y0 + 2.6, nb = SB('netting'), w = hexCol(0xffffff);                         // debris netting over it all
+  nb.quad([c0[0] + F.nx * o, y0, c0[1] + F.nz * o], [c1[0] + F.nx * o, y0, c1[1] + F.nz * o], [c1[0] + F.nx * o, top, c1[1] + F.nz * o], [c0[0] + F.nx * o, top, c0[1] + F.nz * o], F.nx, 0, F.nz, 0, 0, F.len / 2, (top - y0) / 2, w);
+  SCAFF.push({ x: (c0[0] + c1[0]) / 2, z: (c0[1] + c1[1]) / 2, f });
+}
+function buildingWork() {
+  const walk = BLDS.filter(B => (B.mat === 'brick' || B.mat === 'brick2') && !B.shop && B.top - B.y0 > 8 && B.x1 - B.x0 > 9);
+  for (let k = 0, tries = 0; k < 3 && tries < 30 && walk.length; tries++) { const B = walk[(WD() * walk.length) | 0], f = ['n', 's', 'e', 'w'].find(q => faceRoadGap(q, B) < EDGE + 4 && faceFrame(q, B).len > 9); if (!f || SCAFF.some(S => hyp(S.x - B.x0, S.z - B.z0) < 60)) continue; scaffold(B, f); k++; }
+  // the crane: on the tallest office roof, a lattice mast; the jib and its counterweight turn (craneTick)
+  const tall = BLDS.filter(B => B.mat === 'office' && B.roof !== false).sort((a, b) => b.top - a.top)[0]; if (!tall) return;
+  const cx = (tall.x0 + tall.x1) / 2 + 3, cz = (tall.z0 + tall.z1) / 2, y0 = tall.top, H = 26, yel = hexCol(0xd9a521), dk = hexCol(0x3a3c3e), M = new GeoBuf(), J = new GeoBuf(), m = 1.7;
+  const bar = (b, ax, ay, az, bx, by, bz, t, col) => { const len = hyp(bx - ax, by - ay, bz - az), g = new T.BoxGeometry(t, t, len); g.lookAt(new T.Vector3(bx - ax, by - ay, bz - az)); g.translate((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2); b.geo(g, null, col); g.dispose(); };
+  [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(q => bar(M, cx + q[0] * m / 2, y0, cz + q[1] * m / 2, cx + q[0] * m / 2, y0 + H, cz + q[1] * m / 2, .12, yel));
+  for (let y = y0; y < y0 + H - 1; y += 2) [[-1, -1, 1, -1], [1, -1, 1, 1], [1, 1, -1, 1], [-1, 1, -1, -1]].forEach(q => bar(M, cx + q[0] * m / 2, y, cz + q[1] * m / 2, cx + q[2] * m / 2, y + 2, cz + q[3] * m / 2, .07, yel));
+  M.box(cx - 2.2, cx + 2.2, y0, y0 + .6, cz - 2.2, cz + 2.2, hexCol(0x8a8a86));   // its base, ballast on the roof
+  const L = 34, C = 11, h = 1.4;   // the jib, out along +x from the slewing ring, and the counter-jib back along -x; in the turning group's frame
+  [[0, -.6], [0, .6]].forEach(q => bar(J, -C, 0, q[1], L, 0, q[1], .1, yel)); bar(J, -C, h, 0, L, h * .2, 0, .1, yel);
+  for (let x = -C; x < L - 1; x += 1.6) { bar(J, x, 0, -.6, x + .8, h * (1 - (x + .8 + C) / (L + C) * .8), 0, .06, yel); bar(J, x + .8, h * (1 - (x + .8 + C) / (L + C) * .8), 0, x + 1.6, 0, .6, .06, yel); }
+  J.box(-C, -C + 3.4, -1.6, 0, -.9, .9, hexCol(0x9a9a96)); J.box(-1.2, 1.2, -.3, 2.2, -1.1, 1.1, yel); J.box(-.4, 1.1, -.2, 2.1, .7, 1.4, hexCol(0x2b3640));   // counterweights, the machinery deck, the cab
+  bar(J, 0, 2.2, 0, 0, 6.5, 0, .12, yel); bar(J, 0, 6.5, 0, L * .7, h * .5, 0, .04, dk); bar(J, 0, 6.5, 0, -C + 1, .2, 0, .04, dk);   // the A-frame and its ties
+  bar(J, 22, 0, 0, 22, -18, 0, .025, dk); J.box(21.6, 22.4, -19, -18, -.4, .4, hexCol(0xd9a521));   // the hook block on its cable
+  const mm = new T.Mesh(M.build(), MATS.flat.mat), g = new T.Group(), jm = new T.Mesh(J.build(), MATS.flat.mat); mm.userData.key = jm.userData.key = 'flat'; mm.castShadow = jm.castShadow = true; mm.matrixAutoUpdate = false; scene.add(mm); staticMeshes.push(mm, jm);
+  g.position.set(cx, y0 + H, cz); g.add(jm); scene.add(g); CRANE.g = g; CRANE.jib = jm;
+  CRANE.lamp = new T.Mesh(new T.SphereGeometry(.25, 8, 6), new T.MeshBasicMaterial({ color: 0x000000 })); CRANE.lamp.position.set(0, 6.8, 0); g.add(CRANE.lamp);   // red aircraft light
+}
+function craneTick(dt) { if (!CRANE.g) return; CRANE.t -= dt; if (CRANE.t <= 0) { CRANE.t = 8 + rand() * 18; CRANE.turn = rand() < .35 ? 0 : (rand() < .5 ? -1 : 1) * (.04 + rand() * .05); }
+  CRANE.g.rotation.y += CRANE.turn * dt; const on = ENV.night > .3 && (G.time % 2) < .3; CRANE.lamp.material.color.setRGB(on ? (POST.on ? 4 : 1.6) : .15, on ? .1 : .02, on ? .06 : .02); }
 // --- the whole pass (from 43-assemble.js, before the static meshes are made)
 // houses (41-districts.js) are not building()s: they get the dirt along the foot of their walls and nothing else
 function dressHouses() { FOOT.forEach(f => { if (f[4] !== 'h' || f[2] - f[0] < 2) return; const B = { x0: f[0], z0: f[1], x1: f[2], z1: f[3] }; ['n', 's', 'e', 'w'].forEach(k => grimeRun(faceFrame(k, B), CURB, CURB + 1.1, 1, .7)); }); }
-function dressCity() { BLDS.forEach(dressBuilding); dressHouses(); dressStreets(); PROPS.forEach((p, i) => { p.i = i; }); buildSignalLamps(); finishDetail(); }
+function dressCity() { BLDS.forEach(dressBuilding); dressHouses(); dressStreets(); buildingWork(); PROPS.forEach((p, i) => { p.i = i; }); buildSignalLamps(); finishDetail(); }
 // --- the signals: every lamp is one instance; signalsTick colours them from the cycle. The clock is the time of day, which every
 //     player shares, so all see the same lights and the traffic (run by the host) stops for the same reds.
 //     32 s a cycle: north-south green 12, amber 3, all red 1; east-west the same. 2400 s a day, 75 cycles: it wraps cleanly.
@@ -2844,7 +2949,7 @@ function initAudio() {
   musicBus = AC.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
   noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rand() * 2 - 1;
   // the city: a low hum of far traffic
-  const wn = AC.createBufferSource(); wn.buffer = noiseBuf; wn.loop = true; const wf = AC.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 220; const wg = AC.createGain(); wg.gain.value = .05; wn.connect(wf); wf.connect(wg); wg.connect(master); wn.start();
+  const wn = AC.createBufferSource(); wn.buffer = noiseBuf; wn.loop = true; const wf = AC.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 220; const wg = AC.createGain(); wg.gain.value = .022; wn.connect(wf); wf.connect(wg); wg.connect(master); wn.start();
   // tyres: one looping hiss whose level follows how hard the nearest car is sliding
   const sk = AC.createBufferSource(); sk.buffer = noiseBuf; sk.loop = true; const sf = AC.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 1500; sf.Q.value = 2.2; SKID.g = AC.createGain(); SKID.g.gain.value = 0; sk.connect(sf); sf.connect(SKID.g); SKID.g.connect(sfxBus); sk.start();
   for (let i = 0; i < 4; i++) { const o1 = AC.createOscillator(), o2 = AC.createOscillator(), f = AC.createBiquadFilter(), g = AC.createGain(); o1.type = 'sawtooth'; o2.type = 'square'; o1.frequency.value = 60; o2.frequency.value = 30; f.type = 'lowpass'; f.frequency.value = 420; g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); g.connect(sfxBus); o1.start(); o2.start(); ENGV.push({ o1, o2, f, g, car: null }); }
@@ -2908,7 +3013,7 @@ function updateEngines(dt, mine) {
     if (e.d < 45) slip = Math.max(slip, (c.slip > 4.5 ? Math.min(1, (c.slip - 4.5) / 6) : 0) * (c === mine ? 1 : .5), c.inp.hb && sp > 6 ? .7 : 0); });
   SKID.g.gain.setTargetAtTime(slip * .16, AC.currentTime, .05);
   // one siren: the nearest police car that has its lights on
-  let sv = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.cop || !c.horn || c.wreck || !c.occ[0]) continue; if (c === mine) { sv = Math.max(sv, .03); continue; } const d = hyp(c.x - EAR.x, c.z - EAR.z); if (d < 190) sv = Math.max(sv, .075 * Math.pow(1 - d / 190, 1.6)); }
+  let sv = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!(c.cop || c.ems) || !c.horn || c.wreck || !c.occ[0]) continue; if (c === mine) { sv = Math.max(sv, .03); continue; } const d = hyp(c.x - EAR.x, c.z - EAR.z); if (d < 190) sv = Math.max(sv, .075 * Math.pow(1 - d / 190, 1.6)); }
   if (ROTOR.g) { let hb = null, hd = 1e9; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (!c.spec.air || c.spec.air === 'plane' || c.wreck || !(c.rotor > .04)) continue; const d = c === mine ? -1 : hyp(c.x - EAR.x, c.y - EAR.y, c.z - EAR.z); if (d < hd) { hd = d; hb = c; } }
     const rv = !hb || hd > 320 ? 0 : (hb === mine ? .2 : .45 * Math.pow(1 - hd / 320, 1.5)) * hb.rotor, t = AC.currentTime; ROTOR.g.gain.setTargetAtTime(rv, t, .1); if (hb) { ROTOR.lfo.frequency.setTargetAtTime(5 + hb.rotor * 9, t, .2); ROTOR.wh.frequency.setTargetAtTime(650 + hb.rotor * 550, t, .2); } }
   SIREN.g.gain.setTargetAtTime(sv, AC.currentTime, .12); if (sv > 0) { const ph = (AC.currentTime * .6) % 1, tri = ph < .5 ? ph * 2 : 2 - ph * 2; SIREN.o.frequency.setTargetAtTime(620 + tri * 540, AC.currentTime, .03); }
@@ -3289,7 +3394,7 @@ function spawnCar(type, x, z, yaw, o) {
   const c = { id: o.id === undefined ? ++carSeq : o.id, type, spec: S, geo, slot: carFree.pop(), x, y: groundAt(x, z, 1, 'p', .45), z, yaw, vx: 0, vz: 0, yawRate: 0, steer: 0, hp: S.hp, color, g, body, pm, bm, tm, gm, lm,
     occ: [null, null, null, null], inp: { thr: 0, steer: 0, hb: false }, wreck: false, burn: 0, spin: 0, roll: 0, dive: 0, asleep: true, home: o.home || null, team: o.team === undefined ? -1 : o.team, horn: 0, smokeT: 0, lastHit: null, idle: 0, buf: [], slip: 0, crash: 0 };
   if (c.id > carSeq) carSeq = c.id;
-  if (S.air === 'plane') planeDress(c); else if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c);
+  if (S.air === 'plane') planeDress(c); else if (S.air) heliDress(c, color === COP_PAINT); else if (color === COP_PAINT) copDress(c); else if (color === AMB_PAINT && type === 'van') emsDress(c);
   cars.push(c); placeCar(c); return c;
 }
 function setPaint(c, hex) { if (hex === undefined || c.color === hex) return; c.color = hex; if (!c.wreck) c.pm.material = paintMat(hex); }
@@ -3401,6 +3506,7 @@ function updateCarVisual(c, dt) {
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
   carLamps(c, dt);
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
+  if (c.ems) emsLights(c);
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
   if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
   const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), hx = c.x + fx * (c.spec.len / 2 - .8), hz = c.z + fz * (c.spec.len / 2 - .8), frac = c.hp / c.spec.hp;
@@ -3448,7 +3554,7 @@ function lampSpots(S, B) {   // [x, y, z, w, h, facing (1 front, -1 back), kind]
   LAMP.mesh = new T.InstancedMesh(g, m, CAR_MAX * LAMP_N); LAMP.mesh.frustumCulled = false; LAMP.mesh.renderOrder = 5;
   for (let i = 0; i < CAR_MAX * LAMP_N; i++) { LAMP.mesh.setMatrixAt(i, ZERO_M); LAMP.mesh.setColorAt(i, new T.Color(0, 0, 0)); } scene.add(LAMP.mesh);
   const pg = new T.BufferGeometry(); LAMP.gpos = new Float32Array(CAR_MAX * 4 * 3); LAMP.gcol = new Float32Array(CAR_MAX * 4 * 3); pg.setAttribute('position', new T.BufferAttribute(LAMP.gpos, 3)); pg.setAttribute('color', new T.BufferAttribute(LAMP.gcol, 3));
-  LAMP.glare = new T.Points(pg, new T.PointsMaterial({ map: glowTex, size: 1.5, sizeAttenuation: true, vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); LAMP.glare.frustumCulled = false; LAMP.glare.renderOrder = 6; scene.add(LAMP.glare); }
+  LAMP.glare = new T.Points(pg, new T.PointsMaterial({ map: glowTex, size: 1.05, sizeAttenuation: true, vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); LAMP.glare.frustumCulled = false; LAMP.glare.renderOrder = 6; scene.add(LAMP.glare); }
 const LAMP_C = [new T.Color(3.4, 3.15, 2.7), new T.Color(1.5, .07, .04), new T.Color(2.6, 2.6, 2.6), new T.Color(3.2, 1.45, .05), new T.Color(4.2, .2, .1)], LAMP_OFF = new T.Color(0, 0, 0), _lc = new T.Color(), _lm = new T.Matrix4(), _lq = new T.Quaternion(), _lv = new T.Vector3(), _ls = new T.Vector3(), _ly = new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), PI), _lpt = new T.Vector3();
 function lampsOff(c) { for (let k = 0; k < LAMP_N; k++) LAMP.mesh.setMatrixAt(c.slot * LAMP_N + k, ZERO_M); for (let k = 0; k < 4; k++) LAMP.gpos[(c.slot * 4 + k) * 3 + 1] = -999; LAMP.mesh.instanceMatrix.needsUpdate = true; }
 // which way an AI driver is about to turn: -1 left, 1 right, 0 straight on (and how far off the turn is)
@@ -4652,7 +4758,9 @@ function botPathTo(b, x, y, z, civ) {
 function botFollow(b, speed, dt) {   // true once the last node is reached
   if (!b.path || b.pi >= b.path.length) return true;
   const n = NAV[b.path[b.pi]]; if (hyp(n.x - b.x, n.z - b.z) < 1.15 && Math.abs(n.y - b.y) < 1.3) { b.pi++; if (b.pi >= b.path.length) return true; }
-  const m = NAV[b.path[b.pi]]; botWalk(b, m.x, m.z, speed, dt); return false;
+  const m = NAV[b.path[b.pi]];
+  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]]; if (hyp(a.x - b.x, a.z - b.z) < 1.9 && walkWait(a, m)) { botWalk(b, b.x, b.z, 0, dt); return false; } }   // waiting for the walk signal (109.5-city.js)
+  botWalk(b, m.x, m.z, speed, dt); return false;
 }
 // --- seeing and shooting
 const _cand = [];
@@ -4745,7 +4853,7 @@ function driveAI(c, dt) {
   const turnAt = L - 9.5, look = 6.5 + sp * .5, ts = s + look; if (A.passT > 0) { A.passT -= dt; if (A.passT <= 0) A.off = LANE; }
   const busCap = A.mode === 'bus' ? busDrive(c, A, s, sp, dt) : 1e9;
   // parking at the journey's end
-  const last = A.dest && A.to[0] === A.dest[0] && A.to[1] === A.dest[1] && A.mode === 'crew';
+  const last = A.dest && A.to[0] === A.dest[0] && A.to[1] === A.dest[1] && (A.mode === 'crew' || A.mode === 'ems');
   if (last && s > L - 34) { lanePoint(A.from, A.to, Math.max(s + 4, L - 16), 4.9, _lp); } else if (ts <= turnAt || !A.next) lanePoint(A.from, A.to, Math.max(9.5, Math.min(ts, L)), A.off, _lp); else lanePoint(A.to, A.next, 9.5 + Math.max(0, ts - turnAt - 6), A.off, _lp);
   const want = yawOf(_lp.x - c.x, _lp.z - c.z), diff = angTo(c.yaw, want); let cruise = Math.min(busCap, A.cruise * (A.panic > 0 ? 1.7 : 1)); if (A.panic > 0) A.panic -= dt;
   const nx = A.next ? RX(A.next[0]) - bx : dx, nz = A.next ? RZ(A.next[1]) - bz : dz, nl = hyp(nx, nz) || 1, turning = (nx * dx + nz * dz) / nl < .5, toX = turnAt - s;
@@ -4755,13 +4863,13 @@ function driveAI(c, dt) {
   // traffic signals (42.8-dress.js): stop at the line on red, and on amber if there is room to stop without standing on the brakes
   A.red = false; if ((A.mode === 'traffic' || A.mode === 'bus') && A.panic <= 0) { const ph = signalAhead(A.from, A.to);
     if (ph) { const toStop = L - 11 - c.spec.len / 2 - s, need = sp * sp / (ph === 2 ? 13 : 8); if (toStop > -.6 && toStop > need + (ph === 2 ? -1.5 : 1)) { cruise = Math.min(cruise, toStop > 1.2 ? Math.sqrt(6 * (toStop - 1)) : 0); A.red = true; } } }   // brake on a curve that ends a metre short of the line
-  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
+  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' || A.mode === 'ems' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
   if (A.mode === 'cop' && gap < 20 && A.passT <= 0) { A.off = -1.8; A.passT = 3.5; }
   A.q = !!(blk[3] && blk[3].ai && (blk[3].ai.red || blk[3].ai.q) && gap < 9);   // in a queue at a red light: wait, no horn, no going round
   if (gap < 1e8) cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8);
-  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0;
+  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (A.mode !== 'ems') c.horn = tr && A.hold > 2 && A.hold < 2.6 ? 1 : 0;
     if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } }   // a person who will not move: back up and go round
-  else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
+  else { A.hold = Math.max(0, A.hold - dt); if (A.mode !== 'ems') c.horn = 0; }   // (an ambulance's horn flag is its siren)
   if (A.passT > 0 && gap > 1e8) cruise = Math.min(cruise, 9);
   if (A.passT > 0 && blk[2] && gap > 1 && gap < 1e8) cruise = Math.max(cruise, 2.2);       // someone is standing in the road and is not going to move: edge round them
   // stuck against something: back up and try again
@@ -4860,7 +4968,7 @@ function pickSpot(b) {
 const gunUp = a => a === P ? !WEAPONS[P.wpn].melee && (P.ads > .5 || P.shootT > 0) : a.wpn !== 'fist' && !!a.aim;
 function civBrain(b) {
   if (b.gotOn || b.board) return;
-  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
+  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || (!b.ems && (c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)))) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
   if (b.post) {   // at work
     const p = b.post; let threat = false;
     if (b.fleeT > 0) { if (p.npc === b) { p.npc = null; p.t = G.time + 80; } b.post = null; b.act = 0; }                                                     // hurt: the job can wait
@@ -4875,6 +4983,7 @@ function civBrain(b) {
   if (b.fleeing) { b.fleeing = false; b.path = null; }
   if (b.poi) { const p = b.poi; if (b.at === 2 && (G.time > b.actT || (p.zone >= 0 && ZS[p.zone].hot))) { leavePoi(b); b.idleT = .4 + rand() * 1.5; } else if (b.at < 2 && G.time > b.poiT) { leavePoi(b); b.path = null; b.idleT = 1; } return; }
   if (b.path || b.idleT > 0) return;
+  if (!b.thief && shopHours() && rand() < .12 && shopIn(b)) return;   // in to a shop
   const from = nearestNode(b.x, b.y, b.z, true);
   if (rand() < .75) { const p = pickSpot(b), path = p ? navPath(from, p.node, 2) : null;   // somewhere to be
     if (path) { const k = freeSlot(p); let len = hyp(NAV[path[0]].x - b.x, NAV[path[0]].z - b.z); for (let q = 1; q < path.length; q++) len += hyp(NAV[path[q]].x - NAV[path[q - 1]].x, NAV[path[q]].z - NAV[path[q - 1]].z);
@@ -4906,6 +5015,8 @@ function civAct(b, dt) {
       if (d < .55 || (d < 2.6 && G.time - b.poiP > 1)) takeSpot(b, p, b.slot); else if (G.time - b.poiP > 2.2) { leavePoi(b); b.idleT = .5; return; } }      // something is parked in the way: near enough will do, or think again
     if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8)); return; }
   b.act = 0;
+  if (b.shopIn && b.fleeT > 0) b.shopIn = null;
+  if (b.shopIn && !b.path) { shopInStep(b, dt); return; }
   if (b.path) { if (botFollow(b, b.fleeT > 0 ? (b.thief ? 5.6 : 6.4) : b.walk * wetPace(b), dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
@@ -4951,7 +5062,7 @@ function updateBot(b, dt) {
 function botVisual(b, dt) {
   const ch = b.ch; if (!ch) return;
   const far = hyp(b.x - camera.position.x, b.z - camera.position.z);
-  if ((b.dead && b.deadT > 7) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
+  if ((b.dead && b.deadT > (b.emsHold ? 90 : 7)) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
   ch.acc = (ch.acc || 0) + dt; if (far > 70 && ch.shown && ((LIFE.frame + ch.idx) & (far > 140 ? 3 : 1))) return;   // far enough that nobody can tell it is posed half as often
   dt = Math.min(.2, ch.acc); ch.acc = 0;
   let seat = null, twist = 0, x = b.x, y = b.y, z = b.z;
@@ -5856,7 +5967,8 @@ function populate() {
     for (let k = Q.length - 1; k >= 0; k--) if (G.time >= Q[k]) { Q.splice(k, 1); spawnCrewBot(t, .45); } }
   let peds = 0, traf = 0, beat = 0, farPed = null, fd = 90;
   for (let i = bots.length - 1; i >= 0; i--) { const b = bots[i];
-    if (b.dead) { if (b.deadT > 9) removeBot(b); continue; }
+    if (b.dead) { if (b.deadT > (b.emsHold ? 90 : 9)) removeBot(b); continue; }
+    if (b.vanish) { removeBot(b); continue; }   // gone in through a shop door
     if (b.temp && !b.car && G.time > b.until && nearHuman(b.x, b.z) > 45) { removeBot(b); continue; }
     if (b.team === TEAM_COP) { if (b.beat) { if (!b.chase && !b.tgt && nearHuman(b.x, b.z) > 205) removeBot(b); else beat++; } continue; }
     if (b.team !== TEAM_CIV) continue;
@@ -5864,7 +5976,7 @@ function populate() {
     if (b.car) { if (b.seat === 0 && b.car.traffic && far > 370) { const c = b.car; removeBot(b); removeCar(c); } else traf++; }
     else if (!b.post) { if (far > 128 && nearBubble(b.x, b.z) > 128) removeBot(b); else { peds++; if (far > fd) { fd = far; farPed = b; } } } }
   const want = walkersWanted();
-  for (let k = Math.min(5, want - peds); k > 0; k--) spawnPed(false); if (peds > want + 2 && farPed) removeBot(farPed);       // the evening thins the crowd from its far edge
+  for (let k = Math.min(5, want - peds); k > 0; k--) { if (shopHours() && rand() < .3 && shopOut(humans())) continue; spawnPed(false); }   // some come out of the shops if (peds > want + 2 && farPed) removeBot(farPed);       // the evening thins the crowd from its far edge
   if (traf < G.traffic + Math.min(2, humans().length - 1) && cars.length < CAR_MAX - 6) spawnTraffic();
   staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
@@ -5958,7 +6070,7 @@ function payHour() {
 }
 const hourlyNow = () => P.team === TEAM_COP ? CFG.cop.pay + CFG.cop.rankPay * (P.rank | 0) : turfPay(G.rivals ? P.team : G.crew)[1];
 function authTick(dt) {
-  G.tod = (G.tod + dt * TOD_RATE) % 24; weatherAuth();
+  G.tod = (G.tod + dt * TOD_RATE) % 24; weatherAuth(); emsTick(dt);
   updateZones(dt); updateRaids(dt);
   G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); airTick(); }
   if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }
@@ -7385,6 +7497,93 @@ function dogs(dt) {
 function streetVisuals(dt) { diceVisuals(dt); dogs(dt); }
 
 /* =====================================================================
+   11e. THE CITY GOING ABOUT ITS DAY — what the people and traffic do around you, on top of 97-life.js and 109-street.js.
+        · At a signalled crossing people wait at the kerb for the walk signal (unless they are running from something).
+        · Shops have customers: people step out of shop doors, and others walk up to a shop and go in.
+        · Ambulances: when someone is shot or run down in the street, one comes with its lights and siren, pulls up near them,
+          takes them away and drives off. (The machine that runs the world sends them; everyone sees the same ambulance.)
+        · The sound of the place: a traffic bed that swells with the cars around you, wind that rises with the weather and with
+          height, sirens far off at night, and all of it muffled when there is a roof over your head.
+   ===================================================================== */
+// --- the walk signal: is the stretch of zebra from node a to node m shut right now?
+function walkWait(a, m) {
+  const dx = m.x - a.x, dz = m.z - a.z, L = hyp(dx, dz); if (L < 10 || L > 22) return false;   // one carriageway across
+  const mx = (a.x + m.x) / 2, mz = (a.z + m.z) / 2, S = SIG_AT[Math.round((mx - EDGE) / PX) + Math.round((mz - EDGE) / PZ) * 16]; if (!S || hyp(mx - S.x, mz - S.z) > 13) return false;
+  return signalPhase(S, Math.abs(dx) > Math.abs(dz) ? 1 : 0, sigClock()) !== 0;   // walking along x crosses the north-south road: go on the east-west green
+}
+// --- shops: who goes in, who comes out
+const shopHours = () => G.tod > 7.5 && G.tod < 21.5;
+const doorOf = F => ({ x: F.x - FACE[F.face][0] * 1.55, z: F.z - FACE[F.face][1] * 1.55, yaw: yawOf(FACE[F.face][0], FACE[F.face][1]) });
+function frontNear(x, z, r0, r1) { const L = FRONTS.filter(F => { if (!F.face) return false; const d = hyp(F.x - x, F.z - z); return d > r0 && d < r1; }); return L.length ? L[(rand() * L.length) | 0] : null; }
+function shopOut(hs) {   // someone steps out of a shop near a player (seen or not: coming out of a door is how people appear)
+  const h = hs[(rand() * hs.length) | 0], F = frontNear(h.x, h.z, 14, 70); if (!F || cars.some(c => hyp(c.x - F.x, c.z - F.z) < 2.5)) return null; const d = doorOf(F);
+  const b = spawnBot(TEAM_CIV, d.x, CURB, d.z, {}); if (!b) return null; b.yaw = d.yaw; b.idleT = .6 + rand() * 1.2; return b;
+}
+function shopIn(b) {   // a walk to a shop near them, to go in (civBrain asks)
+  const F = frontNear(b.x, b.z, 4, 60); if (!F) return false; const path = navPath(nearestNode(b.x, b.y, b.z, true), nearestNode(F.x, CURB, F.z, false), true); if (!path) return false;
+  b.path = path; b.pi = 0; b.shopIn = F; b.shopT = G.time + 70; return true;
+}
+function shopInStep(b, dt) {   // the last few steps to the door; then they are gone (populate takes them away)
+  const d = doorOf(b.shopIn), r = botWalk(b, d.x, d.z, b.walk, dt); if (b.spd > .3) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
+  if (r < .5 || G.time > b.shopT) b.vanish = true;
+}
+// --- ambulances
+const AMB_PAINT = 0xf3f1ea, EMS = { list: [], t: 0 };
+function emsDress(c) {
+  const S = c.spec, ge = c.geo, B = S.body, zm = (ge.zf + ge.zr) / 2 + .1, red = new T.MeshLambertMaterial({ color: 0xb3261e });
+  const band = new T.Mesh(new T.BoxGeometry(S.wid + .02, .14, Math.max(1, S.len - .6)), red); band.position.set(0, B.belt - .12, 0); c.body.add(band);
+  const base = new T.Mesh(copBaseGeo, carTrimMat); base.position.set(0, B.roof + .06, zm); c.body.add(base);
+  c.lb = [0, 1].map(k => { const m = new T.Mesh(copBarGeo, new T.MeshBasicMaterial({ color: k ? 0x4d4d4d : 0x4d1313 })); m.position.set(k ? .26 : -.26, B.roof + .14, zm); c.body.add(m); const s = new T.Sprite(new T.SpriteMaterial({ map: glowTex, color: k ? 0xffffff : 0xff3030, transparent: true, opacity: .9, blending: T.AdditiveBlending, depthWrite: false, fog: false }));
+    s.scale.setScalar(2.6); s.position.set(m.position.x, m.position.y + .12, zm); s.visible = false; c.body.add(s); return { m, s }; });
+  c.ems = true; c.lph = -1;
+}
+function emsLights(c) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 6 + c.id * .5) % 2 : -1; if (c.lph === ph) return; c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0xffffff : 0xff4a4a) : (k ? 0x4d4d4d : 0x4d1313)); L.s.visible = on; }); }
+// on the machine that runs the world: someone down in the street, a player near: send one (one at a time), and see it through
+function emsTick(dt) {
+  EMS.t -= dt; if (EMS.t <= 0) { EMS.t = 2;
+    if (!EMS.list.length) { const v = bots.find(b => b.dead && b.team === TEAM_CIV && !b.car && !b.emsDone && b.deadT > 2 && b.deadT < 6 && nearHuman(b.x, b.z) < 140); if (v) emsSend(v); } }
+  for (let i = EMS.list.length - 1; i >= 0; i--) { const E = EMS.list[i], c = E.car; if (!c || c.gone || c.wreck) { if (E.v) E.v.emsHold = false; EMS.list.splice(i, 1); continue; } const A = c.ai;
+    if (E.leg === 0) { c.horn = 1; const dv = hyp(c.x - E.v.x, c.z - E.v.z);
+      if (E.ph === 0 && A && (A.done || hyp(c.x - RX(E.c1[0]), c.z - RZ(E.c1[1])) < 16)) { E.ph = 1; aiStart(c, 'ems', E.c2); c.ai.cruise = 12; }   // at the end of their street: now down it
+      if (!A || !c.occ[0]) { E.leg = 2; continue; }   // lost its driver: it is no use to anyone
+      if (dv < 20 || (E.ph === 1 && c.ai && c.ai.done) || G.time > E.give) { E.leg = 1; E.t = G.time + 7; c.horn = 0; c.inp.thr = 0; c.inp.hb = true; if (c.ai) c.ai.wait = 99; } }   // there (or near as it can get)
+    else if (E.leg === 1) { c.inp.hb = true; if (G.time > E.t) { E.v.emsHold = false; E.v.deadT = 99; E.leg = 2; const far = [E.v.x < CITY.w / 2 ? NX : 0, E.v.z < CITY.d / 2 ? NZ : 0]; const B = c.occ[0]; if (B) { aiStart(c, 'ems', far); c.ai.cruise = 13; } } }   // taken away
+    else if (E.leg === 2 && (nearHuman(c.x, c.z) > 220 || (c.ai && c.ai.done))) { const B = c.occ[0]; if (B) removeBot(B); removeCar(c); EMS.list.splice(i, 1); } }
+}
+function emsSend(v) {
+  const hs = humans(); let best = null, bd = 1e9;
+  for (let i = 0; i <= NX; i++) for (let j = 0; j <= NZ; j++) { const x = RX(i), z = RZ(j), d = hyp(x - v.x, z - v.z), nh = nearHuman(x, z); if (d < 150 || d > 330 || nh < 95) continue; if (d < bd) { bd = d; best = [i, j]; } }
+  if (!best) return; const [i, j] = best, dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(q => i + q[0] >= 0 && i + q[0] <= NX && j + q[1] >= 0 && j + q[1] <= NZ), q = dirs[(rand() * dirs.length) | 0];
+  lanePoint([i, j], [i + q[0], j + q[1]], 16, LANE, _lp); if (cars.some(c => hyp(c.x - _lp.x, c.z - _lp.z) < 9)) return;
+  const c = spawnCar('van', _lp.x, _lp.z, yawOf(q[0], q[1]), { color: AMB_PAINT }); if (!c) return; const b = spawnBot(TEAM_CIV, _lp.x, 0, _lp.z, {}); if (!b) { removeCar(c); return; }
+  // the street they are lying on: its two crossings; drive to the nearer end, then down the street to them
+  const ci = clamp(Math.round((v.x - EDGE) / PX), 0, NX), cj = clamp(Math.round((v.z - EDGE) / PZ), 0, NZ), alongNS = Math.abs(v.x - RX(ci)) < Math.abs(v.z - RZ(cj));
+  const ends = alongNS ? [[ci, clamp(Math.floor((v.z - EDGE) / PZ), 0, NZ - 1)], [ci, clamp(Math.floor((v.z - EDGE) / PZ), 0, NZ - 1) + 1]] : [[clamp(Math.floor((v.x - EDGE) / PX), 0, NX - 1), cj], [clamp(Math.floor((v.x - EDGE) / PX), 0, NX - 1) + 1, cj]];
+  const near0 = hyp(RX(ends[0][0]) - c.x, RZ(ends[0][1]) - c.z) < hyp(RX(ends[1][0]) - c.x, RZ(ends[1][1]) - c.z), c1 = near0 ? ends[0] : ends[1], c2 = near0 ? ends[1] : ends[0];
+  b.car = c; b.seat = 0; c.occ[0] = b; b.ems = true; aiStart(c, 'ems', c1); c.ai.cruise = 19; c.horn = 1; v.emsHold = true; v.emsDone = true; EMS.list.push({ car: c, v, leg: 0, t: 0, ph: 0, c1, c2, give: G.time + 120 });
+}
+// --- the sound of the place
+const CITYSND = { wind: null, windF: null, bedG: null, bedF: null, sirT: 40, in: 0 };
+function citySound(dt) {
+  if (!AC || !CITYSND.bedG) return; const t = AC.currentTime, ex = camera.position.x, ey = camera.position.y, ez = camera.position.z;
+  // a roof overhead (the mall, a shelter, a bus): what is outside comes through muffled
+  const roof = groundAt(ex, ez, ey + 14, 'p') > ey + .5; CITYSND.in = lerp(CITYSND.in, roof ? 1 : 0, Math.min(1, dt * 3));
+  let n = 0; for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.spec.air || c.wreck) continue; const d = hyp(c.x - ex, c.z - ez); if (d < 110) n += Math.min(1, carSpeed(c) / 8) * (1 - d / 110); }
+  CITYSND.bedG.gain.setTargetAtTime(G.state === 'menu' ? .03 : .028 + Math.min(.06, n * .012), t, .6); CITYSND.bedF.frequency.setTargetAtTime(lerp(260, 140, CITYSND.in), t, .3);
+  const w = (WX.wind * .05 + Math.max(0, ey - 12) * .0012) * (1 - CITYSND.in * .7) * (G.state === 'menu' ? .3 : 1); CITYSND.windG.gain.setTargetAtTime(w * (.7 + .3 * Math.sin(t * .37) * Math.sin(t * .13)), t, .4); CITYSND.windF.frequency.setTargetAtTime(500 + 300 * Math.sin(t * .21), t, .5);
+  if (RAINS.f) RAINS.f.frequency.setTargetAtTime(lerp(P.car && !P.car.spec.air ? 900 : 2400, 700, CITYSND.in), t, .3);
+  // far sirens after dark, now and then
+  if (ENV.night > .5 && G.state !== 'menu') { CITYSND.sirT -= dt; if (CITYSND.sirT <= 0) { CITYSND.sirT = 50 + rand() * 90; const pan = rand() * 2 - 1, d = .6 + rand() * 1.8; for (let k = 0; k < 6; k++) sTone(640, 1080, .45, .012 * (1 - CITYSND.in * .6), 'sawtooth', t + d + k * .9, out(pan)), sTone(1080, 640, .45, .012 * (1 - CITYSND.in * .6), 'sawtooth', t + d + k * .9 + .45, out(pan)); } }
+}
+function citySoundInit() {
+  if (!AC || CITYSND.bedG) return;
+  const w = AC.createBufferSource(); w.buffer = noiseBuf; w.loop = true; CITYSND.windF = AC.createBiquadFilter(); CITYSND.windF.type = 'bandpass'; CITYSND.windF.frequency.value = 600; CITYSND.windF.Q.value = .6; CITYSND.windG = AC.createGain(); CITYSND.windG.gain.value = 0;
+  w.connect(CITYSND.windF); CITYSND.windF.connect(CITYSND.windG); CITYSND.windG.connect(master); w.start();
+  const bd = AC.createBufferSource(); bd.buffer = noiseBuf; bd.loop = true; CITYSND.bedF = AC.createBiquadFilter(); CITYSND.bedF.type = 'lowpass'; CITYSND.bedF.frequency.value = 240; CITYSND.bedG = AC.createGain(); CITYSND.bedG.gain.value = .03;
+  bd.connect(CITYSND.bedF); CITYSND.bedF.connect(CITYSND.bedG); CITYSND.bedG.connect(master); bd.start(rand() * .5);
+}
+
+/* =====================================================================
    12. MULTIPLAYER — the same scheme as the Black Ops Clone engine. Everyone with the page open shares a small
        "presence" record. One player hosts: their machine runs the bots, the traffic, the turf and the police, and
        publishes it ten times a second. Everyone else sends where they are, what they hit and what they ask for.
@@ -7396,7 +7595,7 @@ function streetVisuals(dt) { diceVisuals(dt); dogs(dt); }
        has more players with them. A player who loses their own connection keeps playing and rejoins when it comes back.
    ===================================================================== */
 Object.assign(NET, { hostPeer: null, hostEp: 0, ep: 1, jit: {}, seq: 0, hits: [], hp: [], reqs: [], kd: null, evSeen: -1, lastDmg: -1, sendT: 0, lost: 0, lastS: null, pkGone: {}, slots: {}, dmgOut: {}, lob: null, bytes: 0, myBoom: -9, knSeen: 0, joinT: 0 });
-const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT]);
+const ALLPAINT = PAINTS.concat(CREW_PAINT, [COP_PAINT, AMB_PAINT]);
 const B36 = (n, w) => { n = Math.max(0, Math.round(n)); let s = n.toString(36); while (s.length < w) s = '0' + s; return s.length > w ? 'z'.repeat(w) : s; };
 const U36 = (s, o, w) => parseInt(s.substr(o, w), 36);
 const r2 = v => Math.round(v * 100) / 100;
@@ -7528,6 +7727,7 @@ function decCars(s, pk) {
     if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
     if (!c.mine && !c.vbufOf) snapPush(c.buf, air ? { x, y, z, yaw, vf, pitch: dive, roll } : { x, y, z, yaw, vf });
     { const drop = c.hp / c.spec.hp - hp; if (drop > .08 && !c.mine) dentCar(c, drop * 1.6, null); else if (hp > .98 && c.dent) undentCar(c); }
+    if (!c.ems && ALLPAINT[ci] === AMB_PAINT && c.type === 'van') emsDress(c);
     c.hp = hp * c.spec.hp; if ((fl & 1) && !c.wreck) { c.wreck = true; c.wreckT = 0; } c.burn = fl & 2 ? 1 : 0; if (!c.mine) { c.horn = fl & 4 ? 1 : 0; c.rslip = fl & 16 ? 7 : 0; } c.eng = !!(fl & 8);
     for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } }
     return len; };
@@ -8305,7 +8505,7 @@ function visuals(dt, now) {
   for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true; flushWheels();
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
   updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt); coopVisuals(dt); caseVisuals(dt);
-  updateProps(dt); signalsTick(); detailTick(); headlightTick(); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
+  updateProps(dt); signalsTick(); detailTick(); headlightTick(); craneTick(dt); if (AC) { citySoundInit(); citySound(dt); } updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
   if (G.state !== 'menu') updateHud(dt);
 }
 let last = performance.now();
@@ -8328,7 +8528,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { meChar, poseChar, flushChars, rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { FAR_B, FAR_BL, FAR_LAND, CITY, humans, walkWait, shopIn, shopOut, EMS, emsSend, emsTick, CRANE, SCAFF, CITYSND, meChar, poseChar, flushChars, rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

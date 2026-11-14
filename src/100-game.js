@@ -262,7 +262,8 @@ function populate() {
     for (let k = Q.length - 1; k >= 0; k--) if (G.time >= Q[k]) { Q.splice(k, 1); spawnCrewBot(t, .45); } }
   let peds = 0, traf = 0, beat = 0, farPed = null, fd = 90;
   for (let i = bots.length - 1; i >= 0; i--) { const b = bots[i];
-    if (b.dead) { if (b.deadT > 9) removeBot(b); continue; }
+    if (b.dead) { if (b.deadT > (b.emsHold ? 90 : 9)) removeBot(b); continue; }
+    if (b.vanish) { removeBot(b); continue; }   // gone in through a shop door
     if (b.temp && !b.car && G.time > b.until && nearHuman(b.x, b.z) > 45) { removeBot(b); continue; }
     if (b.team === TEAM_COP) { if (b.beat) { if (!b.chase && !b.tgt && nearHuman(b.x, b.z) > 205) removeBot(b); else beat++; } continue; }
     if (b.team !== TEAM_CIV) continue;
@@ -270,7 +271,7 @@ function populate() {
     if (b.car) { if (b.seat === 0 && b.car.traffic && far > 370) { const c = b.car; removeBot(b); removeCar(c); } else traf++; }
     else if (!b.post) { if (far > 128 && nearBubble(b.x, b.z) > 128) removeBot(b); else { peds++; if (far > fd) { fd = far; farPed = b; } } } }
   const want = walkersWanted();
-  for (let k = Math.min(5, want - peds); k > 0; k--) spawnPed(false); if (peds > want + 2 && farPed) removeBot(farPed);       // the evening thins the crowd from its far edge
+  for (let k = Math.min(5, want - peds); k > 0; k--) { if (shopHours() && rand() < .3 && shopOut(humans())) continue; spawnPed(false); }   // some come out of the shops if (peds > want + 2 && farPed) removeBot(farPed);       // the evening thins the crowd from its far edge
   if (traf < G.traffic + Math.min(2, humans().length - 1) && cars.length < CAR_MAX - 6) spawnTraffic();
   staffPosts(false); streetCrews();
   if (G.cops && beat < 2 && G.time > G.beatT) { G.beatT = G.time + 7; spawnBeat(); }
@@ -364,7 +365,7 @@ function payHour() {
 }
 const hourlyNow = () => P.team === TEAM_COP ? CFG.cop.pay + CFG.cop.rankPay * (P.rank | 0) : turfPay(G.rivals ? P.team : G.crew)[1];
 function authTick(dt) {
-  G.tod = (G.tod + dt * TOD_RATE) % 24; weatherAuth();
+  G.tod = (G.tod + dt * TOD_RATE) % 24; weatherAuth(); emsTick(dt);
   updateZones(dt); updateRaids(dt);
   G.polT -= dt; if (G.polT <= 0) { G.polT = .25; updatePolice(); airTick(); }
   if (G.phase === 'play') { const hr = Math.floor(G.tod); if (hr !== G.hour) { G.hour = hr; payHour(); } }

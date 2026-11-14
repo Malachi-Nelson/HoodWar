@@ -35,7 +35,9 @@ function botPathTo(b, x, y, z, civ) {
 function botFollow(b, speed, dt) {   // true once the last node is reached
   if (!b.path || b.pi >= b.path.length) return true;
   const n = NAV[b.path[b.pi]]; if (hyp(n.x - b.x, n.z - b.z) < 1.15 && Math.abs(n.y - b.y) < 1.3) { b.pi++; if (b.pi >= b.path.length) return true; }
-  const m = NAV[b.path[b.pi]]; botWalk(b, m.x, m.z, speed, dt); return false;
+  const m = NAV[b.path[b.pi]];
+  if (b.team === TEAM_CIV && !(b.fleeT > 0) && b.pi > 0) { const a = NAV[b.path[b.pi - 1]]; if (hyp(a.x - b.x, a.z - b.z) < 1.9 && walkWait(a, m)) { botWalk(b, b.x, b.z, 0, dt); return false; } }   // waiting for the walk signal (109.5-city.js)
+  botWalk(b, m.x, m.z, speed, dt); return false;
 }
 // --- seeing and shooting
 const _cand = [];
@@ -128,7 +130,7 @@ function driveAI(c, dt) {
   const turnAt = L - 9.5, look = 6.5 + sp * .5, ts = s + look; if (A.passT > 0) { A.passT -= dt; if (A.passT <= 0) A.off = LANE; }
   const busCap = A.mode === 'bus' ? busDrive(c, A, s, sp, dt) : 1e9;
   // parking at the journey's end
-  const last = A.dest && A.to[0] === A.dest[0] && A.to[1] === A.dest[1] && A.mode === 'crew';
+  const last = A.dest && A.to[0] === A.dest[0] && A.to[1] === A.dest[1] && (A.mode === 'crew' || A.mode === 'ems');
   if (last && s > L - 34) { lanePoint(A.from, A.to, Math.max(s + 4, L - 16), 4.9, _lp); } else if (ts <= turnAt || !A.next) lanePoint(A.from, A.to, Math.max(9.5, Math.min(ts, L)), A.off, _lp); else lanePoint(A.to, A.next, 9.5 + Math.max(0, ts - turnAt - 6), A.off, _lp);
   const want = yawOf(_lp.x - c.x, _lp.z - c.z), diff = angTo(c.yaw, want); let cruise = Math.min(busCap, A.cruise * (A.panic > 0 ? 1.7 : 1)); if (A.panic > 0) A.panic -= dt;
   const nx = A.next ? RX(A.next[0]) - bx : dx, nz = A.next ? RZ(A.next[1]) - bz : dz, nl = hyp(nx, nz) || 1, turning = (nx * dx + nz * dz) / nl < .5, toX = turnAt - s;
@@ -138,13 +140,13 @@ function driveAI(c, dt) {
   // traffic signals (42.8-dress.js): stop at the line on red, and on amber if there is room to stop without standing on the brakes
   A.red = false; if ((A.mode === 'traffic' || A.mode === 'bus') && A.panic <= 0) { const ph = signalAhead(A.from, A.to);
     if (ph) { const toStop = L - 11 - c.spec.len / 2 - s, need = sp * sp / (ph === 2 ? 13 : 8); if (toStop > -.6 && toStop > need + (ph === 2 ? -1.5 : 1)) { cruise = Math.min(cruise, toStop > 1.2 ? Math.sqrt(6 * (toStop - 1)) : 0); A.red = true; } } }   // brake on a curve that ends a metre short of the line
-  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
+  const blk = aiBlocked(c, 5 + sp * 1.15, c.cop ? a => a.team === TEAM_CIV || a.team === TEAM_COP : A.mode === 'traffic' || A.mode === 'bus' || A.mode === 'ems' ? a => true : a => isCrew(a.team) && a.team === c.team), gap = A.bully > 0 && !blk[2] ? 1e9 : blk[0];   // a bus that has been stuck a while noses through   // police wait for bystanders and each other, nobody else
   if (A.mode === 'cop' && gap < 20 && A.passT <= 0) { A.off = -1.8; A.passT = 3.5; }
   A.q = !!(blk[3] && blk[3].ai && (blk[3].ai.red || blk[3].ai.q) && gap < 9);   // in a queue at a red light: wait, no horn, no going round
   if (gap < 1e8) cruise = Math.min(cruise, gap < 3 ? 0 : blk[1] + (gap - 3) * .8);
-  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (tr && A.hold > 2 && A.hold < 2.6) c.horn = 1; else c.horn = 0;
+  if (gap < 6 && sp < 1 && !A.q) { A.hold += dt; const tr = A.mode === 'traffic' || A.mode === 'bus'; if (A.mode !== 'ems') c.horn = tr && A.hold > 2 && A.hold < 2.6 ? 1 : 0;
     if (A.hold > (tr ? 6 : 2.5) && A.passT <= 0) { A.off = -1.8; A.passT = 5; A.hold = 0; if (blk[2]) { A.rev = 1.3; A.passT = 8; } } }   // a person who will not move: back up and go round
-  else { A.hold = Math.max(0, A.hold - dt); c.horn = 0; }
+  else { A.hold = Math.max(0, A.hold - dt); if (A.mode !== 'ems') c.horn = 0; }   // (an ambulance's horn flag is its siren)
   if (A.passT > 0 && gap > 1e8) cruise = Math.min(cruise, 9);
   if (A.passT > 0 && blk[2] && gap > 1 && gap < 1e8) cruise = Math.max(cruise, 2.2);       // someone is standing in the road and is not going to move: edge round them
   // stuck against something: back up and try again
@@ -243,7 +245,7 @@ function pickSpot(b) {
 const gunUp = a => a === P ? !WEAPONS[P.wpn].melee && (P.ads > .5 || P.shootT > 0) : a.wpn !== 'fist' && !!a.aim;
 function civBrain(b) {
   if (b.gotOn || b.board) return;
-  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
+  if (b.car) { const c = b.car; if (c.wreck || c.burn > 0 || (!b.ems && (c.hp < c.spec.hp * .55 || (c.ai && c.ai.jams > 4)))) { botExit(b, false); b.fleeT = 10; b.fleeX = c.x; b.fleeZ = c.z; } return; }
   if (b.post) {   // at work
     const p = b.post; let threat = false;
     if (b.fleeT > 0) { if (p.npc === b) { p.npc = null; p.t = G.time + 80; } b.post = null; b.act = 0; }                                                     // hurt: the job can wait
@@ -258,6 +260,7 @@ function civBrain(b) {
   if (b.fleeing) { b.fleeing = false; b.path = null; }
   if (b.poi) { const p = b.poi; if (b.at === 2 && (G.time > b.actT || (p.zone >= 0 && ZS[p.zone].hot))) { leavePoi(b); b.idleT = .4 + rand() * 1.5; } else if (b.at < 2 && G.time > b.poiT) { leavePoi(b); b.path = null; b.idleT = 1; } return; }
   if (b.path || b.idleT > 0) return;
+  if (!b.thief && shopHours() && rand() < .12 && shopIn(b)) return;   // in to a shop
   const from = nearestNode(b.x, b.y, b.z, true);
   if (rand() < .75) { const p = pickSpot(b), path = p ? navPath(from, p.node, 2) : null;   // somewhere to be
     if (path) { const k = freeSlot(p); let len = hyp(NAV[path[0]].x - b.x, NAV[path[0]].z - b.z); for (let q = 1; q < path.length; q++) len += hyp(NAV[path[q]].x - NAV[path[q - 1]].x, NAV[path[q]].z - NAV[path[q - 1]].z);
@@ -289,6 +292,8 @@ function civAct(b, dt) {
       if (d < .55 || (d < 2.6 && G.time - b.poiP > 1)) takeSpot(b, p, b.slot); else if (G.time - b.poiP > 2.2) { leavePoi(b); b.idleT = .5; return; } }      // something is parked in the way: near enough will do, or think again
     if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8)); return; }
   b.act = 0;
+  if (b.shopIn && b.fleeT > 0) b.shopIn = null;
+  if (b.shopIn && !b.path) { shopInStep(b, dt); return; }
   if (b.path) { if (botFollow(b, b.fleeT > 0 ? (b.thief ? 5.6 : 6.4) : b.walk * wetPace(b), dt)) { b.path = null; b.idleT = b.fleeT > 0 ? 0 : .5 + rand() * 3; } } else botWalk(b, b.x, b.z, 0, dt);
   if (b.spd > .4) b.yaw = lerpAng(b.yaw, yawOf(b.vx, b.vz), Math.min(1, dt * 8));
 }
@@ -334,7 +339,7 @@ function updateBot(b, dt) {
 function botVisual(b, dt) {
   const ch = b.ch; if (!ch) return;
   const far = hyp(b.x - camera.position.x, b.z - camera.position.z);
-  if ((b.dead && b.deadT > 7) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
+  if ((b.dead && b.deadT > (b.emsHold ? 90 : 7)) || far > (TOUCH.on ? 220 : 300)) { hideChar(ch); return; }
   ch.acc = (ch.acc || 0) + dt; if (far > 70 && ch.shown && ((LIFE.frame + ch.idx) & (far > 140 ? 3 : 1))) return;   // far enough that nobody can tell it is posed half as often
   dt = Math.min(.2, ch.acc); ch.acc = 0;
   let seat = null, twist = 0, x = b.x, y = b.y, z = b.z;
