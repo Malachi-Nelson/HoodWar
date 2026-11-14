@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 13:25 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 13:52 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -1145,7 +1145,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
@@ -2948,6 +2948,50 @@ charPart('beanie', bxg(.228, .13, .246, 0, .24, -.004), 1); charPart('hood', bxg
 charPart('uarm', bxg(.12, .3, .13, 0, -.15, 0), 2); charPart('farm', bxg(.1, .27, .11, 0, -.135, 0), 2); charPart('hand', bxg(.09, .1, .1, 0, -.32, 0), 2);
 charPart('thigh', bxg(.155, .44, .17, 0, -.22, 0), 2); charPart('shin', bxg(.13, .42, .145, 0, -.21, 0), 2); charPart('shoe', bxg(.135, .09, .27, 0, -.445, .05), 2);
 const HEADGEAR = ['cap', 'beanie', 'hood', 'hair'];
+// --- the same figure up close: rounded and tapered limbs, a jaw, a nose, ears, eyes and brows, hair that wraps the head, a sole on
+//     each shoe. Drawn for anyone within about 45 m when the textures setting is above Low; past that (and on Low) the boxes above.
+//     The vertex colours shade the features (dark eyes, brows) and multiply by each person's own colours.
+function rbox(w, h, d, r, seg, taper) {   // a box with its edges rounded to radius r; taper: [x, z] scale at the bottom, 1 at the top
+  const g = new T.BoxGeometry(w, h, d, seg[0], seg[1], seg[2]), p = g.attributes.position, n = g.attributes.normal, a = w / 2 - r, b = h / 2 - r, c = d / 2 - r;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), qx = clamp(x, -a, a), qy = clamp(y, -b, b), qz = clamp(z, -c, c), dx = x - qx, dy = y - qy, dz = z - qz, l = Math.hypot(dx, dy, dz) || 1;
+    let X = qx + dx / l * r, Y = qy + dy / l * r, Z = qz + dz / l * r; if (taper) { const t = (Y + h / 2) / h; X *= lerp(taper[0], 1, t); Z *= lerp(taper[1], 1, t); }
+    p.setXYZ(i, X, Y, Z); n.setXYZ(i, dx / l, dy / l, dz / l); }
+  return g;
+}
+const CPD = {}, charMatD = [new T.MeshLambertMaterial({ vertexColors: true }), new T.MeshStandardMaterial({ vertexColors: true, roughness: .78, metalness: 0, envMapIntensity: .6 })];
+{ const W1 = [1, 1, 1], dk = [.06, .05, .05], brow = [.2, .18, .17], lip = [.6, .45, .43], band = [.82, .82, .82], sole = [.5, .5, .5];
+  const part = (name, per, fn) => { const b = new GeoBuf(); fn((g, x, y, z, col) => { g.translate(x, y, z); b.geo(g, null, col || W1); g.dispose(); }); const m = new T.InstancedMesh(b.build(), charMatD[0], CHAR_MAX * per);
+    m.castShadow = true; m.frustumCulled = false; m.userData.per = per; for (let i = 0; i < CHAR_MAX * per; i++) { m.setMatrixAt(i, ZERO_M); m.setColorAt(i, _wc.setHex(0xffffff)); } m.count = 0; scene.add(m); CPD[name] = m; };
+  part('pelvis', 1, put => put(rbox(.355, .21, .22, .07, [3, 2, 2]), 0, 0, 0));
+  part('chest', 1, put => put(rbox(.43, .5, .245, .085, [4, 5, 2], [.8, .85]), 0, .29, 0));
+  part('head', 1, put => { put(rbox(.2, .235, .215, .07, [4, 4, 4], [.8, .9]), 0, .135, 0); put(new T.CylinderGeometry(.05, .056, .1, 10, 1, true), 0, -.008, -.008);   // skull and jaw, neck
+    put(rbox(.034, .052, .036, .014, [1, 1, 1]), 0, .118, .108); put(rbox(.06, .014, .012, .005, [1, 1, 1]), 0, .084, .1, lip);                                      // nose, mouth
+    [-1, 1].forEach(sd => { put(rbox(.024, .056, .042, .011, [1, 1, 1]), sd * .1, .132, -.006); put(rbox(.032, .019, .012, .006, [1, 1, 1]), sd * .044, .148, .1, dk); put(rbox(.042, .012, .012, .005, [1, 1, 1]), sd * .044, .171, .1, brow); }); });   // ears, eyes, brows
+  part('hair', 1, put => { put(rbox(.222, .1, .238, .05, [3, 2, 3]), 0, .236, -.008); put(rbox(.216, .15, .095, .04, [3, 2, 1]), 0, .17, -.07); });
+  part('beanie', 1, put => { put(rbox(.232, .14, .252, .09, [3, 2, 3]), 0, .246, -.006); put(rbox(.238, .045, .258, .02, [3, 1, 3]), 0, .195, -.006, band); });
+  part('hood', 1, put => put(rbox(.272, .29, .205, .09, [3, 3, 2]), 0, .152, -.06));
+  part('cap', 1, put => { put(rbox(.228, .095, .242, .08, [3, 2, 3]), 0, .252, -.006); put(rbox(.2, .022, .135, .009, [2, 1, 2]), 0, .214, .168); });
+  part('mask', 1, put => put(rbox(.226, .11, .088, .035, [2, 2, 1]), 0, .07, .088));
+  part('uarm', 2, put => put(rbox(.122, .32, .132, .056, [2, 3, 2], [.84, .88]), 0, -.15, 0));
+  part('farm', 2, put => put(rbox(.102, .28, .112, .048, [2, 3, 2], [.8, .84]), 0, -.135, 0));
+  part('hand', 2, put => put(rbox(.086, .105, .096, .036, [2, 2, 2]), 0, -.318, .006));
+  part('thigh', 2, put => put(rbox(.162, .46, .176, .072, [2, 4, 2], [.76, .8]), 0, -.22, 0));
+  part('shin', 2, put => put(rbox(.132, .43, .142, .06, [2, 4, 2], [.74, .8]), 0, -.21, 0));
+  part('shoe', 2, put => { put(rbox(.132, .085, .28, .04, [2, 1, 3]), 0, -.438, .05); put(rbox(.138, .026, .29, .011, [2, 1, 3]), 0, -.477, .05, sole); }); }
+function charLook() { const m = charMatD[GQ.env ? 1 : 0]; for (const k in CPD) CPD[k].material = m; }
+// the near figures are packed into the front of each instanced mesh every frame, so only as many are drawn as there are people near
+const NEAR = { list: [], frame: 0 };
+function flushNear() {
+  const L = NEAR.list, n = L.length, col = (m, k, h) => m.setColorAt(k, _wc.setHex(h));
+  for (let k = 0; k < n; k++) { const c = L[k], r = c.rig, Lk = c.look;
+    CPD.pelvis.setMatrixAt(k, r.hips.matrixWorld); col(CPD.pelvis, k, Lk.pants); CPD.chest.setMatrixAt(k, r.torso.matrixWorld); col(CPD.chest, k, Lk.top); CPD.head.setMatrixAt(k, r.head.matrixWorld); col(CPD.head, k, Lk.skin);
+    HEADGEAR.forEach(g => { if (g === Lk.gear) { CPD[g].setMatrixAt(k, r.head.matrixWorld); col(CPD[g], k, Lk.gearCol); } else CPD[g].setMatrixAt(k, ZERO_M); });
+    if (Lk.mask) { CPD.mask.setMatrixAt(k, r.head.matrixWorld); col(CPD.mask, k, Lk.maskCol || 0); } else CPD.mask.setMatrixAt(k, ZERO_M);
+    for (let s = 0; s < 2; s++) { const j = k * 2 + s; CPD.uarm.setMatrixAt(j, r.sh[s].matrixWorld); col(CPD.uarm, j, Lk.top); CPD.farm.setMatrixAt(j, r.el[s].matrixWorld); col(CPD.farm, j, Lk.tee ? Lk.skin : Lk.top);
+      CPD.hand.setMatrixAt(j, r.el[s].matrixWorld); col(CPD.hand, j, Lk.skin); CPD.thigh.setMatrixAt(j, r.hip[s].matrixWorld); col(CPD.thigh, j, Lk.pants); CPD.shin.setMatrixAt(j, r.kn[s].matrixWorld); col(CPD.shin, j, Lk.shorts ? Lk.skin : Lk.pants); CPD.shoe.setMatrixAt(j, r.kn[s].matrixWorld); col(CPD.shoe, j, Lk.shoe); } }
+  for (const k in CPD) { const m = CPD[k]; m.count = n * m.userData.per; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  L.length = 0; NEAR.frame++;
+}
 // guns, modelled in gun space: +z down the barrel, origin at the firing hand
 const GUN_GEO = {}, GUN_MUZ = {};
 { const st = hexCol(0x2a2d31), dk = hexCol(0x15171a), wd = hexCol(0x6a4528), pl = hexCol(0x3d4145), mk = (id, f, mz) => { const b = new GeoBuf(); f(b); GUN_GEO[id] = b.build(); GUN_MUZ[id] = mz; };
@@ -2996,16 +3040,17 @@ function makeRig() {
 }
 function setLook(c, L) {
   const i = c.idx, col = (m, k, h) => { m.setColorAt(k, _wc.setHex(h)); m.instanceColor.needsUpdate = true; };
-  c.look = L; col(CP.pelvis, i, L.pants); col(CP.chest, i, L.top); col(CP.head, i, L.skin);
-  HEADGEAR.forEach(g => { col(CP[g], i, L.gearCol); if (g !== L.gear) CP[g].setMatrixAt(i, ZERO_M); }); col(CP.mask, i, L.maskCol || 0); if (!L.mask) CP.mask.setMatrixAt(i, ZERO_M);
-  for (let k = 0; k < 2; k++) { const j = i * 2 + k; col(CP.uarm, j, L.top); col(CP.farm, j, L.tee ? L.skin : L.top); col(CP.hand, j, L.skin); col(CP.thigh, j, L.pants); col(CP.shin, j, L.shorts ? L.skin : L.pants); col(CP.shoe, j, L.shoe); }
+  c.look = L; [CP].forEach(P => { col(P.pelvis, i, L.pants); col(P.chest, i, L.top); col(P.head, i, L.skin);
+  HEADGEAR.forEach(g => { col(P[g], i, L.gearCol); if (g !== L.gear) P[g].setMatrixAt(i, ZERO_M); }); col(P.mask, i, L.maskCol || 0); if (!L.mask) P.mask.setMatrixAt(i, ZERO_M);
+  for (let k = 0; k < 2; k++) { const j = i * 2 + k; col(P.uarm, j, L.top); col(P.farm, j, L.tee ? L.skin : L.top); col(P.hand, j, L.skin); col(P.thigh, j, L.pants); col(P.shin, j, L.shorts ? L.skin : L.pants); col(P.shoe, j, L.shoe); } });
 }
 function makeChar(look) {
   if (!charFree.length) return null;
   const c = { idx: charFree.pop(), rig: makeRig(), ph: rand() * 6, amp: 0, aim: 0, hold: 0, fall: 0, sit: 0, gun: null, shown: true, muz: new T.Vector3(), kick: 0 };
   chars.push(c); setLook(c, look); return c;
 }
-function hideChar(c) { if (!c.shown) return; c.shown = false; const i = c.idx; for (const k in CP) { const m = CP[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } c.gun = null; }
+function zeroParts(P, i) { for (const k in P) { const m = P[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } }
+function hideChar(c) { if (!c.shown) return; c.shown = false; const i = c.idx; zeroParts(CP, i); c.gun = null; }
 function freeChar(c) { if (!c) return; c.shown = true; hideChar(c); const k = chars.indexOf(c); if (k >= 0) chars.splice(k, 1); charFree.push(c.idx); }
 const _mz = new T.Vector3();
 // What someone is doing when they are not walking, fighting or driving. The number travels with them between machines.
@@ -3062,13 +3107,16 @@ function poseChar(c, s, dt) {
   r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3]; if (H.g2) { r.gun2.position.set(H.g2[0], H.g2[1], H.g2[2] - c.kick * .04); r.gun2.rotation.y = H.g2[3]; }
   // write the joints out to the instanced parts
   const i = c.idx; c.shown = true; r.root.updateMatrixWorld(true);
-  CP.pelvis.setMatrixAt(i, r.hips.matrixWorld); CP.chest.setMatrixAt(i, r.torso.matrixWorld); CP.head.setMatrixAt(i, r.head.matrixWorld); CP[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) CP.mask.setMatrixAt(i, r.head.matrixWorld);
-  for (let k = 0; k < 2; k++) { const j = i * 2 + k; CP.uarm.setMatrixAt(j, r.sh[k].matrixWorld); CP.farm.setMatrixAt(j, r.el[k].matrixWorld); CP.hand.setMatrixAt(j, r.el[k].matrixWorld); CP.thigh.setMatrixAt(j, r.hip[k].matrixWorld); CP.shin.setMatrixAt(j, r.kn[k].matrixWorld); CP.shoe.setMatrixAt(j, r.kn[k].matrixWorld); }
+  const dist = hyp(s.x - camera.position.x, s.z - camera.position.z), det = GQ.tex > 0 && dist < (c.det ? 48 : 42);   // near: the rounded figure
+  if (det !== !!c.det) { c.det = det; if (det) for (const k in CP) if (!k.startsWith('gun')) { const m = CP[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } }
+  if (det) { if (c.nearF !== NEAR.frame) { c.nearF = NEAR.frame; NEAR.list.push(c); } }   // drawn by flushNear
+  else { const P = CP; P.pelvis.setMatrixAt(i, r.hips.matrixWorld); P.chest.setMatrixAt(i, r.torso.matrixWorld); P.head.setMatrixAt(i, r.head.matrixWorld); P[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) P.mask.setMatrixAt(i, r.head.matrixWorld);
+    for (let k = 0; k < 2; k++) { const j = i * 2 + k; P.uarm.setMatrixAt(j, r.sh[k].matrixWorld); P.farm.setMatrixAt(j, r.el[k].matrixWorld); P.hand.setMatrixAt(j, r.el[k].matrixWorld); P.thigh.setMatrixAt(j, r.hip[k].matrixWorld); P.shin.setMatrixAt(j, r.kn[k].matrixWorld); P.shoe.setMatrixAt(j, r.kn[k].matrixWorld); } }
   const g = armed && h > .5 ? s.wpn : null;
   if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
   if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
-function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; }
+function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; flushNear(); }
 
 // name tags over other players
 function nameTag(text, css, down, rank) {   // rank: drawn in a little badge before the name, the way online players show theirs
@@ -3158,7 +3206,11 @@ function carGeo(type) {
   const bar = (buf, x, z0, y0, z1, y1, th, col) => { const len = hyp(z1 - z0, y1 - y0), g = new T.BoxGeometry(th, th * .9, len); g.rotateX(-Math.atan2(y1 - y0, z1 - z0)); g.translate(x, (y0 + y1) / 2, (z0 + z1) / 2); buf.geo(g, null, col); g.dispose(); };
   const bus = type === 'bus', wr = bus ? .5 : type === 'suv' || type === 'pickup' ? .4 : type === 'van' ? .37 : type === 'hatch' ? .31 : type === 'sport' ? .33 : .34;
   const nose = B.belt - .1, zc1 = hl - B.hood, deck = B.trunk > 0 ? B.belt - .03 : B.belt, zr0 = B.trunk > 0 ? -hl + B.trunk : B.bed ? -hl + B.bed : -hl + .07, zf = zc1 - B.rake, zr = zr0 + B.crake;
-  ext(P, [[-hl + .1, B.ride], [-hl, B.ride + .14], [-hl, deck - .1], [-hl + .08, deck], [zr0, B.belt], [zc1, B.belt], [hl - .14, nose], [hl, nose - .17], [hl, B.ride + .14], [hl - .1, B.ride]], S.wid, .05);
+  const axF = bus ? hl - 2.3 : hl - .86, axR = bus ? -hl + 2.7 : -hl + .9;
+  // the side profile, with an arch cut over each wheel (no taller than the waist allows)
+  const arch = z => { const R = Math.min(wr + .08, B.belt - .07 - wr), a0 = Math.asin(clamp((B.ride - wr) / R, -1, 1)), o = []; for (let k = 0; k <= 10; k++) { const a = a0 + (PI - 2 * a0) * k / 10; o.push([z + R * Math.cos(a), wr + R * Math.sin(a)]); } return o; };
+  ext(P, [[-hl + .1, B.ride], [-hl, B.ride + .14], [-hl, deck - .1], [-hl + .08, deck], [zr0, B.belt], [zc1, B.belt], [hl - .14, nose], [hl, nose - .17], [hl, B.ride + .14], [hl - .1, B.ride]].concat(arch(axF), arch(axR)), S.wid, .05);
+  [axF, axR].forEach(z => { const R = Math.min(wr + .08, B.belt - .07 - wr); M.box(-hw + .32, hw - .32, B.ride - .02, wr + R - .01, z - R, z + R, bl); });   // the wheel wells: dark inside
   ext(G, [[zr0, B.belt - .03], [zr, B.roof], [zf, B.roof], [zc1, B.belt - .03]], S.wid - .2, .015);
   P.box(-hw + .1, hw - .1, B.roof - .025, B.roof + .04, zr - .02, zf + .02);
   [-1, 1].forEach(s => { const x = s * (hw - .115); bar(P, x, zc1, B.belt, zf, B.roof, .075); bar(P, x, zr0, B.belt, zr, B.roof, .09); if (zf - zr > 1.5) P.box(x - .04, x + .04, B.belt, B.roof, (zf + zr) / 2 - .02, (zf + zr) / 2 + .07); });
@@ -3169,15 +3221,14 @@ function carGeo(type) {
   M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, hl - .08, hl + .09, dk); M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, -hl - .09, -hl + .08, dk);
   M.box(-.52, .52, nose - .33, nose - .13, hl - .02, hl + .035, bl); M.box(-.27, .27, B.ride + .33, B.ride + .47, -hl - .03, -hl + .02, hexCol(0xe8e4da));
   M.box(-hw + .16, hw - .16, B.ride + .06, B.belt - .28, zr0 - .1, zc1 + .1, bl);
-  const axF = bus ? hl - 2.3 : hl - .86, axR = bus ? -hl + 2.7 : -hl + .9;
   if (bus) {   // a band above the windows, pillars between them, the destination board, the doors on the kerb side
     const wht = hexCol(0xf2efe6); M.box(-hw - .005, hw + .005, 2.36, B.roof + .03, -hl + .08, hl - .3, wht);
     for (let z = -hl + 1.0; z < hl - 1.2; z += 1.42) [-1, 1].forEach(s => M.box(Math.min(s * (hw - .02), s * (hw + .012)), Math.max(s * (hw - .02), s * (hw + .012)), B.belt, 2.36, z - .05, z + .05, dk));
     L.box(-.85, .85, 2.48, 2.78, hl - .31, hl - .24, hexCol(0xffb43c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, hl - 2.25, hl - 1.05, hexCol(0x24303c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, -.9, .3, hexCol(0x24303c)); }
-  [axF, axR].forEach(z => [-1, 1].forEach(s => M.box(Math.min(s * (hw - .03), s * (hw + .018)), Math.max(s * (hw - .03), s * (hw + .018)), B.ride - .03, wr * 2 - .04, z - wr - .05, z + wr + .05, bl)));
   [-1, 1].forEach(s => M.box(Math.min(s * hw, s * (hw + .17)), Math.max(s * hw, s * (hw + .17)), B.belt + .04, B.belt + .14, zc1 - .22, zc1 - .1, dk));
   [-1, 1].forEach(s => { L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), nose - .27, nose - .11, hl - .03, hl + .03, hexCol(0xfff2cc)); L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), deck - .27, deck - .12, -hl - .03, -hl + .03, hexCol(0xd6231a)); });
-  return CAR_GEO[type] = Object.assign({ paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 }, bus ? { seats: [[-.72, hl - 1.25], [.72, hl - 2.6], [.72, .2], [.72, -2.2]], seatY: .78 } : {});
+  carInterior(M, S, B, hl, hw, zf, zr, zc1);   // seats, dashboard, steering wheel: 71-carlook.js
+  return CAR_GEO[type] = Object.assign({ paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), lamps: lampSpots(S, B), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 }, bus ? { seats: [[-.72, hl - 1.25], [.72, hl - 2.6], [.72, .2], [.72, -2.2]], seatY: .78 } : {});
 }
 const SEATS = [[-.43, .12], [.43, .12], [-.43, -.82], [.43, -.82]];   // [across, along] from the centre: driver sits front left
 // a police car is an ordinary model in black with white doors and a light bar that flashes while its siren is on
@@ -3203,7 +3254,8 @@ function spawnCar(type, x, z, yaw, o) {
   cars.push(c); placeCar(c); return c;
 }
 function setPaint(c, hex) { if (hex === undefined || c.color === hex) return; c.color = hex; if (!c.wreck) c.pm.material = paintMat(hex); }
-function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true; carFree.push(c.slot); c.gone = true; }
+function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true;
+  lampsOff(c); undentCar(c); carFree.push(c.slot); c.gone = true; }
 // the pool is full and something that matters wants a car (a delivery, a job's van, the police): clear away a wreck, or a car
 // standing at its parking spot well away from everyone and out of their sight; the spot fills again later. Only on the machine
 // that runs the world: everyone else's cars are copies of its own.
@@ -3219,8 +3271,12 @@ const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _w
 function placeCar(c) {
   const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.g.updateMatrixWorld(true);
   if (c.spec.air) return;   // skids, not wheels
-  const hw = c.spec.wid / 2 - .13;
-  for (let k = 0; k < 4; k++) { const front = k < 2, sd = k % 2 ? 1 : -1; _we.set(c.spin, front ? -c.steer * .5 : 0, 0); _wq.setFromEuler(_we); _wm.compose(_wv.set(sd * hw, G.wr, front ? G.axF : G.axR), _wq, _ws.set(.25, G.wr, G.wr)); _cm.multiplyMatrices(c.g.matrixWorld, _wm); wheelMesh.setMatrixAt(c.slot * 4 + k, _cm); }
+  const hw = c.spec.wid / 2 - .13, near = wheelsNear(c);
+  if (near !== !!c.wnear) { c.wnear = near; if (near) for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); }
+  if (near && !c.wmat) c.wmat = [0, 1, 2, 3].map(() => new T.Matrix4());
+  for (let k = 0; k < 4; k++) { const front = k < 2, sd = k % 2 ? 1 : -1; _we.set(c.spin, front ? -c.steer * .5 : 0, 0); _wq.setFromEuler(_we); _wm.compose(_wv.set(sd * hw, G.wr, front ? G.axF : G.axR), _wq, _ws.set(.25, G.wr, G.wr)); _cm.multiplyMatrices(c.g.matrixWorld, _wm);
+    if (near) c.wmat[k].copy(_cm); else wheelMesh.setMatrixAt(c.slot * 4 + k, _cm); }
+  if (near && c.wnF !== WNEAR.frame) { c.wnF = WNEAR.frame; WNEAR.list.push(c); }
 }
 const carFwd = c => [-Math.sin(c.yaw), -Math.cos(c.yaw)], carSpeed = c => hyp(c.vx, c.vz);
 function seatPos(c, k, out) { const s = (c.geo.seats || SEATS)[k], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * s[0] + fx * s[1]; out.z = c.z + rz * s[0] + fz * s[1]; out.y = c.y + c.geo.seatY; return out; }
@@ -3253,7 +3309,7 @@ function stepCar(c, dt, inp) {
   for (let k = 0; k < 3; k++) { const o = (k - 1) * half, px = c.x + fx * o, pz = c.z + fz * o;
     carProps(c, px, pz, R, spd);
     if (pushOut(px, pz, R, c.y + .46, c.y + 1.3, 'p')) { c.x += COL.x - px; c.z += COL.z - pz; const nx = COL.nx, nz = COL.nz, vn = c.vx * nx + c.vz * nz;
-      if (vn < 0) { if (-vn > hit) hit = -vn; c.vx -= nx * vn * 1.22; c.vz -= nz * vn * 1.22; c.vx *= .97; c.vz *= .97; c.yawRate += (fz * o * nx - fx * o * nz) * -vn * .09; } } }
+      if (vn < 0) { if (-vn > hit) { hit = -vn; c.hitN = [nx, nz]; } c.vx -= nx * vn * 1.22; c.vz -= nz * vn * 1.22; c.vx *= .97; c.vz *= .97; c.yawRate += (fz * o * nx - fx * o * nz) * -vn * .09; } } }
   c.y = lerp(c.y, groundAt(c.x, c.z, c.y, 'p', .46), Math.min(1, dt * 14));
   c.spin += vf * dt / c.geo.wr; c.roll = lerp(c.roll, clamp(-c.yawRate * sp * .0045, -.07, .07), Math.min(1, dt * 6)); c.dive = lerp(c.dive, clamp((thr > 0 && vf >= 0 ? -.012 : thr < 0 && vf > 1 ? .03 : 0) * (sp > .5 || thr ? 1 : 0), -.03, .04), Math.min(1, dt * 5));
   if (hit > 0) c.crash = Math.max(c.crash, hit);
@@ -3274,7 +3330,7 @@ function carsCollide() {
         const jimp = -1.3 * vr / (1 / ma + 1 / mb);
         if (!a.kin) { a.vx += nx * jimp / ma; a.vz += nz * jimp / ma; a.yawRate += (afz * p * ha * nx - afx * p * ha * nz) * jimp / ma * .07; a.asleep = false; }
         if (!b.kin) { b.vx -= nx * jimp / mb; b.vz -= nz * jimp / mb; b.yawRate -= (bfz * q * hb * nx - bfx * q * hb * nz) * jimp / mb * .07; b.asleep = false; }
-        const imp = -vr; if (imp > a.crash) a.crash = imp; if (imp > b.crash) b.crash = imp; a.hitBy = b; b.hitBy = a;
+        const imp = -vr; if (imp > a.crash) { a.crash = imp; a.hitN = [nx, nz]; } if (imp > b.crash) { b.crash = imp; b.hitN = [-nx, -nz]; } a.hitBy = b; b.hitBy = a;
       } } }
 }
 // a walker against the cars: treat each car as a box turned with its heading
@@ -3302,6 +3358,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
+  carLamps(c, dt);
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
   if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }
@@ -3311,6 +3368,118 @@ function updateCarVisual(c, dt) {
   else if (frac < .45 && c.smokeT <= 0) { c.smokeT = frac < .25 ? .1 : .22; FX.smoke(hx, c.y + c.geo.belt, hz, .7, frac < .25); }
   if ((c.slip > 5.5 || (c.inp.hb && carSpeed(c) > 6)) && rand() < dt * 40) { const rxv = Math.cos(c.yaw), rzv = -Math.sin(c.yaw), s = rand() < .5 ? -1 : 1; FX.tyre(c.x - fx * (c.spec.len / 2 - .9) + rxv * s * .8, c.y, c.z - fz * (c.spec.len / 2 - .9) + rzv * s * .8); }
 }
+
+/* =====================================================================
+   7b. CARS UP CLOSE — what the bodies in 70-cars.js were missing.
+       · Inside: seats, a dashboard and a steering wheel you can see through the glass.
+       · Lamps that work: headlights and tail lights after dark, brake lights (pedal or handbrake, or a car seen slowing hard),
+         reversing lights, indicators blinking before a turn. One instanced mesh for every lamp of every car; at night the
+         headlights also flare, and the car you are driving throws real light down the road (a spotlight, Medium and up).
+       · Wheels: a tyre with a sidewall and a tread, a five-spoke rim and a brake disc behind it, for cars near the camera.
+       · A tailpipe, and a puff from it when the car pulls away hard.
+       · Dents: a hard knock pushes the panels in where it landed (front, back or side) and can put out that end's lamps. The
+         car's own machine knows where it was hit; anyone else watching sees the dents land on the side the numbers suggest.
+   ===================================================================== */
+// --- inside the car, in the body's own frame (+z the front, +x the car's left)
+function carInterior(M, S, B, hl, hw, zf, zr, zc1) {
+  if (S.air) return; const seat = hexCol(pick(rng32(S.len * 100 | 0), [0x2a2b2e, 0x3a2f26, 0x4a3f33, 0x24272c])), dash = hexCol(0x1d1e21), wheel = hexCol(0x151618), sy = Math.max(.12, B.belt - .78);
+  const box = (x0, x1, y0, y1, z0, z1, col) => M.box(x0, x1, y0, y1, z0, z1, col);
+  if (S.len > 9) return;   // the bus has its own plan
+  const front = .12, back = -.82;
+  [.43, -.43].forEach(x => { box(x - .24, x + .24, sy, sy + .13, front - .26, front + .22, seat);
+    const g = new T.BoxGeometry(.46, .62, .11); g.rotateX(-.22); g.translate(x, sy + .42, front - .3); M.geo(g, null, seat); g.dispose();
+    box(x - .12, x + .12, sy + .72, sy + .86, front - .38, front - .28, seat); });                                                       // cushion, back, headrest
+  if (S.seats > 2 && zr < back - .2) { box(-hw + .2, hw - .2, sy, sy + .13, back - .25, back + .2, seat); const g = new T.BoxGeometry(hw * 2 - .4, .55, .1); g.rotateX(-.18); g.translate(0, sy + .38, back - .3); M.geo(g, null, seat); g.dispose(); }
+  box(-hw + .14, hw - .14, B.belt - .26, B.belt + .02, zf - .55, zf + .02, dash); box(-hw + .14, hw - .14, sy - .02, sy + .02, back - .4, zf, dash);   // dashboard; the floor
+  const ex = new T.CylinderGeometry(.045, .05, .3, 8, 1, true); ex.rotateX(PI / 2); ex.translate(-(hw - .42), B.ride + .07, -hl + .1); M.geo(ex, null, hexCol(0x55585c)); ex.dispose();   // the tailpipe, right side
+  const t = new T.TorusGeometry(.17, .022, 6, 18); t.rotateX(-1.05); t.translate(.43, B.belt + .02, zf - .42); M.geo(t, null, wheel); t.dispose();          // the steering wheel
+  const col = new T.CylinderGeometry(.025, .03, .3, 6); col.rotateX(PI / 2 - .5); col.translate(.43, B.belt - .07, zf - .3); M.geo(col, null, wheel); col.dispose();
+}
+// --- lamps: ten to a car. Where they sit comes from the body's measurements
+const LAMP_N = 10, LAMP = { mesh: null, glare: null, gpos: null, slots: [] };
+function lampSpots(S, B) {   // [x, y, z, w, h, facing (1 front, -1 back), kind]: kind 0 head, 1 tail, 2 reverse, 3 indicator front, 4 indicator back
+  const hl = S.len / 2, hw = S.wid / 2, nose = B.belt - .1, deck = B.trunk > 0 ? B.belt - .03 : B.belt, ty = deck - .195, hy = nose - .19, o = [];
+  [1, -1].forEach(s => o.push([s * (hw - .26), hy, hl + .045, .33, .13, 1, 0])); [1, -1].forEach(s => o.push([s * (hw - .26), ty, -hl - .045, .33, .12, -1, 1]));
+  [1, -1].forEach(s => o.push([s * (hw - .53), ty, -hl - .04, .12, .09, -1, 2])); [1, -1].forEach(s => o.push([s * (hw - .05), hy, hl - .02, .09, .09, 1, 3])); [1, -1].forEach(s => o.push([s * (hw - .05), ty + .1, -hl - .02, .09, .08, -1, 4]));
+  return o;
+}
+{ const g = new T.PlaneGeometry(1, 1), m = new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: T.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+  LAMP.mesh = new T.InstancedMesh(g, m, CAR_MAX * LAMP_N); LAMP.mesh.frustumCulled = false; LAMP.mesh.renderOrder = 5;
+  for (let i = 0; i < CAR_MAX * LAMP_N; i++) { LAMP.mesh.setMatrixAt(i, ZERO_M); LAMP.mesh.setColorAt(i, new T.Color(0, 0, 0)); } scene.add(LAMP.mesh);
+  const pg = new T.BufferGeometry(); LAMP.gpos = new Float32Array(CAR_MAX * 4 * 3); LAMP.gcol = new Float32Array(CAR_MAX * 4 * 3); pg.setAttribute('position', new T.BufferAttribute(LAMP.gpos, 3)); pg.setAttribute('color', new T.BufferAttribute(LAMP.gcol, 3));
+  LAMP.glare = new T.Points(pg, new T.PointsMaterial({ map: glowTex, size: 1.5, sizeAttenuation: true, vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false })); LAMP.glare.frustumCulled = false; LAMP.glare.renderOrder = 6; scene.add(LAMP.glare); }
+const LAMP_C = [new T.Color(3.4, 3.15, 2.7), new T.Color(1.5, .07, .04), new T.Color(2.6, 2.6, 2.6), new T.Color(3.2, 1.45, .05), new T.Color(4.2, .2, .1)], LAMP_OFF = new T.Color(0, 0, 0), _lc = new T.Color(), _lm = new T.Matrix4(), _lq = new T.Quaternion(), _lv = new T.Vector3(), _ls = new T.Vector3(), _ly = new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), PI), _lpt = new T.Vector3();
+function lampsOff(c) { for (let k = 0; k < LAMP_N; k++) LAMP.mesh.setMatrixAt(c.slot * LAMP_N + k, ZERO_M); for (let k = 0; k < 4; k++) LAMP.gpos[(c.slot * 4 + k) * 3 + 1] = -999; LAMP.mesh.instanceMatrix.needsUpdate = true; }
+// which way an AI driver is about to turn: -1 left, 1 right, 0 straight on (and how far off the turn is)
+function turnAhead(c) { const A = c.ai; if (!A || !A.next || !A.to || !A.from) return 0; const ax = RX(A.from[0]), az = RZ(A.from[1]), bx = RX(A.to[0]), bz = RZ(A.to[1]), nx = RX(A.next[0]) - bx, nz = RZ(A.next[1]) - bz, dx = bx - ax, dz = bz - az;
+  if (hyp(c.x - bx, c.z - bz) > 38) return 0; const cr = dx * nz - dz * nx; return Math.abs(cr) < 1 ? 0 : cr > 0 ? 1 : -1; }
+function carLamps(c, dt) {
+  if (c.spec.air || !c.geo.lamps) return; const night = ENV.night > .35, run = !c.wreck && (c.occ[0] || c.ai || c.eng), hdr = POST.on ? 1 : .45, fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), vf = c.vx * fx + c.vz * fz;
+  // slowing hard counts as braking, so the lamps work on cars driven on another machine too
+  const acc = (vf - (c.lvf === undefined ? vf : c.lvf)) / Math.max(dt, 1e-3); c.lvf = vf; c.dec = lerp(c.dec || 0, acc, Math.min(1, dt * 8));
+  const brake = run && ((c.inp.thr < -.05 && vf > .4) || c.inp.hb || (vf > .8 && c.dec < -3.2) || (c.ai && c.ai.red && Math.abs(vf) < .5)), rev = run && vf < -.4 && c.inp.thr < 0;
+  const turn = run ? turnAhead(c) : 0, blink = (G.time * 1.6 + c.id * .13) % 1 < .5, D = c.dent || null, base = c.slot * LAMP_N;
+  c.body.updateMatrixWorld(); const W = c.body.matrixWorld;
+  c.geo.lamps.forEach((L, k) => { const [x, y, z, w, h, face, kind] = L, side = x > 0 ? -1 : 1;   // +x is the car's left
+    let on = 0; if (kind === 0) on = night && run ? 1 : 0; else if (kind === 1) on = brake ? 4 : night && run ? 1 : 0; else if (kind === 2) on = rev ? 2 : 0; else on = turn === side && blink ? 3 : 0;
+    if (D && ((face > 0 && D[0] > .5) || (face < 0 && D[1] > .5))) on = 0;   // smashed
+    _lm.compose(_lv.set(x, y, z), face > 0 ? _lq.identity() : _ly, _ls.set(w, h, 1)); _lm.premultiply(W); LAMP.mesh.setMatrixAt(base + k, _lm);
+    _lc.copy(on ? LAMP_C[on === 4 ? 4 : on === 1 && kind === 1 ? 1 : on === 1 ? 0 : on === 2 ? 2 : 3] : LAMP_OFF).multiplyScalar(hdr); LAMP.mesh.setColorAt(base + k, _lc);
+    if (k < 4) { const gi = (c.slot * 4 + k) * 3, lit = kind === 0 ? on && night : on && night; _lpt.set(x, y, z + face * .12).applyMatrix4(W); LAMP.gpos[gi] = _lpt.x; LAMP.gpos[gi + 1] = lit ? _lpt.y : -999; LAMP.gpos[gi + 2] = _lpt.z;
+      const gc = kind === 0 ? [1.1, 1.0, .85] : brake ? [1.2, .05, .03] : [.45, .02, .01]; LAMP.gcol[gi] = gc[0] * hdr; LAMP.gcol[gi + 1] = gc[1] * hdr; LAMP.gcol[gi + 2] = gc[2] * hdr; } });
+  // a puff from the tailpipe when it pulls away hard (or, on a car driven elsewhere, when it is seen to)
+  if (run && vf < 9 && ((c.inp.thr > .7 && !c.kin) || c.dec > 2.6) && rand() < dt * 9) { const hw = c.spec.wid / 2, r = _lpt.set(-(hw - .42), c.spec.body.ride + .07, -c.spec.len / 2 - .05).applyMatrix4(W); FX.smoke(r.x, r.y, r.z, .28, false); }
+  LAMP.mesh.instanceMatrix.needsUpdate = true; LAMP.mesh.instanceColor.needsUpdate = true; LAMP.glare.geometry.attributes.position.needsUpdate = true; LAMP.glare.geometry.attributes.color.needsUpdate = true;
+}
+// --- the light from your own headlights (one spotlight, kept in the scene so turning it on and off never rebuilds a shader)
+const HEADLIGHT = new T.SpotLight(0xfff0dc, 0, 60, .5, .55, 1.4); HEADLIGHT.castShadow = false; scene.add(HEADLIGHT, HEADLIGHT.target);
+function headlightTick() {
+  const c = P.car, on = !!c && !c.spec.air && !c.wreck && ENV.night > .3 && GQ.env && !(c.dent && c.dent[0] > .5);
+  HEADLIGHT.visible = GQ.env > 0; if (!on) { HEADLIGHT.intensity = 0; return; }
+  const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), h = c.spec.len / 2; HEADLIGHT.position.set(c.x + fx * (h + .1), c.y + c.geo.belt - .25, c.z + fz * (h + .1)); HEADLIGHT.target.position.set(c.x + fx * (h + 22), c.y - 1.2, c.z + fz * (h + 22));
+  HEADLIGHT.target.updateMatrixWorld(); HEADLIGHT.intensity = 2.2 * clamp((ENV.night - .3) * 3, 0, 1);
+}
+// --- wheels near the camera: tyre, rim, disc (in the same unit space as wheelGeo: radius 1 across, axle along x, 1 wide)
+const WHEEL_D = (() => { const tire = new GeoBuf(), rim = new GeoBuf(), rub = hexCol(0x17181a), side = hexCol(0x222326), alloy = hexCol(0xb8bcc0), disc = hexCol(0x5a5c60), hub = hexCol(0x8c9094);
+  const prof = [[.64, -.36], [.78, -.47], [.93, -.47], [.99, -.4], [1, -.25], [1, .25], [.99, .4], [.93, .47], [.78, .47], [.64, .36]].map(p => new T.Vector2(p[0], p[1]));
+  const lg = new T.LatheGeometry(prof, 28); lg.rotateZ(-PI / 2); tire.geo(lg, null, rub); lg.dispose();
+  [-1, 1].forEach(s => { const r = new T.RingGeometry(.58, .66, 28); r.rotateY(s * PI / 2); r.translate(s * .37, 0, 0); tire.geo(r, null, side); r.dispose();   // the bead
+    const d = new T.CircleGeometry(.5, 24); d.rotateY(s * PI / 2); d.translate(s * .12, 0, 0); rim.geo(d, null, disc); d.dispose();                                    // brake disc
+    const lip = new T.CylinderGeometry(.62, .62, .06, 28, 1, true); lip.rotateZ(PI / 2); lip.translate(s * .33, 0, 0); rim.geo(lip, null, alloy); lip.dispose();        // rim lip
+    for (let k = 0; k < 5; k++) { const a = k / 5 * TAU, b = new T.BoxGeometry(.06, .5, .1); b.translate(0, .36, 0); b.rotateX(a); b.translate(s * .32, 0, 0); rim.geo(b, null, alloy); b.dispose(); }   // spokes
+    const hc = new T.CylinderGeometry(.16, .18, .08, 12); hc.rotateZ(PI / 2); hc.translate(s * .34, 0, 0); rim.geo(hc, null, hub); hc.dispose(); });
+  return { tire: tire.build(), rim: rim.build() }; })();
+const wheelNear = { tire: new T.InstancedMesh(WHEEL_D.tire, lam({}), CAR_MAX * 4), rim: new T.InstancedMesh(WHEEL_D.rim, lam({}), CAR_MAX * 4), pbr: [new T.MeshStandardMaterial({ vertexColors: true, roughness: .92, metalness: 0 }), new T.MeshStandardMaterial({ vertexColors: true, roughness: .28, metalness: .85, envMapIntensity: 1.1 })] };
+['tire', 'rim'].forEach(k => { const m = wheelNear[k]; m.castShadow = true; m.frustumCulled = false; for (let i = 0; i < CAR_MAX * 4; i++) m.setMatrixAt(i, ZERO_M); m.count = 0; scene.add(m); });
+// near wheels are packed into the front of the two meshes each frame (placeCar leaves their matrices on the car)
+const WNEAR = { list: [], frame: 0 };
+function flushWheels() { const L = WNEAR.list; let n = 0; for (const c of L) { if (c.gone) continue; for (let k = 0; k < 4; k++, n++) { wheelNear.tire.setMatrixAt(n, c.wmat[k]); wheelNear.rim.setMatrixAt(n, c.wmat[k]); } }
+  wheelNear.tire.count = wheelNear.rim.count = n; wheelNear.tire.instanceMatrix.needsUpdate = wheelNear.rim.instanceMatrix.needsUpdate = true; L.length = 0; WNEAR.frame++; }
+const wheelLow = [wheelNear.tire.material, wheelNear.rim.material];
+function wheelLook() { wheelNear.tire.material = GQ.env ? wheelNear.pbr[0] : wheelLow[0]; wheelNear.rim.material = GQ.env ? wheelNear.pbr[1] : wheelLow[1]; }
+// a car's wheels go to the near set or the far one; this says which
+function wheelsNear(c) { return GQ.tex > 0 && hyp(c.x - camera.position.x, c.z - camera.position.z) < (c.wnear ? 64 : 58); }
+// --- dents: per-car copy of the body, pushed in where it was hit. zone: 0 front, 1 back, 2 left, 3 right
+function dentCar(c, amount, hitN) {
+  if (c.spec.air || amount <= 0) return; const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw);
+  let zone; if (hitN) { const dx = -hitN[0], dz = -hitN[1], f = dx * fx + dz * fz, r = dx * rx + dz * rz; zone = Math.abs(f) >= Math.abs(r) ? (f > 0 ? 0 : 1) : (r > 0 ? 3 : 2); }
+  else zone = Math.floor(rng32(c.id * 977 + Math.round(c.hp))() * 4);   // no idea where it landed: the same guess on every machine
+  const D = c.dent || (c.dent = [0, 0, 0, 0]); D[zone] = Math.min(1, D[zone] + amount); c.dentAt = c.dentAt || [rand() * .6 - .3, rand() * .6 - .3]; dentShape(c);
+}
+function dentShape(c) {
+  const geo = c.geo, S = c.spec, hl = S.len / 2, hw = S.wid / 2, D = c.dent; if (!D) return;
+  if (!c.dentBase) { const g = geo.paint.clone(); c.pm.geometry = g; c.dentBase = Float32Array.from(g.attributes.position.array); }
+  const p = c.pm.geometry.attributes.position, b = c.dentBase, zc = c.dentAt[0] * hl;
+  for (let i = 0; i < p.count; i++) { let x = b[i * 3], y = b[i * 3 + 1], z = b[i * 3 + 2]; const n = .75 + .5 * ((Math.sin(i * 12.9898) * 43758.5453) % 1 + 1) % 1;
+    if (D[0] && z > hl - .95) { const t = (z - (hl - .95)) / .95; z -= D[0] * .3 * t * t * n; y -= D[0] * .07 * t * (y > S.body.belt - .2 ? 1 : 0); x *= 1 - D[0] * .05 * t; }
+    if (D[1] && z < -hl + .9) { const t = (-hl + .9 - z) / .9; z += D[1] * .26 * t * t * n; y -= D[1] * .05 * t * (y > S.body.belt - .2 ? 1 : 0); }
+    const bell = Math.exp(-Math.pow((z - zc) / 1.1, 2));
+    if (D[2] && x > hw - .4) x -= D[2] * .16 * ((x - (hw - .4)) / .4) * bell * n;
+    if (D[3] && x < -hw + .4) x += D[3] * .16 * ((-hw + .4 - x) / .4) * bell * n;
+    p.setXYZ(i, x, y, z); }
+  p.needsUpdate = true; c.pm.geometry.computeVertexNormals();
+}
+function undentCar(c) { if (!c.dentBase) return; c.pm.geometry.dispose(); c.pm.geometry = c.geo.paint; c.dentBase = null; c.dent = null; }
 
 /* =====================================================================
    8. STATE + COMBAT
@@ -3418,6 +3587,7 @@ function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
   if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
   if (c.plate) dmg *= [1, .67, .5, .35][c.plate] || .35;   // car-shop armor plating
+  if (dmg > c.spec.hp * .08 && !c.crashing) dentCar(c, dmg / c.spec.hp * 1.6, null);   // a blast or a knock felt on another machine: dents where the numbers suggest
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }
@@ -5448,8 +5618,8 @@ GAME.roadkill = (c, drv) => {
     SFX.crash(a.x, a.y, a.z, 6); c.vx *= .96; c.vz *= .96; });
 };
 function carAfterStep(c) {
-  if (c.crash > 4.5) { SFX.crash(c.x, c.y, c.z, c.crash); const dmg = (c.crash - 4.5) * 15, by = c.hitBy && c.hitBy.occ[0] ? c.hitBy.occ[0] : null;
-    if (AUTH()) damageCar(c, dmg, by); else if (c === P.car && P.seat === 0) NET.req('cd', c.id, Math.round(dmg));
+  if (c.crash > 4.5) { SFX.crash(c.x, c.y, c.z, c.crash); dentCar(c, (c.crash - 4.5) * .045, c.hitN); const dmg = (c.crash - 4.5) * 15, by = c.hitBy && c.hitBy.occ[0] ? c.hitBy.occ[0] : null;
+    c.crashing = true; if (AUTH()) damageCar(c, dmg, by); else if (c === P.car && P.seat === 0) NET.req('cd', c.id, Math.round(dmg)); c.crashing = false;
     if (c === P.car) { shake(c.crash * .045); if (c.crash > 15) hurtPlayer((c.crash - 15) * 3.5, null, 'car'); } }
   c.crash = 0; c.hitBy = null;
 }
@@ -6139,7 +6309,7 @@ function modItems(pg) {
   if (pg === 'paint') return (isCrew(P.team) ? [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]] : []).concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
     : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
   const out = [], mine = c.pv === P;
-  out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
+  out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; undentCar(c); if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
   out.push(page('Respray', 'paint'));
   for (const k of ['plate', 'tune', 'nos', 'grip']) { const u = UPG[k], lv = c[k] | 0;
     out.push(lv >= u.cost.length ? { label: u.name, sub: 'Maxed out', off: true, own: true } : { label: u.name + ' · level ' + (lv + 1), sub: u.say[lv], cost: u.cost[lv], act: () => { if (payCash(u.cost[lv])) { c[k] = lv + 1; modSync(c); SFX.buy(); banner(u.name, 'Level ' + c[k], 1.6, 'gold'); afterMod(c); } } }); }
@@ -7203,6 +7373,7 @@ function decCars(s, pk) {
     live[id] = 1; let c = carById(id);
     if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
     if (!c.mine && !c.vbufOf) snapPush(c.buf, air ? { x, y, z, yaw, vf, pitch: dive, roll } : { x, y, z, yaw, vf });
+    { const drop = c.hp / c.spec.hp - hp; if (drop > .08 && !c.mine) dentCar(c, drop * 1.6, null); else if (hp > .98 && c.dent) undentCar(c); }
     c.hp = hp * c.spec.hp; if ((fl & 1) && !c.wreck) { c.wreck = true; c.wreckT = 0; } c.burn = fl & 2 ? 1 : 0; if (!c.mine) { c.horn = fl & 4 ? 1 : 0; c.rslip = fl & 16 ? 7 : 0; } c.eng = !!(fl & 8);
     for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } }
     return len; };
@@ -7230,7 +7401,7 @@ NET.host = dt => {
       else if (k === 'cd' && c) damageCar(c, clamp(+q[3] || 0, 0, 600), null);
       else if (k === 'dk') { const dc = carById(q[2]); if (dc && dc.spec.air && dc.occ.includes(r)) GAME.ditch(dc); }
       else if (k === 'ad') GAME.airDeliver(r, CID[q[2] | 0], ALLPAINT[q[3] | 0]);
-      else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
+      else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; undentCar(c); }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && ALLPAINT[q[3] | 0] !== undefined && ALLPAINT[q[3] | 0] !== COP_PAINT) { setPaint(rc, ALLPAINT[q[3] | 0]); if (r.heat > 0 && r.evade) GAME.clearHeat(r); } }
       else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 3); rc.tune = clamp(q[4] | 0, 0, 3); rc.bp = q[5] ? 1 : 0; } }
       else if (k === 'pm') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop) rc.pv = r; }
@@ -7977,10 +8148,10 @@ function visuals(dt, now) {
   for (let i = 0; i < bots.length; i++) botVisual(bots[i], dt);
   for (const k in NET.remotes) remoteVisual(NET.remotes[k], dt);
   flushChars();
-  for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true;
+  for (let i = 0; i < cars.length; i++) updateCarVisual(cars[i], dt); wheelMesh.instanceMatrix.needsUpdate = true; flushWheels();
   for (let i = 0; i < pickups.length; i++) pickups[i].g.rotation.y += dt * 2;
   updateLife(dt); updateEventMarks(dt); careerTick(dt); heistVisuals(dt); airVisuals(dt); coopVisuals(dt); caseVisuals(dt);
-  updateProps(dt); signalsTick(); detailTick(); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
+  updateProps(dt); signalsTick(); detailTick(); headlightTick(); updateMarks(dt); updateTrain(dt); updateFx(dt); updateEngines(dt, G.state === 'menu' ? null : P.car); weatherFrame(dt); streetVisuals(dt);
   if (G.state !== 'menu') updateHud(dt);
 }
 let last = performance.now();
@@ -8003,7 +8174,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

@@ -23,7 +23,11 @@ function carGeo(type) {
   const bar = (buf, x, z0, y0, z1, y1, th, col) => { const len = hyp(z1 - z0, y1 - y0), g = new T.BoxGeometry(th, th * .9, len); g.rotateX(-Math.atan2(y1 - y0, z1 - z0)); g.translate(x, (y0 + y1) / 2, (z0 + z1) / 2); buf.geo(g, null, col); g.dispose(); };
   const bus = type === 'bus', wr = bus ? .5 : type === 'suv' || type === 'pickup' ? .4 : type === 'van' ? .37 : type === 'hatch' ? .31 : type === 'sport' ? .33 : .34;
   const nose = B.belt - .1, zc1 = hl - B.hood, deck = B.trunk > 0 ? B.belt - .03 : B.belt, zr0 = B.trunk > 0 ? -hl + B.trunk : B.bed ? -hl + B.bed : -hl + .07, zf = zc1 - B.rake, zr = zr0 + B.crake;
-  ext(P, [[-hl + .1, B.ride], [-hl, B.ride + .14], [-hl, deck - .1], [-hl + .08, deck], [zr0, B.belt], [zc1, B.belt], [hl - .14, nose], [hl, nose - .17], [hl, B.ride + .14], [hl - .1, B.ride]], S.wid, .05);
+  const axF = bus ? hl - 2.3 : hl - .86, axR = bus ? -hl + 2.7 : -hl + .9;
+  // the side profile, with an arch cut over each wheel (no taller than the waist allows)
+  const arch = z => { const R = Math.min(wr + .08, B.belt - .07 - wr), a0 = Math.asin(clamp((B.ride - wr) / R, -1, 1)), o = []; for (let k = 0; k <= 10; k++) { const a = a0 + (PI - 2 * a0) * k / 10; o.push([z + R * Math.cos(a), wr + R * Math.sin(a)]); } return o; };
+  ext(P, [[-hl + .1, B.ride], [-hl, B.ride + .14], [-hl, deck - .1], [-hl + .08, deck], [zr0, B.belt], [zc1, B.belt], [hl - .14, nose], [hl, nose - .17], [hl, B.ride + .14], [hl - .1, B.ride]].concat(arch(axF), arch(axR)), S.wid, .05);
+  [axF, axR].forEach(z => { const R = Math.min(wr + .08, B.belt - .07 - wr); M.box(-hw + .32, hw - .32, B.ride - .02, wr + R - .01, z - R, z + R, bl); });   // the wheel wells: dark inside
   ext(G, [[zr0, B.belt - .03], [zr, B.roof], [zf, B.roof], [zc1, B.belt - .03]], S.wid - .2, .015);
   P.box(-hw + .1, hw - .1, B.roof - .025, B.roof + .04, zr - .02, zf + .02);
   [-1, 1].forEach(s => { const x = s * (hw - .115); bar(P, x, zc1, B.belt, zf, B.roof, .075); bar(P, x, zr0, B.belt, zr, B.roof, .09); if (zf - zr > 1.5) P.box(x - .04, x + .04, B.belt, B.roof, (zf + zr) / 2 - .02, (zf + zr) / 2 + .07); });
@@ -34,15 +38,14 @@ function carGeo(type) {
   M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, hl - .08, hl + .09, dk); M.box(-hw + .02, hw - .02, B.ride + .04, B.ride + .3, -hl - .09, -hl + .08, dk);
   M.box(-.52, .52, nose - .33, nose - .13, hl - .02, hl + .035, bl); M.box(-.27, .27, B.ride + .33, B.ride + .47, -hl - .03, -hl + .02, hexCol(0xe8e4da));
   M.box(-hw + .16, hw - .16, B.ride + .06, B.belt - .28, zr0 - .1, zc1 + .1, bl);
-  const axF = bus ? hl - 2.3 : hl - .86, axR = bus ? -hl + 2.7 : -hl + .9;
   if (bus) {   // a band above the windows, pillars between them, the destination board, the doors on the kerb side
     const wht = hexCol(0xf2efe6); M.box(-hw - .005, hw + .005, 2.36, B.roof + .03, -hl + .08, hl - .3, wht);
     for (let z = -hl + 1.0; z < hl - 1.2; z += 1.42) [-1, 1].forEach(s => M.box(Math.min(s * (hw - .02), s * (hw + .012)), Math.max(s * (hw - .02), s * (hw + .012)), B.belt, 2.36, z - .05, z + .05, dk));
     L.box(-.85, .85, 2.48, 2.78, hl - .31, hl - .24, hexCol(0xffb43c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, hl - 2.25, hl - 1.05, hexCol(0x24303c)); M.box(hw - .01, hw + .015, B.ride + .1, 2.3, -.9, .3, hexCol(0x24303c)); }
-  [axF, axR].forEach(z => [-1, 1].forEach(s => M.box(Math.min(s * (hw - .03), s * (hw + .018)), Math.max(s * (hw - .03), s * (hw + .018)), B.ride - .03, wr * 2 - .04, z - wr - .05, z + wr + .05, bl)));
   [-1, 1].forEach(s => M.box(Math.min(s * hw, s * (hw + .17)), Math.max(s * hw, s * (hw + .17)), B.belt + .04, B.belt + .14, zc1 - .22, zc1 - .1, dk));
   [-1, 1].forEach(s => { L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), nose - .27, nose - .11, hl - .03, hl + .03, hexCol(0xfff2cc)); L.box(Math.min(s * (hw - .44), s * (hw - .08)), Math.max(s * (hw - .44), s * (hw - .08)), deck - .27, deck - .12, -hl - .03, -hl + .03, hexCol(0xd6231a)); });
-  return CAR_GEO[type] = Object.assign({ paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 }, bus ? { seats: [[-.72, hl - 1.25], [.72, hl - 2.6], [.72, .2], [.72, -2.2]], seatY: .78 } : {});
+  carInterior(M, S, B, hl, hw, zf, zr, zc1);   // seats, dashboard, steering wheel: 71-carlook.js
+  return CAR_GEO[type] = Object.assign({ paint: P.build(), trim: M.build(), glass: G.build(), lamp: L.build(), lamps: lampSpots(S, B), wr, axF, axR, seatY: Math.max(.02, B.belt - .8), belt: B.belt, roof: B.roof, ride: B.ride, zf, zr, zc1 }, bus ? { seats: [[-.72, hl - 1.25], [.72, hl - 2.6], [.72, .2], [.72, -2.2]], seatY: .78 } : {});
 }
 const SEATS = [[-.43, .12], [.43, .12], [-.43, -.82], [.43, -.82]];   // [across, along] from the centre: driver sits front left
 // a police car is an ordinary model in black with white doors and a light bar that flashes while its siren is on
@@ -68,7 +71,8 @@ function spawnCar(type, x, z, yaw, o) {
   cars.push(c); placeCar(c); return c;
 }
 function setPaint(c, hex) { if (hex === undefined || c.color === hex) return; c.color = hex; if (!c.wreck) c.pm.material = paintMat(hex); }
-function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true; carFree.push(c.slot); c.gone = true; }
+function removeCar(c) { const i = cars.indexOf(c); if (i < 0) return; cars.splice(i, 1); scene.remove(c.g); if (c.cone) heliUndress(c); for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); wheelMesh.instanceMatrix.needsUpdate = true;
+  lampsOff(c); undentCar(c); carFree.push(c.slot); c.gone = true; }
 // the pool is full and something that matters wants a car (a delivery, a job's van, the police): clear away a wreck, or a car
 // standing at its parking spot well away from everyone and out of their sight; the spot fills again later. Only on the machine
 // that runs the world: everyone else's cars are copies of its own.
@@ -84,8 +88,12 @@ const _cm = new T.Matrix4(), _wm = new T.Matrix4(), _wq = new T.Quaternion(), _w
 function placeCar(c) {
   const G = c.geo; c.g.position.set(c.x, c.y, c.z); c.g.rotation.set(0, c.yaw + PI, 0); c.body.rotation.set(c.dive, 0, c.roll); c.g.updateMatrixWorld(true);
   if (c.spec.air) return;   // skids, not wheels
-  const hw = c.spec.wid / 2 - .13;
-  for (let k = 0; k < 4; k++) { const front = k < 2, sd = k % 2 ? 1 : -1; _we.set(c.spin, front ? -c.steer * .5 : 0, 0); _wq.setFromEuler(_we); _wm.compose(_wv.set(sd * hw, G.wr, front ? G.axF : G.axR), _wq, _ws.set(.25, G.wr, G.wr)); _cm.multiplyMatrices(c.g.matrixWorld, _wm); wheelMesh.setMatrixAt(c.slot * 4 + k, _cm); }
+  const hw = c.spec.wid / 2 - .13, near = wheelsNear(c);
+  if (near !== !!c.wnear) { c.wnear = near; if (near) for (let k = 0; k < 4; k++) wheelMesh.setMatrixAt(c.slot * 4 + k, ZERO_M); }
+  if (near && !c.wmat) c.wmat = [0, 1, 2, 3].map(() => new T.Matrix4());
+  for (let k = 0; k < 4; k++) { const front = k < 2, sd = k % 2 ? 1 : -1; _we.set(c.spin, front ? -c.steer * .5 : 0, 0); _wq.setFromEuler(_we); _wm.compose(_wv.set(sd * hw, G.wr, front ? G.axF : G.axR), _wq, _ws.set(.25, G.wr, G.wr)); _cm.multiplyMatrices(c.g.matrixWorld, _wm);
+    if (near) c.wmat[k].copy(_cm); else wheelMesh.setMatrixAt(c.slot * 4 + k, _cm); }
+  if (near && c.wnF !== WNEAR.frame) { c.wnF = WNEAR.frame; WNEAR.list.push(c); }
 }
 const carFwd = c => [-Math.sin(c.yaw), -Math.cos(c.yaw)], carSpeed = c => hyp(c.vx, c.vz);
 function seatPos(c, k, out) { const s = (c.geo.seats || SEATS)[k], fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw); out.x = c.x + rx * s[0] + fx * s[1]; out.z = c.z + rz * s[0] + fz * s[1]; out.y = c.y + c.geo.seatY; return out; }
@@ -118,7 +126,7 @@ function stepCar(c, dt, inp) {
   for (let k = 0; k < 3; k++) { const o = (k - 1) * half, px = c.x + fx * o, pz = c.z + fz * o;
     carProps(c, px, pz, R, spd);
     if (pushOut(px, pz, R, c.y + .46, c.y + 1.3, 'p')) { c.x += COL.x - px; c.z += COL.z - pz; const nx = COL.nx, nz = COL.nz, vn = c.vx * nx + c.vz * nz;
-      if (vn < 0) { if (-vn > hit) hit = -vn; c.vx -= nx * vn * 1.22; c.vz -= nz * vn * 1.22; c.vx *= .97; c.vz *= .97; c.yawRate += (fz * o * nx - fx * o * nz) * -vn * .09; } } }
+      if (vn < 0) { if (-vn > hit) { hit = -vn; c.hitN = [nx, nz]; } c.vx -= nx * vn * 1.22; c.vz -= nz * vn * 1.22; c.vx *= .97; c.vz *= .97; c.yawRate += (fz * o * nx - fx * o * nz) * -vn * .09; } } }
   c.y = lerp(c.y, groundAt(c.x, c.z, c.y, 'p', .46), Math.min(1, dt * 14));
   c.spin += vf * dt / c.geo.wr; c.roll = lerp(c.roll, clamp(-c.yawRate * sp * .0045, -.07, .07), Math.min(1, dt * 6)); c.dive = lerp(c.dive, clamp((thr > 0 && vf >= 0 ? -.012 : thr < 0 && vf > 1 ? .03 : 0) * (sp > .5 || thr ? 1 : 0), -.03, .04), Math.min(1, dt * 5));
   if (hit > 0) c.crash = Math.max(c.crash, hit);
@@ -139,7 +147,7 @@ function carsCollide() {
         const jimp = -1.3 * vr / (1 / ma + 1 / mb);
         if (!a.kin) { a.vx += nx * jimp / ma; a.vz += nz * jimp / ma; a.yawRate += (afz * p * ha * nx - afx * p * ha * nz) * jimp / ma * .07; a.asleep = false; }
         if (!b.kin) { b.vx -= nx * jimp / mb; b.vz -= nz * jimp / mb; b.yawRate -= (bfz * q * hb * nx - bfx * q * hb * nz) * jimp / mb * .07; b.asleep = false; }
-        const imp = -vr; if (imp > a.crash) a.crash = imp; if (imp > b.crash) b.crash = imp; a.hitBy = b; b.hitBy = a;
+        const imp = -vr; if (imp > a.crash) { a.crash = imp; a.hitN = [nx, nz]; } if (imp > b.crash) { b.crash = imp; b.hitN = [-nx, -nz]; } a.hitBy = b; b.hitBy = a;
       } } }
 }
 // a walker against the cars: treat each car as a box turned with its heading
@@ -167,6 +175,7 @@ function rayCars(ox, oy, oz, dx, dy, dz, maxT, skip) {
 // what a car looks and sounds like from its state; runs for every car on every machine
 function updateCarVisual(c, dt) {
   placeCar(c); if (c.spec.air) { if (c.spec.air === 'plane') planeVisual(c, dt); else heliVisual(c, dt); return; }
+  carLamps(c, dt);
   const lit = ENV.night > .35 && !c.wreck && (c.occ[0] || c.ai || c.eng); if (c.bm.visible !== !!lit) c.bm.visible = !!lit;
   if (c.cop) { const ph = c.horn && !c.wreck ? Math.floor(G.time * 5.5 + c.id * .5) % 2 : -1; if (c.lph !== ph) { c.lph = ph; c.lb.forEach((L, k) => { const on = ph === k; L.m.material.color.setHex(on ? (k ? 0x5c98ff : 0xff4a4a) : (k ? 0x13224d : 0x4d1313)); L.s.visible = on; }); } if (c.wreck && c.dp.material !== wreckMat) c.dp.material = wreckMat; }
   if (c.wreck) { if (c.pm.material !== CARLOOK.wreck[GQ.env ? 1 : 0]) c.pm.material = CARLOOK.wreck[GQ.env ? 1 : 0]; c.smokeT -= dt; if (c.smokeT <= 0 && c.wreckT < 14) { c.smokeT = .18; FX.smoke(c.x, c.y + 1.1, c.z, 1.2, true); if (c.wreckT < 6) FX.fire(c.x, c.y + .9, c.z, 1.1); } return; }

@@ -104,6 +104,7 @@ function damageCar(c, dmg, src) {
   if (c.wreck) return; if (src && src.kind !== 'bot' && c.occ.some(o => o && o.kind !== 'bot' && o !== src)) return;   // players cannot wreck a car another player is in
   if (c.armored && !c.opened) { dmg *= .4; if (c.hp - dmg <= c.spec.hp * .35) { c.hp = Math.max(1, c.hp - dmg); if (src) c.lastHit = src; GAME.truckOpen(c, src); return; } }   // an armored truck gives up its cash before it gives up
   if (c.plate) dmg *= [1, .67, .5, .35][c.plate] || .35;   // car-shop armor plating
+  if (dmg > c.spec.hp * .08 && !c.crashing) dentCar(c, dmg / c.spec.hp * 1.6, null);   // a blast or a knock felt on another machine: dents where the numbers suggest
   c.hp -= dmg; if (src) c.lastHit = src; c.asleep = false;
   if (c.hp <= 0 && c.burn <= 0) { c.hp = 0; c.burn = 3 + rand() * 2.5; }
 }

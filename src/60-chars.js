@@ -14,6 +14,50 @@ charPart('beanie', bxg(.228, .13, .246, 0, .24, -.004), 1); charPart('hood', bxg
 charPart('uarm', bxg(.12, .3, .13, 0, -.15, 0), 2); charPart('farm', bxg(.1, .27, .11, 0, -.135, 0), 2); charPart('hand', bxg(.09, .1, .1, 0, -.32, 0), 2);
 charPart('thigh', bxg(.155, .44, .17, 0, -.22, 0), 2); charPart('shin', bxg(.13, .42, .145, 0, -.21, 0), 2); charPart('shoe', bxg(.135, .09, .27, 0, -.445, .05), 2);
 const HEADGEAR = ['cap', 'beanie', 'hood', 'hair'];
+// --- the same figure up close: rounded and tapered limbs, a jaw, a nose, ears, eyes and brows, hair that wraps the head, a sole on
+//     each shoe. Drawn for anyone within about 45 m when the textures setting is above Low; past that (and on Low) the boxes above.
+//     The vertex colours shade the features (dark eyes, brows) and multiply by each person's own colours.
+function rbox(w, h, d, r, seg, taper) {   // a box with its edges rounded to radius r; taper: [x, z] scale at the bottom, 1 at the top
+  const g = new T.BoxGeometry(w, h, d, seg[0], seg[1], seg[2]), p = g.attributes.position, n = g.attributes.normal, a = w / 2 - r, b = h / 2 - r, c = d / 2 - r;
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), qx = clamp(x, -a, a), qy = clamp(y, -b, b), qz = clamp(z, -c, c), dx = x - qx, dy = y - qy, dz = z - qz, l = Math.hypot(dx, dy, dz) || 1;
+    let X = qx + dx / l * r, Y = qy + dy / l * r, Z = qz + dz / l * r; if (taper) { const t = (Y + h / 2) / h; X *= lerp(taper[0], 1, t); Z *= lerp(taper[1], 1, t); }
+    p.setXYZ(i, X, Y, Z); n.setXYZ(i, dx / l, dy / l, dz / l); }
+  return g;
+}
+const CPD = {}, charMatD = [new T.MeshLambertMaterial({ vertexColors: true }), new T.MeshStandardMaterial({ vertexColors: true, roughness: .78, metalness: 0, envMapIntensity: .6 })];
+{ const W1 = [1, 1, 1], dk = [.06, .05, .05], brow = [.2, .18, .17], lip = [.6, .45, .43], band = [.82, .82, .82], sole = [.5, .5, .5];
+  const part = (name, per, fn) => { const b = new GeoBuf(); fn((g, x, y, z, col) => { g.translate(x, y, z); b.geo(g, null, col || W1); g.dispose(); }); const m = new T.InstancedMesh(b.build(), charMatD[0], CHAR_MAX * per);
+    m.castShadow = true; m.frustumCulled = false; m.userData.per = per; for (let i = 0; i < CHAR_MAX * per; i++) { m.setMatrixAt(i, ZERO_M); m.setColorAt(i, _wc.setHex(0xffffff)); } m.count = 0; scene.add(m); CPD[name] = m; };
+  part('pelvis', 1, put => put(rbox(.355, .21, .22, .07, [3, 2, 2]), 0, 0, 0));
+  part('chest', 1, put => put(rbox(.43, .5, .245, .085, [4, 5, 2], [.8, .85]), 0, .29, 0));
+  part('head', 1, put => { put(rbox(.2, .235, .215, .07, [4, 4, 4], [.8, .9]), 0, .135, 0); put(new T.CylinderGeometry(.05, .056, .1, 10, 1, true), 0, -.008, -.008);   // skull and jaw, neck
+    put(rbox(.034, .052, .036, .014, [1, 1, 1]), 0, .118, .108); put(rbox(.06, .014, .012, .005, [1, 1, 1]), 0, .084, .1, lip);                                      // nose, mouth
+    [-1, 1].forEach(sd => { put(rbox(.024, .056, .042, .011, [1, 1, 1]), sd * .1, .132, -.006); put(rbox(.032, .019, .012, .006, [1, 1, 1]), sd * .044, .148, .1, dk); put(rbox(.042, .012, .012, .005, [1, 1, 1]), sd * .044, .171, .1, brow); }); });   // ears, eyes, brows
+  part('hair', 1, put => { put(rbox(.222, .1, .238, .05, [3, 2, 3]), 0, .236, -.008); put(rbox(.216, .15, .095, .04, [3, 2, 1]), 0, .17, -.07); });
+  part('beanie', 1, put => { put(rbox(.232, .14, .252, .09, [3, 2, 3]), 0, .246, -.006); put(rbox(.238, .045, .258, .02, [3, 1, 3]), 0, .195, -.006, band); });
+  part('hood', 1, put => put(rbox(.272, .29, .205, .09, [3, 3, 2]), 0, .152, -.06));
+  part('cap', 1, put => { put(rbox(.228, .095, .242, .08, [3, 2, 3]), 0, .252, -.006); put(rbox(.2, .022, .135, .009, [2, 1, 2]), 0, .214, .168); });
+  part('mask', 1, put => put(rbox(.226, .11, .088, .035, [2, 2, 1]), 0, .07, .088));
+  part('uarm', 2, put => put(rbox(.122, .32, .132, .056, [2, 3, 2], [.84, .88]), 0, -.15, 0));
+  part('farm', 2, put => put(rbox(.102, .28, .112, .048, [2, 3, 2], [.8, .84]), 0, -.135, 0));
+  part('hand', 2, put => put(rbox(.086, .105, .096, .036, [2, 2, 2]), 0, -.318, .006));
+  part('thigh', 2, put => put(rbox(.162, .46, .176, .072, [2, 4, 2], [.76, .8]), 0, -.22, 0));
+  part('shin', 2, put => put(rbox(.132, .43, .142, .06, [2, 4, 2], [.74, .8]), 0, -.21, 0));
+  part('shoe', 2, put => { put(rbox(.132, .085, .28, .04, [2, 1, 3]), 0, -.438, .05); put(rbox(.138, .026, .29, .011, [2, 1, 3]), 0, -.477, .05, sole); }); }
+function charLook() { const m = charMatD[GQ.env ? 1 : 0]; for (const k in CPD) CPD[k].material = m; }
+// the near figures are packed into the front of each instanced mesh every frame, so only as many are drawn as there are people near
+const NEAR = { list: [], frame: 0 };
+function flushNear() {
+  const L = NEAR.list, n = L.length, col = (m, k, h) => m.setColorAt(k, _wc.setHex(h));
+  for (let k = 0; k < n; k++) { const c = L[k], r = c.rig, Lk = c.look;
+    CPD.pelvis.setMatrixAt(k, r.hips.matrixWorld); col(CPD.pelvis, k, Lk.pants); CPD.chest.setMatrixAt(k, r.torso.matrixWorld); col(CPD.chest, k, Lk.top); CPD.head.setMatrixAt(k, r.head.matrixWorld); col(CPD.head, k, Lk.skin);
+    HEADGEAR.forEach(g => { if (g === Lk.gear) { CPD[g].setMatrixAt(k, r.head.matrixWorld); col(CPD[g], k, Lk.gearCol); } else CPD[g].setMatrixAt(k, ZERO_M); });
+    if (Lk.mask) { CPD.mask.setMatrixAt(k, r.head.matrixWorld); col(CPD.mask, k, Lk.maskCol || 0); } else CPD.mask.setMatrixAt(k, ZERO_M);
+    for (let s = 0; s < 2; s++) { const j = k * 2 + s; CPD.uarm.setMatrixAt(j, r.sh[s].matrixWorld); col(CPD.uarm, j, Lk.top); CPD.farm.setMatrixAt(j, r.el[s].matrixWorld); col(CPD.farm, j, Lk.tee ? Lk.skin : Lk.top);
+      CPD.hand.setMatrixAt(j, r.el[s].matrixWorld); col(CPD.hand, j, Lk.skin); CPD.thigh.setMatrixAt(j, r.hip[s].matrixWorld); col(CPD.thigh, j, Lk.pants); CPD.shin.setMatrixAt(j, r.kn[s].matrixWorld); col(CPD.shin, j, Lk.shorts ? Lk.skin : Lk.pants); CPD.shoe.setMatrixAt(j, r.kn[s].matrixWorld); col(CPD.shoe, j, Lk.shoe); } }
+  for (const k in CPD) { const m = CPD[k]; m.count = n * m.userData.per; m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  L.length = 0; NEAR.frame++;
+}
 // guns, modelled in gun space: +z down the barrel, origin at the firing hand
 const GUN_GEO = {}, GUN_MUZ = {};
 { const st = hexCol(0x2a2d31), dk = hexCol(0x15171a), wd = hexCol(0x6a4528), pl = hexCol(0x3d4145), mk = (id, f, mz) => { const b = new GeoBuf(); f(b); GUN_GEO[id] = b.build(); GUN_MUZ[id] = mz; };
@@ -62,16 +106,17 @@ function makeRig() {
 }
 function setLook(c, L) {
   const i = c.idx, col = (m, k, h) => { m.setColorAt(k, _wc.setHex(h)); m.instanceColor.needsUpdate = true; };
-  c.look = L; col(CP.pelvis, i, L.pants); col(CP.chest, i, L.top); col(CP.head, i, L.skin);
-  HEADGEAR.forEach(g => { col(CP[g], i, L.gearCol); if (g !== L.gear) CP[g].setMatrixAt(i, ZERO_M); }); col(CP.mask, i, L.maskCol || 0); if (!L.mask) CP.mask.setMatrixAt(i, ZERO_M);
-  for (let k = 0; k < 2; k++) { const j = i * 2 + k; col(CP.uarm, j, L.top); col(CP.farm, j, L.tee ? L.skin : L.top); col(CP.hand, j, L.skin); col(CP.thigh, j, L.pants); col(CP.shin, j, L.shorts ? L.skin : L.pants); col(CP.shoe, j, L.shoe); }
+  c.look = L; [CP].forEach(P => { col(P.pelvis, i, L.pants); col(P.chest, i, L.top); col(P.head, i, L.skin);
+  HEADGEAR.forEach(g => { col(P[g], i, L.gearCol); if (g !== L.gear) P[g].setMatrixAt(i, ZERO_M); }); col(P.mask, i, L.maskCol || 0); if (!L.mask) P.mask.setMatrixAt(i, ZERO_M);
+  for (let k = 0; k < 2; k++) { const j = i * 2 + k; col(P.uarm, j, L.top); col(P.farm, j, L.tee ? L.skin : L.top); col(P.hand, j, L.skin); col(P.thigh, j, L.pants); col(P.shin, j, L.shorts ? L.skin : L.pants); col(P.shoe, j, L.shoe); } });
 }
 function makeChar(look) {
   if (!charFree.length) return null;
   const c = { idx: charFree.pop(), rig: makeRig(), ph: rand() * 6, amp: 0, aim: 0, hold: 0, fall: 0, sit: 0, gun: null, shown: true, muz: new T.Vector3(), kick: 0 };
   chars.push(c); setLook(c, look); return c;
 }
-function hideChar(c) { if (!c.shown) return; c.shown = false; const i = c.idx; for (const k in CP) { const m = CP[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } c.gun = null; }
+function zeroParts(P, i) { for (const k in P) { const m = P[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } }
+function hideChar(c) { if (!c.shown) return; c.shown = false; const i = c.idx; zeroParts(CP, i); c.gun = null; }
 function freeChar(c) { if (!c) return; c.shown = true; hideChar(c); const k = chars.indexOf(c); if (k >= 0) chars.splice(k, 1); charFree.push(c.idx); }
 const _mz = new T.Vector3();
 // What someone is doing when they are not walking, fighting or driving. The number travels with them between machines.
@@ -128,13 +173,16 @@ function poseChar(c, s, dt) {
   r.gun.position.set(H.g[0], H.g[1], H.g[2] - c.kick * .04); r.gun.rotation.y = H.g[3]; if (H.g2) { r.gun2.position.set(H.g2[0], H.g2[1], H.g2[2] - c.kick * .04); r.gun2.rotation.y = H.g2[3]; }
   // write the joints out to the instanced parts
   const i = c.idx; c.shown = true; r.root.updateMatrixWorld(true);
-  CP.pelvis.setMatrixAt(i, r.hips.matrixWorld); CP.chest.setMatrixAt(i, r.torso.matrixWorld); CP.head.setMatrixAt(i, r.head.matrixWorld); CP[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) CP.mask.setMatrixAt(i, r.head.matrixWorld);
-  for (let k = 0; k < 2; k++) { const j = i * 2 + k; CP.uarm.setMatrixAt(j, r.sh[k].matrixWorld); CP.farm.setMatrixAt(j, r.el[k].matrixWorld); CP.hand.setMatrixAt(j, r.el[k].matrixWorld); CP.thigh.setMatrixAt(j, r.hip[k].matrixWorld); CP.shin.setMatrixAt(j, r.kn[k].matrixWorld); CP.shoe.setMatrixAt(j, r.kn[k].matrixWorld); }
+  const dist = hyp(s.x - camera.position.x, s.z - camera.position.z), det = GQ.tex > 0 && dist < (c.det ? 48 : 42);   // near: the rounded figure
+  if (det !== !!c.det) { c.det = det; if (det) for (const k in CP) if (!k.startsWith('gun')) { const m = CP[k]; if (m.userData.per === 1) m.setMatrixAt(i, ZERO_M); else { m.setMatrixAt(i * 2, ZERO_M); m.setMatrixAt(i * 2 + 1, ZERO_M); } } }
+  if (det) { if (c.nearF !== NEAR.frame) { c.nearF = NEAR.frame; NEAR.list.push(c); } }   // drawn by flushNear
+  else { const P = CP; P.pelvis.setMatrixAt(i, r.hips.matrixWorld); P.chest.setMatrixAt(i, r.torso.matrixWorld); P.head.setMatrixAt(i, r.head.matrixWorld); P[c.look.gear].setMatrixAt(i, r.head.matrixWorld); if (c.look.mask) P.mask.setMatrixAt(i, r.head.matrixWorld);
+    for (let k = 0; k < 2; k++) { const j = i * 2 + k; P.uarm.setMatrixAt(j, r.sh[k].matrixWorld); P.farm.setMatrixAt(j, r.el[k].matrixWorld); P.hand.setMatrixAt(j, r.el[k].matrixWorld); P.thigh.setMatrixAt(j, r.hip[k].matrixWorld); P.shin.setMatrixAt(j, r.kn[k].matrixWorld); P.shoe.setMatrixAt(j, r.kn[k].matrixWorld); } }
   const g = armed && h > .5 ? s.wpn : null;
   if (c.gun !== g) { if (c.gun) GUNMESH[c.gun].setMatrixAt(i, ZERO_M); if (c.gun === 'glocks') GUN2.setMatrixAt(i, ZERO_M); c.gun = g; }
   if (g) { GUNMESH[g].setMatrixAt(i, r.gun.matrixWorld); c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun.matrixWorld); if (g === 'glocks') { GUN2.setMatrixAt(i, r.gun2.matrixWorld); if (c.flip) c.muz.set(0, .05, GUN_MUZ[g]).applyMatrix4(r.gun2.matrixWorld); } } else c.muz.set(s.x, s.y + 1.35, s.z);
 }
-function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; }
+function flushChars() { for (const k in CP) CP[k].instanceMatrix.needsUpdate = true; flushNear(); }
 
 // name tags over other players
 function nameTag(text, css, down, rank) {   // rank: drawn in a little badge before the name, the way online players show theirs

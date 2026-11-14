@@ -203,7 +203,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });

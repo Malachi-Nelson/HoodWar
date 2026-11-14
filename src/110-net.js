@@ -141,6 +141,7 @@ function decCars(s, pk) {
     live[id] = 1; let c = carById(id);
     if (!c) { c = spawnCar(CID[tn] || 'sedan', x, z, yaw, { id, color: ALLPAINT[ci] }); if (!c) return len; c.kin = true; c.y = y; if (air) { c.dive = dive; c.roll = roll; } } else if (!c.cop && ALLPAINT[ci] !== COP_PAINT) setPaint(c, ALLPAINT[ci]);
     if (!c.mine && !c.vbufOf) snapPush(c.buf, air ? { x, y, z, yaw, vf, pitch: dive, roll } : { x, y, z, yaw, vf });
+    { const drop = c.hp / c.spec.hp - hp; if (drop > .08 && !c.mine) dentCar(c, drop * 1.6, null); else if (hp > .98 && c.dent) undentCar(c); }
     c.hp = hp * c.spec.hp; if ((fl & 1) && !c.wreck) { c.wreck = true; c.wreckT = 0; } c.burn = fl & 2 ? 1 : 0; if (!c.mine) { c.horn = fl & 4 ? 1 : 0; c.rslip = fl & 16 ? 7 : 0; } c.eng = !!(fl & 8);
     for (let k = 0; k < 4; k++) { const ch = occ[k], was = c.occ[k]; if (ch === '-') c.occ[k] = null; else if (ch === '*') { if (!was || was.kind !== 'bot') c.occ[k] = null; } else { const a = GAME.unref('p' + parseInt(ch, 36)); c.occ[k] = a; if (a && a.kind === 'rp') { a.car = c; a.seat = k; } } }
     return len; };
@@ -168,7 +169,7 @@ NET.host = dt => {
       else if (k === 'cd' && c) damageCar(c, clamp(+q[3] || 0, 0, 600), null);
       else if (k === 'dk') { const dc = carById(q[2]); if (dc && dc.spec.air && dc.occ.includes(r)) GAME.ditch(dc); }
       else if (k === 'ad') GAME.airDeliver(r, CID[q[2] | 0], ALLPAINT[q[3] | 0]);
-      else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; }
+      else if (k === 'fx' && c) { c.hp = c.spec.hp; c.burn = 0; undentCar(c); }
       else if (k === 'rs') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop && ALLPAINT[q[3] | 0] !== undefined && ALLPAINT[q[3] | 0] !== COP_PAINT) { setPaint(rc, ALLPAINT[q[3] | 0]); if (r.heat > 0 && r.evade) GAME.clearHeat(r); } }
       else if (k === 'md') { const rc = carById(q[2]); if (rc && r.car === rc) { rc.plate = clamp(q[3] | 0, 0, 3); rc.tune = clamp(q[4] | 0, 0, 3); rc.bp = q[5] ? 1 : 0; } }
       else if (k === 'pm') { const rc = carById(q[2]); if (rc && r.car === rc && !rc.cop) rc.pv = r; }

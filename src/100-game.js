@@ -178,8 +178,8 @@ GAME.roadkill = (c, drv) => {
     SFX.crash(a.x, a.y, a.z, 6); c.vx *= .96; c.vz *= .96; });
 };
 function carAfterStep(c) {
-  if (c.crash > 4.5) { SFX.crash(c.x, c.y, c.z, c.crash); const dmg = (c.crash - 4.5) * 15, by = c.hitBy && c.hitBy.occ[0] ? c.hitBy.occ[0] : null;
-    if (AUTH()) damageCar(c, dmg, by); else if (c === P.car && P.seat === 0) NET.req('cd', c.id, Math.round(dmg));
+  if (c.crash > 4.5) { SFX.crash(c.x, c.y, c.z, c.crash); dentCar(c, (c.crash - 4.5) * .045, c.hitN); const dmg = (c.crash - 4.5) * 15, by = c.hitBy && c.hitBy.occ[0] ? c.hitBy.occ[0] : null;
+    c.crashing = true; if (AUTH()) damageCar(c, dmg, by); else if (c === P.car && P.seat === 0) NET.req('cd', c.id, Math.round(dmg)); c.crashing = false;
     if (c === P.car) { shake(c.crash * .045); if (c.crash > 15) hurtPlayer((c.crash - 15) * 3.5, null, 'car'); } }
   c.crash = 0; c.hitBy = null;
 }

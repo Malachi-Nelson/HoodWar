@@ -199,7 +199,7 @@ function modItems(pg) {
   if (pg === 'paint') return (isCrew(P.team) ? [[CREWS[P.team].name + ' colours', CREW_PAINT[P.team]]] : []).concat(PAINT_MENU).map(q => c.cop ? { label: q[0], sub: 'Not on a police car', off: true } : c.color === q[1] ? { label: q[0], sub: 'Already this colour', off: true, own: true }
     : { label: q[0], sub: P.heat > 0 ? (P.evade ? 'and the police lose you' : 'lose the police first: they can see you') : '', cost: 300, off: P.heat > 0 && !P.evade, act: () => modPaint(q[1]) }).concat([back()]);
   const out = [], mine = c.pv === P;
-  out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
+  out.push(c.hp < c.spec.hp - 20 ? { label: 'Repair', sub: 'The ' + c.spec.name + ' back to new', cost: 200, act: () => { if (payCash(200)) { c.hp = c.spec.hp; c.burn = 0; undentCar(c); if (!AUTH()) NET.req('fx', c.id); SFX.buy(); banner('Repaired', c.spec.name, 1.6); afterMod(c); } } } : { label: 'Repair', sub: 'Nothing to fix', off: true });
   out.push(page('Respray', 'paint'));
   for (const k of ['plate', 'tune', 'nos', 'grip']) { const u = UPG[k], lv = c[k] | 0;
     out.push(lv >= u.cost.length ? { label: u.name, sub: 'Maxed out', off: true, own: true } : { label: u.name + ' · level ' + (lv + 1), sub: u.say[lv], cost: u.cost[lv], act: () => { if (payCash(u.cost[lv])) { c[k] = lv + 1; modSync(c); SFX.buy(); banner(u.name, 'Level ' + c[k], 1.6, 'gold'); afterMod(c); } } }); }
