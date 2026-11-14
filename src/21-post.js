@@ -105,13 +105,13 @@ const aoBlurMat = new T.ShaderMaterial({
 // then colour grading, vignette and a little grain
 function gradeMat(o) {
   return new T.ShaderMaterial({
-    defines: Object.assign({}, o.ao ? { USE_AO: 1 } : {}, o.dof ? { USE_DOF: 1 } : {}, o.mblur ? { USE_MBLUR: 1 } : {}),
+    defines: Object.assign({}, o.ao ? { USE_AO: 1 } : {}, o.dof ? { USE_DOF: 1 } : {}, o.mblur ? { USE_MBLUR: 1 } : {}, o.ssr ? { USE_SSR: 1, SSR_STEPS: o.ssr > 1 ? 30 : 18, SSR_GROW: o.ssr > 1 ? '1.19' : '1.3' } : {}),
     uniforms: { tColor: { value: null }, tAO: { value: null }, tDepth: { value: null }, exposure: { value: 1 }, aoAmt: { value: .75 }, sat: { value: 1.06 }, contrast: { value: 1.06 }, tintLo: { value: new T.Vector3(1, 1, 1) },
       tintHi: { value: new T.Vector3(1, 1, 1) }, vign: { value: .32 }, grain: { value: .018 }, time: { value: 0 }, res: { value: new T.Vector2() }, near: { value: .12 }, far: { value: 1000 }, focus: { value: 6 },
-      projInv: { value: new T.Matrix4() }, viewInv: { value: new T.Matrix4() }, prevVP: { value: new T.Matrix4() }, mbAmt: { value: 1 } },
+      projInv: { value: new T.Matrix4() }, viewInv: { value: new T.Matrix4() }, prevVP: { value: new T.Matrix4() }, mbAmt: { value: 1 }, tDrops: { value: DROPS }, dropAmt: { value: 0 }, dropT: { value: 0 }, projMat: { value: new T.Matrix4() }, upV: { value: new T.Vector3() } },
     vertexShader: QUAD_VS,
     fragmentShader: `uniform sampler2D tColor; uniform sampler2D tAO; uniform sampler2D tDepth; uniform float exposure; uniform float aoAmt; uniform float sat; uniform float contrast; uniform vec3 tintLo; uniform vec3 tintHi;
-      uniform float vign; uniform float grain; uniform float time; uniform vec2 res; uniform float near; uniform float far; uniform float focus; uniform mat4 projInv; uniform mat4 viewInv; uniform mat4 prevVP; uniform float mbAmt; varying vec2 vUv;
+      uniform float vign; uniform float grain; uniform float time; uniform vec2 res; uniform float near; uniform float far; uniform float focus; uniform mat4 projInv; uniform mat4 viewInv; uniform mat4 prevVP; uniform float mbAmt; uniform sampler2D tDrops; uniform float dropAmt; uniform float dropT; uniform mat4 projMat; uniform vec3 upV; varying vec2 vUv;
       float lin(float d) { float z = d * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
       vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
       vec3 aces(vec3 c) { const mat3 I = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777)); const mat3 O = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
@@ -119,7 +119,22 @@ function gradeMat(o) {
       vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
       float hsh(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main() {
-        vec3 c = texture2D(tColor, vUv).rgb;
+        vec2 uv = vUv; float dm = 0.0;
+        if (dropAmt > 0.01) { vec2 duv = vec2(vUv.x * res.x / res.y, vUv.y) * 1.2 + vec2(0.0, dropT * 0.01); vec4 dr = texture2D(tDrops, duv); dm = dr.b * step(1.0 - dropAmt * 0.85, hsh(floor(duv * 5.0) + floor(dropT * 0.05))); uv += (dr.rg - 0.5) * 0.07 * dm; }   // rain on the lens
+        vec3 c = texture2D(tColor, uv).rgb * (1.0 + 0.06 * dm);
+        #ifdef USE_SSR
+        // wet ground mirrors the street: the ground writes how much it mirrors into alpha; trace the reflected ray through the depth
+        { float m = 1.0 - texture2D(tColor, vUv).a; if (m > 0.02) { float d0 = texture2D(tDepth, vUv).x; vec4 vp = projInv * vec4(vUv * 2.0 - 1.0, d0 * 2.0 - 1.0, 1.0); vec3 P = vp.xyz / vp.w, V = normalize(P), N = normalize(upV), R = reflect(V, N);
+          float F = 0.05 + 0.95 * pow(1.0 - max(dot(-V, N), 0.0), 5.0), t = 0.2, tp = 0.0, hit = 0.0; vec2 huv = vec2(0.0); float jit = hsh(gl_FragCoord.xy + time) * 0.24 + 0.88;
+          for (int i = 0; i < SSR_STEPS; i++) { vec3 Q = P + R * t * jit; vec4 cp = projMat * vec4(Q, 1.0); if (cp.w <= 0.0) break; vec2 su = cp.xy / cp.w * 0.5 + 0.5; if (su.x < 0.0 || su.x > 1.0 || su.y < 0.0 || su.y > 1.0) break;
+            float sd = texture2D(tDepth, su).x; if (sd < 0.99999) { vec4 sv = projInv * vec4(su * 2.0 - 1.0, sd * 2.0 - 1.0, 1.0); float sz = sv.z / sv.w;
+              if (Q.z < sz && sz - Q.z < 0.5 + t * 0.15) { float a = tp, b = t; for (int r = 0; r < 4; r++) { float mid = (a + b) * 0.5; vec3 Qm = P + R * mid * jit; vec4 cm = projMat * vec4(Qm, 1.0); vec2 um = cm.xy / cm.w * 0.5 + 0.5; vec4 smv = projInv * vec4(um * 2.0 - 1.0, texture2D(tDepth, um).x * 2.0 - 1.0, 1.0);
+                  if (Qm.z < smv.z / smv.w) b = mid; else a = mid; } vec3 Qb = P + R * b * jit; vec4 cb = projMat * vec4(Qb, 1.0); huv = cb.xy / cb.w * 0.5 + 0.5; hit = 1.0; break; } }
+            tp = t; t *= SSR_GROW; }
+          if (hit > 0.0) { vec2 e = smoothstep(0.0, 0.1, huv) * smoothstep(0.0, 0.1, 1.0 - huv); float rgh = 1.0 - smoothstep(0.35, 0.8, m);   // the rough wet road smears it down the screen, a puddle is a mirror
+            vec3 rc = (texture2D(tColor, huv).rgb + texture2D(tColor, huv + vec2(0.0, 0.012 * rgh)).rgb + texture2D(tColor, huv - vec2(0.0, 0.012 * rgh)).rgb) / 3.0;
+            c = mix(c, rc, clamp(m * F * e.x * e.y * 1.25, 0.0, 0.9)); } } }
+        #endif
         #ifdef USE_MBLUR
         { float d = texture2D(tDepth, vUv).x; if (d < 0.99999 && lin(d) > 7.0) { vec4 v = projInv * vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); v /= v.w; vec4 w = viewInv * v; vec4 pp = prevVP * w; vec2 puv = pp.xy / pp.w * 0.5 + 0.5;
           vec2 vel = clamp((vUv - puv) * mbAmt, -0.03, 0.03); if (dot(vel, vel) > 1e-7) { vec3 acc = c; for (int i = 1; i < 8; i++) acc += texture2D(tColor, vUv - vel * (float(i) / 7.0 - 0.5)).rgb; c = acc / 8.0; } } }
@@ -161,8 +176,9 @@ function buildPost() {
   POST.scene = new T.WebGLRenderTarget(w, h, opt); POST.scene.depthTexture = new T.DepthTexture(w, h); POST.scene.depthTexture.type = renderer.capabilities.isWebGL2 || renderer.extensions.get('WEBGL_depth_texture') ? T.UnsignedIntType : T.UnsignedShortType;
   if (GQ.ao) { const k = GQ.ao === 2 ? 1 : .5, o2 = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false }; POST.ao = new T.WebGLRenderTarget(Math.max(2, w * k | 0), Math.max(2, h * k | 0), o2); POST.ao2 = POST.ao.clone(); }
   if (GQ.aa) POST.ldr = new T.WebGLRenderTarget(w, h, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false });
-  if (GQ.bloom) { POST.bloom = new T.UnrealBloomPass(new T.Vector2(w, h), .55, .5, 2.5); [POST.bloom.renderTargetBright].concat(POST.bloom.renderTargetsHorizontal, POST.bloom.renderTargetsVertical).forEach(rt => { rt.texture.type = HDR_TYPE; }); }
-  POST.grade = gradeMat({ ao: !!GQ.ao, dof: !!GQ.dof, mblur: !!GQ.mblur }); POST.first = true;
+  if (GQ.bloom) { POST.bloom = new T.UnrealBloomPass(new T.Vector2(w, h), .55, .5, 2.5); [POST.bloom.renderTargetBright].concat(POST.bloom.renderTargetsHorizontal, POST.bloom.renderTargetsVertical).forEach(rt => { rt.texture.type = HDR_TYPE; });
+    const mc = POST.bloom.materialCopy; mc.blending = T.CustomBlending; mc.blendEquation = T.AddEquation; mc.blendSrc = T.SrcAlphaFactor; mc.blendDst = T.OneFactor; mc.blendSrcAlpha = T.ZeroFactor; mc.blendDstAlpha = T.OneFactor; }   // add light, keep the mirror mask in alpha
+  POST.grade = gradeMat({ ao: !!GQ.ao, dof: !!GQ.dof, mblur: !!GQ.mblur, ssr: GQ.ssr | 0 }); POST.first = true;
 }
 function quad(mat, target) { POST.quad.material = mat; renderer.setRenderTarget(target); renderer.render(POST.quadScene, POST.cam); }
 // one frame, whatever the settings. The first-person gun goes on last, straight to the screen.
@@ -175,6 +191,7 @@ function drawFrame() {
     if (POST.ao) { const a = aoMat.uniforms; a.tDepth.value = POST.scene.depthTexture; a.res.value.set(POST.w, POST.h); a.projInv.value.copy(pi); a.projScale.value = camera.projectionMatrix.elements[5] * .5; a.aspect.value = camera.aspect; quad(aoMat, POST.ao);
       const b = aoBlurMat.uniforms; b.tAO.value = POST.ao.texture; b.tDepth.value = POST.scene.depthTexture; b.res.value.set(POST.ao.width, POST.ao.height); b.near.value = camera.near; b.far.value = camera.far; quad(aoBlurMat, POST.ao2); U.tAO.value = POST.ao2.texture; }
     if (POST.bloom) { POST.bloom.threshold = POST.bthr; POST.bloom.strength = POST.bstr; POST.bloom.render(renderer, null, POST.scene, 0, false); }
+    if (GQ.ssr) { U.projInv.value.copy(pi); U.projMat.value.copy(camera.projectionMatrix); U.upV.value.set(0, 1, 0).transformDirection(camera.matrixWorldInverse); }
     U.tColor.value = POST.scene.texture; U.tDepth.value = POST.scene.depthTexture; U.exposure.value = POST.exp; U.res.value.set(POST.w, POST.h); U.time.value = G.time; U.near.value = camera.near; U.far.value = camera.far;
     if (GQ.mblur || GQ.dof) { U.projInv.value.copy(pi); U.viewInv.value.copy(camera.matrixWorld); POST.vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); U.prevVP.value.copy(POST.first ? POST.vp : POST.prevVP); POST.prevVP.copy(POST.vp); POST.first = false;
       U.focus.value = Math.max(2, hyp(camera.position.x - P.x, camera.position.y - P.y - 1.2, camera.position.z - P.z)); }
@@ -203,7 +220,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); puddleMats(); swayMats(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
@@ -214,10 +231,10 @@ function applyQuality(save) {
 function setPreset(p, save) { if (GQ_PRESETS[p]) Object.assign(GQ, GQ_PRESETS[p]); GQ.preset = p; applyQuality(save); }
 const SHADOW = { tex: 190 / 2048 };
 // --- the settings menu: the preset, and every setting by hand behind Advanced
-const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur']];
+const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr']];
 function gqUi() {
   const sel = $('set-gfx'); if (sel) sel.value = GQ.preset;
-  GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa'); });
+  GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa' || q[0] === 'ssr'); });
 }
 if ($('set-gfx')) $('set-gfx').addEventListener('change', e => { const v = e.target.value; if (v === 'custom') { GQ.preset = 'custom'; applyQuality(true); } else setPreset(v, true); GFX.auto = true; });
 GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', () => { GQ[q[0]] = +el.value; GQ.preset = 'custom'; applyQuality(true); GFX.auto = true; }); });

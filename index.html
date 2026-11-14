@@ -402,7 +402,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
       <p class="note" id="touch-help" hidden>Touch: left thumb on the stick moves (push all the way to sprint), drag anywhere on the right to look. FIRE shoots, and dragging it aims while it fires. ADS aims down the sights (tap on, tap off, or hold: your pick below). USE gets in cars, opens shops and robs tills; tap a prompt to do the same. In a car the stick steers and drives. In a helicopter the stick flies it, UP and DOWN set your height, FIRE works the nose guns and ROCKETS fires from the pods. MAP and TURF open the map and the turf board; PHONE calls your homies, the mechanic, the fixer or someone with work. Move buttons also changes what any button does, hides the ones you never use and adds buttons of your own. A controller works too.</p>
       <div class="row" id="row-touch" hidden><label for="set-touch">Touch controls</label><select id="set-touch"><option value="auto">Auto</option><option value="on">On</option><option value="off">Off</option></select><label for="set-tsens">Look speed</label><input type="range" id="set-tsens" min="0.3" max="3" step="0.1" value="1" aria-label="Look speed"><label for="set-assist">Aim help</label><select id="set-assist"><option value="1">On</option><option value="0">Off</option></select><label for="set-float">Stick</label><select id="set-float"><option value="1">Floating</option><option value="0">Fixed</option></select><label for="set-tads">ADS button</label><select id="set-tads"><option value="toggle">Tap on, tap off</option><option value="hold">Hold</option></select><button class="btn sm" id="te-open" type="button">Move buttons</button><button class="btn sm" id="fs-btn" type="button" hidden>Full screen</button></div>
       <div class="row"><label for="set-view">View</label><select id="set-view"><option value="3">Third person</option><option value="1">First person</option></select><label for="set-gfx">Graphics</label><select id="set-gfx"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="ultra">Ultra</option><option value="custom">Custom</option></select><button class="btn sm" id="gq-more" type="button">Advanced</button><button class="btn sm" id="ctl-open" type="button">Controls</button></div>
-      <div class="row gq" id="gq-adv" hidden><label>Resolution <select id="gq-res"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><label>Shadows <select id="gq-shadow"><option value="0">Off</option><option value="1">Low</option><option value="2">High</option><option value="3">Ultra</option></select></label><label>Textures <select id="gq-tex"><option value="0">Low</option><option value="1">Medium</option><option value="2">High</option></select></label><label>View distance <select id="gq-view"><option value="0">Near</option><option value="1">Medium</option><option value="2">Far</option><option value="3">Max</option></select></label><label>Reflections <select id="gq-env"><option value="0">Off</option><option value="1">On</option></select></label><label>Post-processing <select id="gq-post"><option value="0">Off</option><option value="1">On</option></select></label><label>Anti-aliasing <select id="gq-aa"><option value="0">Off</option><option value="1">FXAA</option></select></label><label>Ambient occlusion <select id="gq-ao"><option value="0">Off</option><option value="1">Half</option><option value="2">Full</option></select></label><label>Bloom <select id="gq-bloom"><option value="0">Off</option><option value="1">On</option></select></label><label>Depth of field <select id="gq-dof"><option value="0">Off</option><option value="1">On</option></select></label><label>Motion blur <select id="gq-mblur"><option value="0">Off</option><option value="1">On</option></select></label></div>
+      <div class="row gq" id="gq-adv" hidden><label>Resolution <select id="gq-res"><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5">150%</option><option value="2">200%</option></select></label><label>Shadows <select id="gq-shadow"><option value="0">Off</option><option value="1">Low</option><option value="2">High</option><option value="3">Ultra</option></select></label><label>Textures <select id="gq-tex"><option value="0">Low</option><option value="1">Medium</option><option value="2">High</option></select></label><label>View distance <select id="gq-view"><option value="0">Near</option><option value="1">Medium</option><option value="2">Far</option><option value="3">Max</option></select></label><label>Reflections <select id="gq-env"><option value="0">Off</option><option value="1">On</option></select></label><label>Post-processing <select id="gq-post"><option value="0">Off</option><option value="1">On</option></select></label><label>Anti-aliasing <select id="gq-aa"><option value="0">Off</option><option value="1">FXAA</option></select></label><label>Ambient occlusion <select id="gq-ao"><option value="0">Off</option><option value="1">Half</option><option value="2">Full</option></select></label><label>Street reflections <select id="gq-ssr"><option value="0">Off</option><option value="1">On</option><option value="2">Fine</option></select></label><label>Bloom <select id="gq-bloom"><option value="0">Off</option><option value="1">On</option></select></label><label>Depth of field <select id="gq-dof"><option value="0">Off</option><option value="1">On</option></select></label><label>Motion blur <select id="gq-mblur"><option value="0">Off</option><option value="1">On</option></select></label></div>
       <div class="row" id="row-save"><span class="status" id="save-line">Progress is kept in this browser.</span><button class="btn sm" id="sv-copy" type="button">Copy save code</button><button class="btn sm" id="sv-load" type="button">Load save code</button><button class="btn sm" id="sv-reset" type="button">Start over</button></div>
       <p class="note" id="o-note">Keyboard and mouse, or touch on a phone or tablet. Esc pauses. The ` key opens the dev menu. Cash, guns, rank, businesses, your car and your turf are saved as you play, and your turf and businesses keep earning while you are away. A player's headshot kills in one shot. Multiplayer: one player opens a lobby, the others join and ready up, and the leader starts the session; anyone who arrives later joins it where it stands. Everyone plays on the leader's crew, and players cannot hurt each other. Multiplayer runs through a free public relay: everyone on the plain link shares one public room, and Make a private room gives you a link for just your group.</p>
     </div>
@@ -420,7 +420,7 @@ body.touch #dead-big{font-size:clamp(44px,14vmin,90px)}
    Every version also posts a small note of which version it is, so a player on an old page can be told to reload.
    The game talks to this exactly as it talks to Claude's own shared room, so the same game code runs in both places. */
 (() => {
-  const BUILD = 'build 14 Nov 13:52 UTC', PROTO = 'v10';
+  const BUILD = 'build 14 Nov 14:02 UTC', PROTO = 'v10';
   const SERVERS = window.MQ_SERVERS || ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
   const LINKS = Math.min(2, SERVERS.length);   // relays in use at once
   const STALE = 7000;                          // a player no relay has heard from for this long has gone
@@ -758,10 +758,10 @@ catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so th
 //     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
 //     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
 const GQ_PRESETS = {
-  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0 },
-  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0 },
-  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0 },
-  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2 },
 };
 const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
 { let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}
@@ -1047,13 +1047,13 @@ const aoBlurMat = new T.ShaderMaterial({
 // then colour grading, vignette and a little grain
 function gradeMat(o) {
   return new T.ShaderMaterial({
-    defines: Object.assign({}, o.ao ? { USE_AO: 1 } : {}, o.dof ? { USE_DOF: 1 } : {}, o.mblur ? { USE_MBLUR: 1 } : {}),
+    defines: Object.assign({}, o.ao ? { USE_AO: 1 } : {}, o.dof ? { USE_DOF: 1 } : {}, o.mblur ? { USE_MBLUR: 1 } : {}, o.ssr ? { USE_SSR: 1, SSR_STEPS: o.ssr > 1 ? 30 : 18, SSR_GROW: o.ssr > 1 ? '1.19' : '1.3' } : {}),
     uniforms: { tColor: { value: null }, tAO: { value: null }, tDepth: { value: null }, exposure: { value: 1 }, aoAmt: { value: .75 }, sat: { value: 1.06 }, contrast: { value: 1.06 }, tintLo: { value: new T.Vector3(1, 1, 1) },
       tintHi: { value: new T.Vector3(1, 1, 1) }, vign: { value: .32 }, grain: { value: .018 }, time: { value: 0 }, res: { value: new T.Vector2() }, near: { value: .12 }, far: { value: 1000 }, focus: { value: 6 },
-      projInv: { value: new T.Matrix4() }, viewInv: { value: new T.Matrix4() }, prevVP: { value: new T.Matrix4() }, mbAmt: { value: 1 } },
+      projInv: { value: new T.Matrix4() }, viewInv: { value: new T.Matrix4() }, prevVP: { value: new T.Matrix4() }, mbAmt: { value: 1 }, tDrops: { value: DROPS }, dropAmt: { value: 0 }, dropT: { value: 0 }, projMat: { value: new T.Matrix4() }, upV: { value: new T.Vector3() } },
     vertexShader: QUAD_VS,
     fragmentShader: `uniform sampler2D tColor; uniform sampler2D tAO; uniform sampler2D tDepth; uniform float exposure; uniform float aoAmt; uniform float sat; uniform float contrast; uniform vec3 tintLo; uniform vec3 tintHi;
-      uniform float vign; uniform float grain; uniform float time; uniform vec2 res; uniform float near; uniform float far; uniform float focus; uniform mat4 projInv; uniform mat4 viewInv; uniform mat4 prevVP; uniform float mbAmt; varying vec2 vUv;
+      uniform float vign; uniform float grain; uniform float time; uniform vec2 res; uniform float near; uniform float far; uniform float focus; uniform mat4 projInv; uniform mat4 viewInv; uniform mat4 prevVP; uniform float mbAmt; uniform sampler2D tDrops; uniform float dropAmt; uniform float dropT; uniform mat4 projMat; uniform vec3 upV; varying vec2 vUv;
       float lin(float d) { float z = d * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
       vec3 RRTAndODTFit(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
       vec3 aces(vec3 c) { const mat3 I = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777)); const mat3 O = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
@@ -1061,7 +1061,22 @@ function gradeMat(o) {
       vec3 toSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(0.0031308, c)); }
       float hsh(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
       void main() {
-        vec3 c = texture2D(tColor, vUv).rgb;
+        vec2 uv = vUv; float dm = 0.0;
+        if (dropAmt > 0.01) { vec2 duv = vec2(vUv.x * res.x / res.y, vUv.y) * 1.2 + vec2(0.0, dropT * 0.01); vec4 dr = texture2D(tDrops, duv); dm = dr.b * step(1.0 - dropAmt * 0.85, hsh(floor(duv * 5.0) + floor(dropT * 0.05))); uv += (dr.rg - 0.5) * 0.07 * dm; }   // rain on the lens
+        vec3 c = texture2D(tColor, uv).rgb * (1.0 + 0.06 * dm);
+        #ifdef USE_SSR
+        // wet ground mirrors the street: the ground writes how much it mirrors into alpha; trace the reflected ray through the depth
+        { float m = 1.0 - texture2D(tColor, vUv).a; if (m > 0.02) { float d0 = texture2D(tDepth, vUv).x; vec4 vp = projInv * vec4(vUv * 2.0 - 1.0, d0 * 2.0 - 1.0, 1.0); vec3 P = vp.xyz / vp.w, V = normalize(P), N = normalize(upV), R = reflect(V, N);
+          float F = 0.05 + 0.95 * pow(1.0 - max(dot(-V, N), 0.0), 5.0), t = 0.2, tp = 0.0, hit = 0.0; vec2 huv = vec2(0.0); float jit = hsh(gl_FragCoord.xy + time) * 0.24 + 0.88;
+          for (int i = 0; i < SSR_STEPS; i++) { vec3 Q = P + R * t * jit; vec4 cp = projMat * vec4(Q, 1.0); if (cp.w <= 0.0) break; vec2 su = cp.xy / cp.w * 0.5 + 0.5; if (su.x < 0.0 || su.x > 1.0 || su.y < 0.0 || su.y > 1.0) break;
+            float sd = texture2D(tDepth, su).x; if (sd < 0.99999) { vec4 sv = projInv * vec4(su * 2.0 - 1.0, sd * 2.0 - 1.0, 1.0); float sz = sv.z / sv.w;
+              if (Q.z < sz && sz - Q.z < 0.5 + t * 0.15) { float a = tp, b = t; for (int r = 0; r < 4; r++) { float mid = (a + b) * 0.5; vec3 Qm = P + R * mid * jit; vec4 cm = projMat * vec4(Qm, 1.0); vec2 um = cm.xy / cm.w * 0.5 + 0.5; vec4 smv = projInv * vec4(um * 2.0 - 1.0, texture2D(tDepth, um).x * 2.0 - 1.0, 1.0);
+                  if (Qm.z < smv.z / smv.w) b = mid; else a = mid; } vec3 Qb = P + R * b * jit; vec4 cb = projMat * vec4(Qb, 1.0); huv = cb.xy / cb.w * 0.5 + 0.5; hit = 1.0; break; } }
+            tp = t; t *= SSR_GROW; }
+          if (hit > 0.0) { vec2 e = smoothstep(0.0, 0.1, huv) * smoothstep(0.0, 0.1, 1.0 - huv); float rgh = 1.0 - smoothstep(0.35, 0.8, m);   // the rough wet road smears it down the screen, a puddle is a mirror
+            vec3 rc = (texture2D(tColor, huv).rgb + texture2D(tColor, huv + vec2(0.0, 0.012 * rgh)).rgb + texture2D(tColor, huv - vec2(0.0, 0.012 * rgh)).rgb) / 3.0;
+            c = mix(c, rc, clamp(m * F * e.x * e.y * 1.25, 0.0, 0.9)); } } }
+        #endif
         #ifdef USE_MBLUR
         { float d = texture2D(tDepth, vUv).x; if (d < 0.99999 && lin(d) > 7.0) { vec4 v = projInv * vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0); v /= v.w; vec4 w = viewInv * v; vec4 pp = prevVP * w; vec2 puv = pp.xy / pp.w * 0.5 + 0.5;
           vec2 vel = clamp((vUv - puv) * mbAmt, -0.03, 0.03); if (dot(vel, vel) > 1e-7) { vec3 acc = c; for (int i = 1; i < 8; i++) acc += texture2D(tColor, vUv - vel * (float(i) / 7.0 - 0.5)).rgb; c = acc / 8.0; } } }
@@ -1103,8 +1118,9 @@ function buildPost() {
   POST.scene = new T.WebGLRenderTarget(w, h, opt); POST.scene.depthTexture = new T.DepthTexture(w, h); POST.scene.depthTexture.type = renderer.capabilities.isWebGL2 || renderer.extensions.get('WEBGL_depth_texture') ? T.UnsignedIntType : T.UnsignedShortType;
   if (GQ.ao) { const k = GQ.ao === 2 ? 1 : .5, o2 = { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false }; POST.ao = new T.WebGLRenderTarget(Math.max(2, w * k | 0), Math.max(2, h * k | 0), o2); POST.ao2 = POST.ao.clone(); }
   if (GQ.aa) POST.ldr = new T.WebGLRenderTarget(w, h, { minFilter: T.LinearFilter, magFilter: T.LinearFilter, format: T.RGBAFormat, depthBuffer: false, stencilBuffer: false });
-  if (GQ.bloom) { POST.bloom = new T.UnrealBloomPass(new T.Vector2(w, h), .55, .5, 2.5); [POST.bloom.renderTargetBright].concat(POST.bloom.renderTargetsHorizontal, POST.bloom.renderTargetsVertical).forEach(rt => { rt.texture.type = HDR_TYPE; }); }
-  POST.grade = gradeMat({ ao: !!GQ.ao, dof: !!GQ.dof, mblur: !!GQ.mblur }); POST.first = true;
+  if (GQ.bloom) { POST.bloom = new T.UnrealBloomPass(new T.Vector2(w, h), .55, .5, 2.5); [POST.bloom.renderTargetBright].concat(POST.bloom.renderTargetsHorizontal, POST.bloom.renderTargetsVertical).forEach(rt => { rt.texture.type = HDR_TYPE; });
+    const mc = POST.bloom.materialCopy; mc.blending = T.CustomBlending; mc.blendEquation = T.AddEquation; mc.blendSrc = T.SrcAlphaFactor; mc.blendDst = T.OneFactor; mc.blendSrcAlpha = T.ZeroFactor; mc.blendDstAlpha = T.OneFactor; }   // add light, keep the mirror mask in alpha
+  POST.grade = gradeMat({ ao: !!GQ.ao, dof: !!GQ.dof, mblur: !!GQ.mblur, ssr: GQ.ssr | 0 }); POST.first = true;
 }
 function quad(mat, target) { POST.quad.material = mat; renderer.setRenderTarget(target); renderer.render(POST.quadScene, POST.cam); }
 // one frame, whatever the settings. The first-person gun goes on last, straight to the screen.
@@ -1117,6 +1133,7 @@ function drawFrame() {
     if (POST.ao) { const a = aoMat.uniforms; a.tDepth.value = POST.scene.depthTexture; a.res.value.set(POST.w, POST.h); a.projInv.value.copy(pi); a.projScale.value = camera.projectionMatrix.elements[5] * .5; a.aspect.value = camera.aspect; quad(aoMat, POST.ao);
       const b = aoBlurMat.uniforms; b.tAO.value = POST.ao.texture; b.tDepth.value = POST.scene.depthTexture; b.res.value.set(POST.ao.width, POST.ao.height); b.near.value = camera.near; b.far.value = camera.far; quad(aoBlurMat, POST.ao2); U.tAO.value = POST.ao2.texture; }
     if (POST.bloom) { POST.bloom.threshold = POST.bthr; POST.bloom.strength = POST.bstr; POST.bloom.render(renderer, null, POST.scene, 0, false); }
+    if (GQ.ssr) { U.projInv.value.copy(pi); U.projMat.value.copy(camera.projectionMatrix); U.upV.value.set(0, 1, 0).transformDirection(camera.matrixWorldInverse); }
     U.tColor.value = POST.scene.texture; U.tDepth.value = POST.scene.depthTexture; U.exposure.value = POST.exp; U.res.value.set(POST.w, POST.h); U.time.value = G.time; U.near.value = camera.near; U.far.value = camera.far;
     if (GQ.mblur || GQ.dof) { U.projInv.value.copy(pi); U.viewInv.value.copy(camera.matrixWorld); POST.vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); U.prevVP.value.copy(POST.first ? POST.vp : POST.prevVP); POST.prevVP.copy(POST.vp); POST.first = false;
       U.focus.value = Math.max(2, hyp(camera.position.x - P.x, camera.position.y - P.y - 1.2, camera.position.z - P.z)); }
@@ -1145,7 +1162,7 @@ function applyQuality(save) {
   renderer.shadowMap.needsUpdate = true;
   anisoAll([1, 4, Math.min(8, renderer.capabilities.getMaxAnisotropy())][GQ.tex]);
   VIEW.far = [450, 700, 1000, 1500][GQ.view]; camera.far = VIEW.far + 300; camera.updateProjectionMatrix(); skyDome.scale.setScalar((camera.far * .92) / 1800);
-  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
+  applySurfaces(GQ.tex > 0 ? 1 : 0); makePBR(); puddleMats(); swayMats(); setStaticPBR(!!GQ.env); carLook(); charLook(); wheelLook(); waterLook();
   renderer.toneMapping = GQ.post ? T.NoToneMapping : T.ACESFilmicToneMapping;
   buildPost(); refreshEnv(true); if (!GQ.env) scene.environment = null;
   scene.traverse(o => { if (o.material) [].concat(o.material).forEach(m => m.needsUpdate = true); }); ENVM.scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
@@ -1156,10 +1173,10 @@ function applyQuality(save) {
 function setPreset(p, save) { if (GQ_PRESETS[p]) Object.assign(GQ, GQ_PRESETS[p]); GQ.preset = p; applyQuality(save); }
 const SHADOW = { tex: 190 / 2048 };
 // --- the settings menu: the preset, and every setting by hand behind Advanced
-const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur']];
+const GQ_UI = [['res', 'gq-res'], ['shadow', 'gq-shadow'], ['tex', 'gq-tex'], ['view', 'gq-view'], ['aa', 'gq-aa'], ['env', 'gq-env'], ['ao', 'gq-ao'], ['post', 'gq-post'], ['bloom', 'gq-bloom'], ['dof', 'gq-dof'], ['mblur', 'gq-mblur'], ['ssr', 'gq-ssr']];
 function gqUi() {
   const sel = $('set-gfx'); if (sel) sel.value = GQ.preset;
-  GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa'); });
+  GQ_UI.forEach(q => { const el = $(q[1]); if (!el) return; el.value = String(GQ[q[0]]); el.disabled = !GQ.post && (q[0] === 'ao' || q[0] === 'bloom' || q[0] === 'dof' || q[0] === 'mblur' || q[0] === 'aa' || q[0] === 'ssr'); });
 }
 if ($('set-gfx')) $('set-gfx').addEventListener('change', e => { const v = e.target.value; if (v === 'custom') { GQ.preset = 'custom'; applyQuality(true); } else setPreset(v, true); GFX.auto = true; });
 GQ_UI.forEach(q => { const el = $(q[1]); if (el) el.addEventListener('change', () => { GQ[q[0]] = +el.value; GQ.preset = 'custom'; applyQuality(true); GFX.auto = true; }); });
@@ -1469,12 +1486,13 @@ function prop(type, x, z, y) {
   const box = solid(x - r, x + r, y, y + h, z - r, z + r, { a: false, s: type === 'bin', n: false });
   PROPS.push({ type, x, z, y, box, down: 0, yaw: 0, i: PROPS.length }); if (type === 'lamp') LAMPS.push(PROPS[PROPS.length - 1]);
 }
+defMat('foliage', lam({}), 1, 1); PBR_OF.foliage = [.86, 0];   // tree crowns on their own, so the wind can move them (98.5-wet.js)
 function tree(x, z, s, y) {
   y = y === undefined ? CURB : y; s = s || 1; const h = 2.6 * s + W() * 1.2, g1 = hexCol(pick(W, [0x3f6b34, 0x4d7a3a, 0x58813c, 0x3a5f30])), tr = hexCol(0x4a3a2a);
   addBox(x - .2, x + .2, y, y + h + .4, z - .2, z + .2, 'flat', { col: tr, a: false, n: false });
   const ico = new T.IcosahedronGeometry(1, 1), m = new T.Matrix4();
-  m.compose(new T.Vector3(x, y + h + 1.2 * s, z), new T.Quaternion().setFromEuler(new T.Euler(W() * 3, W() * 3, 0)), new T.Vector3(1.9 * s, 1.5 * s, 1.9 * s)); SB('flat').geo(ico, m, g1);
-  m.compose(new T.Vector3(x + (W() - .5) * s, y + h + 2.3 * s, z + (W() - .5) * s), new T.Quaternion(), new T.Vector3(1.3 * s, 1.1 * s, 1.3 * s)); SB('flat').geo(ico, m, [g1[0] * 1.12, g1[1] * 1.12, g1[2] * 1.05]); ico.dispose();
+  m.compose(new T.Vector3(x, y + h + 1.2 * s, z), new T.Quaternion().setFromEuler(new T.Euler(W() * 3, W() * 3, 0)), new T.Vector3(1.9 * s, 1.5 * s, 1.9 * s)); SB('foliage').geo(ico, m, g1);
+  m.compose(new T.Vector3(x + (W() - .5) * s, y + h + 2.3 * s, z + (W() - .5) * s), new T.Quaternion(), new T.Vector3(1.3 * s, 1.1 * s, 1.3 * s)); SB('foliage').geo(ico, m, [g1[0] * 1.12, g1[1] * 1.12, g1[2] * 1.05]); ico.dispose();
   PATCH.push([x - 1.6 * s, z - 1.6 * s, x + 1.6 * s, z + 1.6 * s, 'tree']);
 }
 function fence(x0, z0, x1, z1, h, kind, y) {   // chain-link stops people and cars, not bullets or sight
@@ -3147,7 +3165,7 @@ function updatePSys(sys, dt) {
   const L = sys.items; let n = 0;
   for (let i = 0; i < L.length; i++) { const p = L[i]; p.t += dt; if (p.t >= p.life) continue;
     p.vy -= p.grav * dt; if (p.drag) { const k = Math.max(0, 1 - p.drag * dt); p.vx *= k; p.vy *= k; p.vz *= k; }
-    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav > 4 && p.y < .03) { p.y = .03; p.vy *= -.3; p.vx *= .6; p.vz *= .6; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav <= 0) { p.x += WINDV.x * dt; p.z += WINDV.z * dt; }   // smoke and steam go with the wind if (p.grav > 4 && p.y < .03) { p.y = .03; p.vy *= -.3; p.vx *= .6; p.vz *= .6; }
     const k = p.t / p.life; sys.pos[n * 3] = p.x; sys.pos[n * 3 + 1] = p.y; sys.pos[n * 3 + 2] = p.z; sys.col[n * 4] = p.r; sys.col[n * 4 + 1] = p.g; sys.col[n * 4 + 2] = p.b; sys.col[n * 4 + 3] = p.a0 * (1 - k) * Math.min(1, p.t * 30); sys.siz[n] = lerp(p.s0, p.s1, k);
     if (n !== i) L[n] = p; n++; }
   L.length = n; sys.g.setDrawRange(0, n); sys.g.attributes.position.needsUpdate = true; sys.g.attributes.pcolor.needsUpdate = true; sys.g.attributes.psize.needsUpdate = true;
@@ -5285,7 +5303,8 @@ const umbOf = b => WX.rain > .3 && (b.id * 7919) % 100 < 55;          // who car
 // --- turning toward it: about twenty seconds to change, the roads take a while to get wet and longer to dry
 function weatherTick(dt) {
   const m = WX_MIX[WX.k], k = Math.min(1, dt / 20);
-  WX.cloud += (m[0] - WX.cloud) * k; WX.rain += (m[1] - WX.rain) * k * (m[1] < WX.rain ? 1.5 : 1); WX.fog += (m[2] - WX.fog) * k; WX.wind += (m[3] - WX.wind) * k;
+  const rt = m[1] * (WX.k === 2 ? .4 + .6 * rainSwell() : 1);   // a spell of rain swells and eases (98.5-wet.js)
+  WX.cloud += (m[0] - WX.cloud) * k; WX.rain += (rt - WX.rain) * k * (rt < WX.rain ? 1.5 : 1); WX.fog += (m[2] - WX.fog) * k; WX.wind += (m[3] - WX.wind) * k;
   WX.wet = clamp(WX.wet + (WX.rain > .15 ? dt / 30 * WX.rain : -dt / 160), 0, 1);
   if (WX.k !== WX.seen && G.state === 'playing') { if (WX.seen !== undefined && G.time > 5) note(WX_SAY[WX.k], 'c'); WX.seen = WX.k; }
   if (WX.k === 3 && WX.rain > .6) { WX.boltT -= dt; if (WX.boltT <= 0) { WX.boltT = 6 + rand() * 16; bolt(); } }
@@ -5360,7 +5379,105 @@ function weatherFrame(dt) {
     u.uCol.value.setRGB(lerp(.78, .5, ENV.night), lerp(.82, .56, ENV.night), lerp(.9, .66, ENV.night)); u.uOp.value = lerp(.38, .26, ENV.night) + WX.flash * .3; }
   if (WX.flash > 0 || WX.lit) { const k = WX.flash; hemi.intensity = WXL.hemi + k * .95; scene.fog.color.copy(WXL.fog).lerp(_wf.setRGB(.62, .66, .8), k * .35); SKY.top.copy(WXL.top).lerp(_wf.setRGB(.5, .55, .72), k * .5); SKY.hor.copy(WXL.hor).lerp(_wf.setRGB(.6, .64, .8), k * .4); WX.lit = k > 0; }
   if (WX.boltOn > 0) { WX.boltOn -= dt; boltSp.material.opacity = WX.boltOn > .12 ? 1 : (G.time * 30 % 2 < 1 ? .9 : .2); if (WX.boltOn <= 0) boltSp.visible = false; }
-  umbrellas(); rainSound();
+  umbrellas(); rainSound(); wetFrame(dt);
+}
+
+/* =====================================================================
+   10e. WET WEATHER UP CLOSE — what 98-weather.js left to the imagination.
+        · Rain that comes and goes: inside a spell of rain it swells from a drizzle to a downpour and eases off again, on a clock
+          every machine shares, so everyone gets the same shower. Storms flicker inside the clouds between the strikes.
+        · Puddles: the low spots of each road, lot and pavement (marked in the blue of their roughness maps, 22-surfaces.js) fill
+          as the ground soaks, lie flat and mirror-smooth, darken, and ring with ripples while it rains (Medium and up).
+        · Splashes: drops bursting on the ground all round you in the rain; spray thrown up behind cars on a wet road.
+        · Drops on the lens in the rain when you are out in it (Medium and up).
+        · Wind: trees sway with it, smoke and steam drift with it, the rain slants with it.
+   ===================================================================== */
+const WETU = { uWet: { value: 0 }, uRain: { value: 0 }, uRT: { value: 0 } }, PUDDLE_KEYS = ['asphalt', 'lot', 'walk', 'plaza'];
+const PUDDLE_FRAG = `
+float pud = 0.0;
+#ifdef USE_ROUGHNESSMAP
+  pud = smoothstep(0.22, 0.7, texelRoughness.b) * smoothstep(0.25, 0.9, uWet);
+#endif
+roughnessFactor = mix(roughnessFactor, 0.04, pud);
+diffuseColor.rgb *= 1.0 - 0.38 * pud;
+float mirror = clamp(pud * 0.95 + uWet * 0.2 * (1.0 - pud), 0.0, 1.0);`;
+const RIPPLE_FRAG = `
+#ifdef USE_NORMALMAP
+  normal = normalize(mix(normal, geometryNormal, pud));
+  if (pud > 0.01 && uRain > 0.02) { vec2 rg = vec2(0.0);
+    for (int k = 0; k < 2; k++) { vec2 p = vUv * (52.0 + float(k) * 21.0) + float(k) * 7.31, cell = floor(p), f = fract(p) - 0.5; float h = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+      f -= (vec2(fract(h * 13.7), fract(h * 71.3)) - 0.5) * 0.5; float ph = fract(uRT * (0.9 + h * 0.6) + h), d = length(f), w = d - ph * 0.45;
+      rg += f / max(d, 1e-3) * sin(w * 55.0) * exp(-w * w * 700.0) * (1.0 - ph) * step(h, 0.35 + uRain * 0.6); }
+    normal = perturbNormal2Arb(-vViewPosition, normal, normalize(vec3(rg * 0.55 * pud * uRain, 1.0)), faceDirection); }
+#endif`;
+function puddleCompile(sh, r) {
+  T.Material.prototype.onBeforeCompile.call(this, sh, r); Object.assign(sh.uniforms, WETU);
+  sh.fragmentShader = 'uniform float uWet; uniform float uRain; uniform float uRT;\n' + sh.fragmentShader.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>' + PUDDLE_FRAG).replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>' + RIPPLE_FRAG)
+    .replace('#include <tonemapping_fragment>', 'gl_FragColor.a = 1.0 - mirror;\n#include <tonemapping_fragment>');   // read by the street reflections (21-post.js)
+}
+function puddleMats() { PUDDLE_KEYS.forEach(k => { const M = MATS[k]; if (M && M.pbr && M.pbr.isMeshStandardMaterial && M.pbr.onBeforeCompile !== puddleCompile) { M.pbr.onBeforeCompile = puddleCompile; M.pbr.needsUpdate = true; } }); }
+// --- trees in the wind: their crowns are their own material (40-world.js), bent by a gust that travels across the city
+const WINDU = { uT: { value: 0 }, uW: { value: 0 } };
+const SWAY_VERT = `
+{ float hgt = clamp((transformed.y - 2.2) / 4.0, 0.0, 1.0), ph = uT * 1.6 + transformed.x * 0.21 + transformed.z * 0.17, gust = 0.6 + 0.4 * sin(uT * 0.45 + transformed.x * 0.02);
+  float s = (sin(ph) * 0.7 + sin(ph * 2.3 + 1.7) * 0.3) * uW * gust * hgt; transformed.x += s * 0.32 + uW * hgt * 0.12; transformed.z += s * 0.2 + uW * hgt * 0.08; }`;
+function swayCompile(sh, r) { T.Material.prototype.onBeforeCompile.call(this, sh, r); Object.assign(sh.uniforms, WINDU); sh.vertexShader = 'uniform float uT; uniform float uW;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>' + SWAY_VERT); }
+const swayDepth = new T.MeshDepthMaterial({ depthPacking: T.RGBADepthPacking }); swayDepth.onBeforeCompile = swayCompile;
+function swayMats() { const M = MATS.foliage; if (!M) return; [M.low || M.mat, M.pbr].forEach(m => { if (m && m.onBeforeCompile !== swayCompile) { m.onBeforeCompile = swayCompile; m.needsUpdate = true; } });
+  staticMeshes.forEach(s => { if (s.userData.key === 'foliage') s.customDepthMaterial = swayDepth; }); }
+// --- rain through the day: how hard it is coming down right now, inside the rain the world is set to (the same on every machine)
+function rainSwell() { const t = G.tod * 100 / 60; return .5 + .5 * Math.sin(t * .9 + Math.sin(t * .37) * 2.1); }   // 0..1, a minute or two per swell
+// --- splashes: drops bursting on whatever is underfoot, all round the camera; drawn on the card from a birth time each
+const SPL_N = 260, SPLASH = { i: 0, acc: 0 };
+const splashMat = new T.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uCol: { value: new T.Color(.8, .84, .9) } },
+  vertexShader: `attribute vec4 at; uniform float uTime; varying float vA; varying vec2 vQ;
+    void main() { float age = uTime - at.w, k = clamp(age / 0.32, 0.0, 1.0); vA = (1.0 - k) * step(0.0, age) * step(age, 0.32); vQ = position.xy;
+      vec4 mv = viewMatrix * vec4(at.xyz, 1.0); mv.xy += position.xy * vec2(0.03 + k * 0.1, 0.03 + k * 0.07) + vec2(0.0, 0.02 + k * 0.05); gl_Position = projectionMatrix * mv; }`,
+  // a crown: a thin rim low down and a few droplets thrown up from it
+  fragmentShader: `uniform vec3 uCol; varying float vA; varying vec2 vQ; void main() { vec2 q = vQ; float rim = smoothstep(0.25, 0.0, abs(length(vec2(q.x, (q.y + 0.55) * 2.2)) - 0.8)) * step(q.y, -0.3);
+    float drops = 0.0; for (int i = 0; i < 4; i++) { float fi = float(i), x = -0.75 + fi * 0.5; drops += smoothstep(0.16, 0.0, length(q - vec2(x, 0.1 + 0.35 * sin(fi * 2.1)))); }
+    float a = vA * clamp(rim + drops * 0.8, 0.0, 1.0); if (a < 0.01) discard; gl_FragColor = vec4(uCol, a * 0.42); }`,
+  transparent: true, depthWrite: false, fog: true,
+});
+splashMat.fog = false;
+const splashMesh = (() => { const g = new T.InstancedBufferGeometry(), q = new T.PlaneGeometry(2, 2); g.index = q.index; g.setAttribute('position', q.attributes.position); g.setAttribute('at', new T.InstancedBufferAttribute(new Float32Array(SPL_N * 4).fill(-99), 4)); g.instanceCount = SPL_N;
+  const m = new T.Mesh(g, splashMat); m.frustumCulled = false; m.renderOrder = 4; m.visible = false; scene.add(m); return m; })();
+function splashTick(dt) {
+  const on = WX.rain > .05 && G.state !== 'menu' && GQ.tex > 0; splashMesh.visible = on; if (!on) return; const t = G.time % 600, at = splashMesh.geometry.attributes.at;
+  splashMat.uniforms.uTime.value = t; splashMat.uniforms.uCol.value.setRGB(lerp(.85, .55, ENV.night), lerp(.88, .58, ENV.night), lerp(.94, .66, ENV.night));
+  SPLASH.acc += dt * WX.rain * 700; const cx = camera.position.x, cz = camera.position.z, cy = camera.position.y;
+  while (SPLASH.acc >= 1) { SPLASH.acc--; const a = rand() * TAU, d = 1.5 + Math.sqrt(rand()) * 24, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, y = groundAt(x, z, Math.max(cy, 3) + 40, 'p');
+    if (y < -5) continue; const i = SPLASH.i = (SPLASH.i + 1) % SPL_N; at.array[i * 4] = x; at.array[i * 4 + 1] = y + .02; at.array[i * 4 + 2] = z; at.array[i * 4 + 3] = t + rand() * .05; }
+  at.needsUpdate = true;
+}
+// --- spray off the tyres of anything moving fast on a wet road
+function sprayTick(dt) {
+  if (WX.wet < .35 || G.state === 'menu') return; const k = (WX.wet - .35) * 1.5;
+  for (let i = 0; i < cars.length; i++) { const c = cars[i]; if (c.spec.air || c.wreck) continue; const sp = hyp(c.vx, c.vz); if (sp < 7 || hyp(c.x - camera.position.x, c.z - camera.position.z) > 80) continue;
+    if (rand() > dt * sp * 1.6 * k) continue; const fx = -Math.sin(c.yaw), fz = -Math.cos(c.yaw), rx = Math.cos(c.yaw), rz = -Math.sin(c.yaw), s = rand() < .5 ? -1 : 1, b = c.spec.len / 2 - .7, w = c.spec.wid / 2 - .15;
+    spawnP(PS, c.x - fx * b + rx * s * w, c.y + .25, c.z - fz * b + rz * s * w, -c.vx * .18 + rs(.6), .5 + rand() * .8, -c.vz * .18 + rs(.6), .5 + rand() * .4, .4, 1.6 + sp * .03, .82, .84, .88, .2, 1.2, 1.2); }
+}
+// --- drops on the lens: a sheet of them (offsets in red and green, the drop itself in blue) that slides down slowly
+const DROPS = (() => { const S = 512, R = rng32(5150), d = new Float32Array(S * S * 3);
+  for (let k = 0; k < 120; k++) { const cx = R() * S, cy = R() * S, r = 3 + R() * R() * 16, sy = 1 + R() * .5;
+    for (let y = Math.floor(cy - r * sy) - 1; y <= cy + r * sy + 1; y++) for (let x = Math.floor(cx - r) - 1; x <= cx + r + 1; x++) { const dx = (x - cx) / r, dy = (y - cy) / (r * sy), q = dx * dx + dy * dy; if (q > 1) continue;
+      const i = (((y + S) % S) * S + ((x + S) % S)) * 3, h = Math.sqrt(1 - q); d[i] = dx * h; d[i + 1] = -dy * h; d[i + 2] = Math.max(d[i + 2], smoothDrop(q)); } }
+  function smoothDrop(q) { return q < .8 ? 1 : (1 - q) / .2; }
+  return pixTex(S, a => { for (let i = 0; i < S * S; i++) { a[i * 4] = (d[i * 3] * .5 + .5) * 255; a[i * 4 + 1] = (d[i * 3 + 1] * .5 + .5) * 255; a[i * 4 + 2] = d[i * 3 + 2] * 255; a[i * 4 + 3] = 255; } }, true); })();
+const LENS = { amt: 0 };
+function lensTick(dt) {   // out in the rain (not in a car, not under the camera's own roof) the drops gather; they clear in a few seconds when it stops
+  const under = !!P.car && !P.car.spec.air || G.state === 'menu', want = WX.rain > .25 && !under ? clamp((WX.rain - .25) * 1.6, 0, 1) : 0;
+  LENS.amt = lerp(LENS.amt, want, Math.min(1, dt * (want > LENS.amt ? .35 : .8))); const U = POST.grade && POST.grade.uniforms; if (U && U.dropAmt) { U.dropAmt.value = LENS.amt; U.dropT.value = G.time % 1000; }
+}
+// --- wind for everything that drifts (65-fx.js reads WINDV)
+const WINDV = { x: 0, z: 0 };
+// --- every frame
+function wetFrame(dt) {
+  const sw = WX.k === 2 ? rainSwell() : 1; WETU.uWet.value = WX.wet; WETU.uRain.value = WX.rain; WETU.uRT.value = G.time % 1000;
+  WINDU.uT.value = G.time % 1000; WINDU.uW.value = WX.wind; WINDV.x = Math.cos(.7) * WX.wind * 2.6; WINDV.z = Math.sin(.7) * WX.wind * 2.6;
+  if (WX.k === 3 && WX.rain > .5 && rand() < dt * .35 && WX.flash < .05) WX.flash = .18 + rand() * .2;   // lightning inside the cloud, no bolt
+  splashTick(dt); sprayTick(dt); lensTick(dt); WX.swell = sw;
 }
 
 /* =====================================================================
@@ -8174,7 +8291,7 @@ function bgTick() { if (!document.hidden || !NET.mode) return; const now = perfo
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { last = performance.now(); return; } saveGame(); if (!NET.mode) return; bgLast = performance.now(); if (!bgWorker) { try { bgWorker = new Worker(URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 50)'], { type: 'application/javascript' }))); bgWorker.onmessage = bgTick; } catch (e) {} } });
 window.addEventListener('pagehide', saveGame);
 resize(); applyQuality(false); resize(); wearCrew(P.team); startAttract(); NET.connect(); CLOUD.init(); saveLine();
-if (TEST) window.__pc = { dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
+if (TEST) window.__pc = { rainSwell, puddleCompile, swayCompile, LENS, splashMesh, WETU, dentCar, undentCar, LAMP, HEADLIGHT, wheelNear, turnAhead, carLamps, CPD, DETAIL, detailTick, SIG_AT, dressCity, tileNoise, fbmTile, SURF_SETS, facadeRelief, normalTex, applySurfaces, SURF, SIGNALS, SIG_LAMPS, signalAhead, signalPhase, sigClock, BLDS, SIGNS, WIRES, staticMeshes, carInReach, dogOf, tillOpen, EV_START, NAVOK, CARTS, FOOD, foodPrompt, DICE, diceSpots, diceTick, dicePrompt, diceRoll, dicers, pursePrompt, streetEvents, dogMesh, umbOf, ROBS, BUS, BUS_STOPS, BUS_ROUTE, busService, busNextStop, busOffer, isBus, busDoor, POI, LANE, lanePoint, stepCar, MATS, hemi, sun, weatherAuth, WX, applyWeather, weatherTick, rainMesh, umbMesh, umbOf, bolt, rainMat, boltSp, RWY, PLANE_STANDS, stepPlane, isPlane, airItems, AIR_SHOP, casePrompt, CASES, OFFERS, TEXTS, labItems, dealItems, labTick, buyUp, buySups, hireDealer, dealersSell, offerTo, answerOffer, sendText, labCap, unitVal, FENCE, removeCar, BK2, CARGO, JOBS, PREPS, EVTS, jobItems, startJob, startPrep, bankPrompt, prepMask, getaway, inBank, PINGS, pingHere, canGoDown, goDown, revivePrompt, mateSpawn, DOWN, coopVisuals, BK, BP, CTL, ACTS, ctlIndex, pollPad, PAD, keyName, capOf, tSelect, TACT, isHeld, hostile, damageBot, payHour, hurtPlayer, drawBoard, SIDE, TEAM_CIV, TEAM_COP, pushOutTest: (x, z) => pushOut(x, z, 9, CURB + .3, CURB + 16, 's') || pushOut(x, z, 9, CURB + .3, CURB + 16, 'p'), groundAt, AIRPORT, ISLE, BRIDGE, AIRSPACE, RWY, onLand, stepHeli, heliControls, heliBrain, spawnCopHeli, airTick, AIRS, myAir, airItems, sendAir, jetAt, swimAshore, crossTarget, heliGun, heliRocket, NOAIR, collectPickups, findPromptNow: () => { findPrompt(); return prompt; }, BANK, JEWEL, LABS, LAB, JOBS, jobLine, labItems, jobItems, startSmuggle, buyLab, heistVisuals, vaultDoor, PROJ, fireProj, explode, RZ, RX, applySpec, setNeon, nitrous, gunItems, BIZ, PH, openPhone, phoneItems, modItems, garageCheck, addRP, rankOf, rpFor, maxHp, bizIncome, buyBiz, myPV, sendPV, UNLOCK, renderShop, buy, openMenu, closeShop, shopNow: () => shopOpen, FRONTS, AREAS, careerTick, homieCount, G, P, ZS, ZONES, NET, DBG, bots, cars, pickups, NAV, PROPS, PARK, SPAWNS, SHOPS, GARAGES, BASECARS, keys, mouse, boxes, FOOT, camera, renderer, scene, GAME, WEAPONS, CARS, chars, EVQ,
   step: (n, dt) => { for (let i = 0; i < n; i++) step(dt || 1 / 30); }, draw: () => drawFrame(), GQ, setPreset, applyQuality, POST, renderer, ENVM, refreshEnv, LOOK, SKY, FOGU, pushOut, COL, groundAt, navPath, nearestNode, zoneNode, walkClear, spawnCar, spawnBot, startWorld, beginPlay, ROBS, tillOpen, updatePolice, spawnCopUnit, copUnit, note, humans, saveGame, loadSave, updateRaids, BASES, tryFire, aimDir, AIM, applyTod, giveWeapon, setWeapon, tryEnter, carOffer, carInReach, damageBot, hurtPlayer, encBots, encCars, lanePoint, rayWorld, los, removeBot, aiStart, visuals,
   damageCar, carById, botById, CHOP, addPickup, ZONES_VAL: () => ZONES.map(z => z.val), TOUCH, setTouch, touchEdit, layoutTouch, tPlace, saveCode, readCode, saveData, loadSave, CLOUD, SAVE, initAudio, RADIO, EVTS, EV_START, RACE, HOOD, hoodAt, skullsOf, updateGangs, updateEvents, spawnHitSquad, payHour, hourlyNow, CREWS, POI, SPOTS, POSTS, ROOSTS, VENTS, STACKS, SPEAKERS, SIGNS, LIFE, ACT, populate, spawnPed, staffPosts, updateZones, walkersWanted, blockOf, nearHuman, hudCache, crewSize, takeSpot, leavePoi, NAVOK, updateLife };
 requestAnimationFrame(frame);

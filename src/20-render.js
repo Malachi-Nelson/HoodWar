@@ -10,10 +10,10 @@ catch (e) { $('o-text').textContent = 'This browser could not start WebGL, so th
 //     env: physically based materials lit and reflecting the sky; ao 0-2 (ambient occlusion off/half/full); post: the HDR pipeline with
 //     bloom and colour grading; dof, mblur: optional depth of field and motion blur.
 const GQ_PRESETS = {
-  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0 },
-  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0 },
-  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0 },
-  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0 },
+  low:    { res: 1,    shadow: 0, tex: 0, view: 0, aa: 0, env: 0, ao: 0, post: 0, bloom: 0, dof: 0, mblur: 0, ssr: 0 },
+  medium: { res: 1.25, shadow: 1, tex: 1, view: 1, aa: 1, env: 1, ao: 0, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 0 },
+  high:   { res: 1.5,  shadow: 2, tex: 2, view: 2, aa: 1, env: 1, ao: 1, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 1 },
+  ultra:  { res: 2,    shadow: 3, tex: 2, view: 3, aa: 1, env: 1, ao: 2, post: 1, bloom: 1, dof: 0, mblur: 0, ssr: 2 },
 };
 const GQ_KEYS = Object.keys(GQ_PRESETS.low), GQ = Object.assign({ preset: 'high' }, GQ_PRESETS.high);
 { let sv = null; try { sv = JSON.parse(localStorage.getItem('pc-gfx2') || 'null'); } catch (e) {}

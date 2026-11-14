@@ -96,12 +96,13 @@ function prop(type, x, z, y) {
   const box = solid(x - r, x + r, y, y + h, z - r, z + r, { a: false, s: type === 'bin', n: false });
   PROPS.push({ type, x, z, y, box, down: 0, yaw: 0, i: PROPS.length }); if (type === 'lamp') LAMPS.push(PROPS[PROPS.length - 1]);
 }
+defMat('foliage', lam({}), 1, 1); PBR_OF.foliage = [.86, 0];   // tree crowns on their own, so the wind can move them (98.5-wet.js)
 function tree(x, z, s, y) {
   y = y === undefined ? CURB : y; s = s || 1; const h = 2.6 * s + W() * 1.2, g1 = hexCol(pick(W, [0x3f6b34, 0x4d7a3a, 0x58813c, 0x3a5f30])), tr = hexCol(0x4a3a2a);
   addBox(x - .2, x + .2, y, y + h + .4, z - .2, z + .2, 'flat', { col: tr, a: false, n: false });
   const ico = new T.IcosahedronGeometry(1, 1), m = new T.Matrix4();
-  m.compose(new T.Vector3(x, y + h + 1.2 * s, z), new T.Quaternion().setFromEuler(new T.Euler(W() * 3, W() * 3, 0)), new T.Vector3(1.9 * s, 1.5 * s, 1.9 * s)); SB('flat').geo(ico, m, g1);
-  m.compose(new T.Vector3(x + (W() - .5) * s, y + h + 2.3 * s, z + (W() - .5) * s), new T.Quaternion(), new T.Vector3(1.3 * s, 1.1 * s, 1.3 * s)); SB('flat').geo(ico, m, [g1[0] * 1.12, g1[1] * 1.12, g1[2] * 1.05]); ico.dispose();
+  m.compose(new T.Vector3(x, y + h + 1.2 * s, z), new T.Quaternion().setFromEuler(new T.Euler(W() * 3, W() * 3, 0)), new T.Vector3(1.9 * s, 1.5 * s, 1.9 * s)); SB('foliage').geo(ico, m, g1);
+  m.compose(new T.Vector3(x + (W() - .5) * s, y + h + 2.3 * s, z + (W() - .5) * s), new T.Quaternion(), new T.Vector3(1.3 * s, 1.1 * s, 1.3 * s)); SB('foliage').geo(ico, m, [g1[0] * 1.12, g1[1] * 1.12, g1[2] * 1.05]); ico.dispose();
   PATCH.push([x - 1.6 * s, z - 1.6 * s, x + 1.6 * s, z + 1.6 * s, 'tree']);
 }
 function fence(x0, z0, x1, z1, h, kind, y) {   // chain-link stops people and cars, not bullets or sight

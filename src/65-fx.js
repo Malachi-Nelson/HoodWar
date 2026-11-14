@@ -18,7 +18,7 @@ function updatePSys(sys, dt) {
   const L = sys.items; let n = 0;
   for (let i = 0; i < L.length; i++) { const p = L[i]; p.t += dt; if (p.t >= p.life) continue;
     p.vy -= p.grav * dt; if (p.drag) { const k = Math.max(0, 1 - p.drag * dt); p.vx *= k; p.vy *= k; p.vz *= k; }
-    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav > 4 && p.y < .03) { p.y = .03; p.vy *= -.3; p.vx *= .6; p.vz *= .6; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; if (p.grav <= 0) { p.x += WINDV.x * dt; p.z += WINDV.z * dt; }   // smoke and steam go with the wind if (p.grav > 4 && p.y < .03) { p.y = .03; p.vy *= -.3; p.vx *= .6; p.vz *= .6; }
     const k = p.t / p.life; sys.pos[n * 3] = p.x; sys.pos[n * 3 + 1] = p.y; sys.pos[n * 3 + 2] = p.z; sys.col[n * 4] = p.r; sys.col[n * 4 + 1] = p.g; sys.col[n * 4 + 2] = p.b; sys.col[n * 4 + 3] = p.a0 * (1 - k) * Math.min(1, p.t * 30); sys.siz[n] = lerp(p.s0, p.s1, k);
     if (n !== i) L[n] = p; n++; }
   L.length = n; sys.g.setDrawRange(0, n); sys.g.attributes.position.needsUpdate = true; sys.g.attributes.pcolor.needsUpdate = true; sys.g.attributes.psize.needsUpdate = true;

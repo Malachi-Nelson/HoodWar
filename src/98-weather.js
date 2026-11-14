@@ -23,7 +23,8 @@ const umbOf = b => WX.rain > .3 && (b.id * 7919) % 100 < 55;          // who car
 // --- turning toward it: about twenty seconds to change, the roads take a while to get wet and longer to dry
 function weatherTick(dt) {
   const m = WX_MIX[WX.k], k = Math.min(1, dt / 20);
-  WX.cloud += (m[0] - WX.cloud) * k; WX.rain += (m[1] - WX.rain) * k * (m[1] < WX.rain ? 1.5 : 1); WX.fog += (m[2] - WX.fog) * k; WX.wind += (m[3] - WX.wind) * k;
+  const rt = m[1] * (WX.k === 2 ? .4 + .6 * rainSwell() : 1);   // a spell of rain swells and eases (98.5-wet.js)
+  WX.cloud += (m[0] - WX.cloud) * k; WX.rain += (rt - WX.rain) * k * (rt < WX.rain ? 1.5 : 1); WX.fog += (m[2] - WX.fog) * k; WX.wind += (m[3] - WX.wind) * k;
   WX.wet = clamp(WX.wet + (WX.rain > .15 ? dt / 30 * WX.rain : -dt / 160), 0, 1);
   if (WX.k !== WX.seen && G.state === 'playing') { if (WX.seen !== undefined && G.time > 5) note(WX_SAY[WX.k], 'c'); WX.seen = WX.k; }
   if (WX.k === 3 && WX.rain > .6) { WX.boltT -= dt; if (WX.boltT <= 0) { WX.boltT = 6 + rand() * 16; bolt(); } }
@@ -98,5 +99,5 @@ function weatherFrame(dt) {
     u.uCol.value.setRGB(lerp(.78, .5, ENV.night), lerp(.82, .56, ENV.night), lerp(.9, .66, ENV.night)); u.uOp.value = lerp(.38, .26, ENV.night) + WX.flash * .3; }
   if (WX.flash > 0 || WX.lit) { const k = WX.flash; hemi.intensity = WXL.hemi + k * .95; scene.fog.color.copy(WXL.fog).lerp(_wf.setRGB(.62, .66, .8), k * .35); SKY.top.copy(WXL.top).lerp(_wf.setRGB(.5, .55, .72), k * .5); SKY.hor.copy(WXL.hor).lerp(_wf.setRGB(.6, .64, .8), k * .4); WX.lit = k > 0; }
   if (WX.boltOn > 0) { WX.boltOn -= dt; boltSp.material.opacity = WX.boltOn > .12 ? 1 : (G.time * 30 % 2 < 1 ? .9 : .2); if (WX.boltOn <= 0) boltSp.visible = false; }
-  umbrellas(); rainSound();
+  umbrellas(); rainSound(); wetFrame(dt);
 }
